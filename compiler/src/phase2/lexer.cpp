@@ -12,7 +12,7 @@ bool is_space(char c) {
 }
 
 bool is_keyword(const std::string& token) {
-  return token == "and" || token == "or" || token == "not";
+  return token == "and" || token == "or" || token == "not" || token == "await";
 }
 
 bool is_integer_literal(const std::string& token) {

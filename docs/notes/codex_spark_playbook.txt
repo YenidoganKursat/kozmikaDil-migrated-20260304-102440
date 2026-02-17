@@ -904,3 +904,550 @@ Negatif (yapma):
 - Cache key'ini probe/versiyon olmadan kurup stale pack kullanma.
 - Tek backend'e kilitlenip fallback'i kaybetme.
 - Benchmarkta interpreter orchestration maliyetini kernel speed ile karistirip yanlis karar verme.
+
+-------------------------------------------------------------------------------
+25) PHASE 7-8 STABILITY PASS LOG (2026-02-17, FINAL)
+-------------------------------------------------------------------------------
+Hedef:
+- Phase 7 ve Phase 8'de en kararlı hiz profiline gecmek ve bu profile gore devam etmek.
+
+Yapilan degisiklikler:
+- Phase 7:
+  - list/matrix fused runtime'da `map_mul -> reduce_sum` icin ek fast path.
+- Phase 8:
+  - own GEMM icinde `b_transposed` kontrolu inner loop disina tasindi (branch hoist).
+  - epilogue (bias/axpby) tarafinda shape-check/dispatch tek sefer hazirlanip
+    hucre-basi erisim sadeleştirildi.
+  - auto backend karari buyuk matrislerde BLAS secimini koruyacak sekilde
+    dim+volume esiklerine baglandi:
+      - `SPARK_MATMUL_AUTO_DIM_THRESHOLD` (default 224)
+      - `SPARK_MATMUL_AUTO_VOLUME_THRESHOLD` (default 224^3)
+  - Tuned backend kilitlemesi varsayilan olarak kapali tutuldu;
+    gerekirse `SPARK_MATMUL_AUTO_RESPECT_TUNED_BACKEND=1` ile acilabilir.
+
+Son stable olcum (runs=5, warmup=1, sample_repeat=3):
+- Phase 7:
+  - list_pipeline_reduce: 3.552x
+  - hetero_pipeline_reduce: 1.823x
+  - matrix_pipeline_reduce: 3.553x
+- Phase 8 comparisons:
+  - matmul_core_f64: own/blas 0.943x, auto backend own
+  - matmul_epilogue_f64: own/blas 0.958x, auto backend own
+  - matmul_core_f64_256: own/blas 1.140x, auto backend blas
+
+Karar (lock):
+- Kucuk/orta boyutlarda own backend, buyuk matrislerde auto->BLAS stratejisi ile devam.
+- Benchmark stabilitesi icin `sample_repeat=3` korunacak.
+
+-------------------------------------------------------------------------------
+26) PHASE 8 BENCH EXTENSION (N=512) + SPEED TRIAL (2026-02-17)
+-------------------------------------------------------------------------------
+Yapilanlar:
+- Phase8 benchmark setine `matmul_core_f64_512` eklendi:
+  - bench/programs/phase8/matmul_core_f64_512.k
+  - bench/programs/phase8/c_baselines/matmul_core_f64_512.c
+  - bench/scripts/phase8/definitions.py guncellendi.
+- 512 case dogruluk toleransi:
+  - k program ve C baseline icin `diff < 1e-4`.
+  - Sebep: toplam buyuklugunde floating birikim farki (`~1.97e-5`) deterministic ama 1e-5'i asiyor.
+
+Tum testler:
+- sparkc_smoke_test, parser/eval/codegen/typecheck, phase5/6/7/8 testleri PASS.
+
+Benchmark sonucu (runs=5, warmup=1, sample_repeat=3):
+- phase8 records: 16/16 PASS
+- phase8 comparisons: 4/4 PASS
+- matmul_core_f64_512:
+  - own median: ~0.350s
+  - auto median: ~0.242s (backend=BLAS)
+  - blas median: ~0.243s
+  - own_vs_blas: ~1.439x
+  - auto_vs_best: ~0.995x
+
+Hizlandirma denemesi (olumsuz):
+- Buyuk own-kernel icin tile>=128 zorlama denendi.
+- Sonuc: 512 own path yavasladi (daha kotu median).
+- Karar: geri alindi, mevcut tuned/auto stratejisi korundu.
+
+-------------------------------------------------------------------------------
+27) PHASE 7-8 DEEP RESEARCH + TARGETED SPEED PASS (128/256/512)
+-------------------------------------------------------------------------------
+Arastirma ozeti (uygulanan):
+- Goto/BLIS prensibi: cache-aware blocking + mikro-kernel register birikimi.
+- LLVM vectorizer notlari: inner-loop branch ve dispatch azaltimi.
+- Weld/deforestation mantigi: pipeline terminalinde gereksiz ara islem azaltimi.
+
+Uygulananlar:
+- Phase 7:
+  - reduce_sum terminalinde map_add/map_mul zincirleri affine formulle
+    sadeleştirildi (tek toplam + sabit duzeltme).
+- Phase 8:
+  - own GEMM transposed-B yoluna 4-kolon mikro-kernel eklendi (n>=192).
+  - matrix_fill_affine icin large matrixlerde (>=128^2) eager dense f64 cache.
+  - acquire_packed_matrix non-transpose f64 yolunda hazir dense cache dogrudan kullanildi.
+  - matmul result matrix'te gereksiz dense cache kopyasi kaldirildi.
+
+Denenen ama geri alinan:
+- buyuk own-kernel icin tile>=128 zorlama (regresyon verdi, geri alindi).
+
+Son benchmark (phase8, runs=5, warmup=1, sample_repeat=3):
+- records: 16/16 PASS
+- comparisons: 4/4 PASS
+- 128 (matmul_core_f64):
+  - own median ~0.0578s
+  - auto median ~0.0707s
+- 256 (matmul_core_f64_256):
+  - own median ~0.1200s
+  - auto median ~0.1061s (auto->BLAS)
+- 512 (matmul_core_f64_512):
+  - own median ~0.2946s
+  - auto median ~0.2188s (auto->BLAS)
+
+Not:
+- 512 için onceki stabil snapshot'a gore own ve auto pathte belirgin iyilesme goruldu.
+- 256/512'de "en kararlı hiz" icin auto->BLAS stratejisi korunuyor.
+
+-------------------------------------------------------------------------------
+28) PHASE 8 STABILITY HOTFIX + ADAPTIVE TILE PASS (2026-02-17)
+-------------------------------------------------------------------------------
+Problem:
+- Phase8 optimize denemesi sonrasi `matmul_epilogue_f64` case'inde
+  `auto_vs_best` gecici olarak bozuldu (4/4 yerine 3/4).
+- Kucuk problemde auto backend yolunda gereksiz BLAS probe latency gorduk.
+
+Yapilanlar:
+- `resolve_schedule` icinde auto backend karari:
+  - `has_blas_backend() && large_problem` yerine
+  - `large_problem && has_blas_backend()` olarak duzeltildi.
+  - Boylece small-size path BLAS probe'a zorlanmiyor.
+- Boyut-adaptif tile kurali eklendi:
+  - f64 max_dim <= 160 -> tile 96
+  - f64 max_dim >= 224 -> tile 64
+- transposed-B own kernelde n>=256 icin 8-kolon mikro-kernel eklendi.
+
+Sonuc:
+- Phase8 benchmark: records 16/16 PASS, comparisons 4/4 PASS.
+- Medyan sureler (latest):
+  - 128 core: own ~0.0413s, auto ~0.0419s, blas ~0.0446s
+  - 256 core: own ~0.0842s, auto ~0.0729s, blas ~0.0726s
+  - 512 core: own ~0.2071s, auto ~0.1562s, blas ~0.1607s
+- Phase7 benchmark da stabil:
+  - list 3.874x, hetero 2.284x, matrix 3.604x.
+
+Ders:
+- Tek tuned tile tum boyutlar icin optimum degil; size-banded tile daha stabil.
+- Auto backend latency'sinde karar sirası bile kritik fark olusturuyor.
+
+-------------------------------------------------------------------------------
+29) PHASE 9 CONCURRENCY BASELINE (2026-02-17)
+-------------------------------------------------------------------------------
+Yapilanlar:
+- Frontend:
+  - `async fn` alias destegi eklendi (`async def` ile ayni AST'ye normalize).
+  - `await` unary parse/eval aktif.
+  - `with task_group([timeout_ms]) as g:` parse/eval aktif.
+- Runtime:
+  - work-stealing scheduler (submit/execute/steal stats),
+  - task API: `spawn`, `join`, `cancel`, `task_group`,
+  - parallel API: `parallel_for`, `par_map`, `par_reduce`,
+  - event API: `channel/send/recv/close`,
+  - stream API: `stream`, `anext`, `channel.anext()`, `channel.has_next()`.
+- Static diagnostics:
+  - `spawn/par_*` icin named-function sendable kontrolu,
+  - non-sendable capture argumanlar icin compile-time hata/rapor.
+- Test paketi:
+  - `tests/phase9/runtime/*` (async/task/channel/parallel)
+  - `tests/phase9/analyze/*` (safety diagnostics)
+- Benchmark paketi:
+  - `bench/scripts/run_phase9_benchmarks.py`
+  - spawn/join overhead, channel throughput+latency,
+    parallel_for scaling, par_reduce chunk tuning.
+
+Denenen ama uygulanmayan:
+- Tam MIR/SSA async state-machine lowering:
+  - bu sprintte stabil runtime + olcum hattina odaklanildi,
+    compiler-level lowering sonraki adima birakildi.
+- Agresif lock-free channel denemesi:
+  - dogruluk/backpressure karmaşıkligi nedeniyle v1'de mutex+cv korundu.
+
+Olumlu:
+- Structured concurrency scope semantigi testlenebilir hale geldi.
+- Event-driven pipeline primitive seti (channel+stream) tek syntaxla calisiyor.
+- Scheduler/perf metrikleri JSON/CSV hattina alinabildi.
+
+Negatif / Dikkat:
+- Full ownership/borrow guvencesi yok; su an conservative diagnostic seviyesi.
+- `parallel_for` path'te closure-capture tipi kotu secilirse T4 fast path reddediliyor.
+
+-------------------------------------------------------------------------------
+30) PHASE 9 PERF TUNING (2026-02-17, follow-up)
+-------------------------------------------------------------------------------
+Problem tespiti:
+- Ilk phase9 bench turunda:
+  - spawn/join overhead yuksekti,
+  - parallel_for scaling olcumu channel lock contention ile kirleniyordu,
+  - channel benchmarkta bir deadlock vakasi goruldu (bounded queue + gec baslayan consumer).
+
+Yapilan optimizasyonlar:
+- Scheduler:
+  - poll-based bekleme kaldirildi,
+  - pending-task sinyali ile cv-wake modeli eklendi.
+- Runtime call hot path:
+  - parallel_for/par_map/par_reduce icinde per-iteration arg vector allocation azaltildi.
+- Closure modeli:
+  - concurrent call path icin frozen closure env kullanildi
+    (paylasilan mutable parent env contention/race riski azaltildi).
+- Benchmark duzeltmeleri:
+  - parallel_for scaling programi chunk-lock contention'dan arindirildi
+    (gercek scheduler scaling gorunur hale getirildi).
+
+Denenen ama geri alinan / degistirilen:
+- parallel_for scaling icin channel'a her elemanda send:
+  - scaling'i yapay olarak bastirdi (lock contention), olcum modeli degistirildi.
+- channel queue'da buyuk `Value` kopyasi:
+  - throughput geriledi; pointer-backed queue'ya donuldu.
+
+Son stable phase9 metrikleri:
+- spawn/join: ~49.3k ns/task
+- channel throughput: ~351k msg/s, latency ~2.85 us/msg
+- parallel_for speedup:
+  - 2 thread: ~1.96x
+  - 4 thread: ~3.03x
+  - 8 thread: ~4.09x
+- par_reduce chunk best: 128
+
+Karsilastirma (phase9 baseline'a gore):
+- spawn/join overhead: ~%95 iyilesme
+- parallel max speedup: ~3.88x -> ~4.09x
+
+-------------------------------------------------------------------------------
+31) PHASE 9 GAP-CLOSURE PASS (2026-02-17, final)
+-------------------------------------------------------------------------------
+Yapilanlar:
+- `async for` syntax + runtime eklendi:
+  - parser: `async for v in stream(ch): ...`
+  - evaluator: channel/stream drain ile async-iter style dongu.
+- Analyzer dump eklendi:
+  - `sparkc analyze file.k --dump-async-sm`
+  - async function icin await noktasi + state sayisi raporu.
+- Concurrency safety sertlestirmesi:
+  - spawn/par_* capture argumanlarinda non-sendable tipleri compile-time reject.
+  - concurrent function call path icin frozen closure env ile mutabilite izolasyonu.
+
+Test/Validation:
+- parser tests PASS
+- phase9 tests PASS
+- phase9 benchmark sections: 4/4 PASS
+
+Not:
+- Async state-machine raporu su an pseudo-lowering (analyzer seviyesinde)
+  ve runtime task frame'i ile hizalanmis durumda.
+
+-------------------------------------------------------------------------------
+32) PHASE 9 DEADLINE + SNAPSHOT SYNC (2026-02-17)
+-------------------------------------------------------------------------------
+Yapilanlar:
+- Timeout/deadline beklentisini netlemek icin `deadline(ms)` alias builtin eklendi.
+  - Runtime: non-negative kontrol + int timeout token donus.
+  - Semantic: `deadline(int) -> int` builtin type tanimi.
+  - Docs: grammar + runtime semantigi + decisions guncellendi.
+- Test kapsamina yeni senaryolar eklendi:
+  - `join(task, deadline(...))` dogrulama testi.
+  - `recv(ch, 0)` timeout hata testi (background task sızıntısı olmadan stabil).
+- Analyzer davranisi runtime ile hizalandi:
+  - `with task_group(...) as g` baglami scope disinda da gorunur (Python-style).
+- Phase9 raporu son benchmark JSON verileriyle senkronize edildi.
+
+Son stable phase9 metrikleri (latest rerun):
+- spawn/join: ~90.3k ns/task
+- channel throughput: ~160k msg/s, latency ~6.23 us/msg
+- parallel_for speedup:
+  - 2 thread: ~1.87x
+  - 4 thread: ~2.40x
+  - 8 thread: ~3.96x
+- par_reduce chunk best: 64
+
+Ders:
+- Bu snapshot'ta thread scaling iyilesirken channel throughput onceki snapshot'a gore dustu;
+  scheduler/queue ayarlarinin workload bagimli oldugu tekrar dogrulandi.
+
+-------------------------------------------------------------------------------
+33) PHASE 9 TAVAN ARAYISI (2026-02-17, runtime fast-path)
+-------------------------------------------------------------------------------
+Yapilanlar:
+- Scheduler submit path:
+  - `packaged_task` yerine promise tabanli submit yolu eklendi.
+  - parallel primitive'ler icin `scheduler_submit_fire_and_forget()` eklendi
+    (future/get overhead'i kaldirildi).
+- Await/join assist:
+  - `await_task_value()` beklerken scheduler'dan pending task alip calistirabiliyor.
+  - Ozellikle `spawn -> join` pattern'inde bos bekleme yerine faydali is yapiliyor.
+- Parallel runtime:
+  - `parallel_for/par_map/par_reduce` icin wait-group + exception propagation modeli eklendi.
+  - chunk baseline yeniden sabitlendi: `<=4096 -> 64` (env override korunuyor).
+- Channel runtime:
+  - notify optimizasyonu: sadece queue state transition oldugunda wake
+    (`empty->non-empty`, `full->non-full`).
+
+Denenen ama geri alinan:
+- Thread-sayisina gore adaptif chunk heuristigi:
+  - bazi kosularda tek-run hizli olsa da tekrar kosularda dalgalanma artirdi.
+  - "en kararlı" hedefi icin fixed-64 default'a geri donuldu.
+
+Olumlu (yap):
+- wait-group + fire-and-forget ile parallel chunk path'te future/get maliyetini azalt.
+- join/await beklerken scheduler assist kullanarak idle kalma.
+- channel tarafinda gereksiz notify'i azalt.
+
+Negatif (yapma):
+- chunk politikasini surekli heuristiklerle degistirip kararliligi bozma.
+- benchmarki parallel kosup (phase7/8/9 ayni anda) snapshot karari verme.
+- channel'da tum queue eventlerinde notify_all kullanma.
+
+Son durum (final config ile tekrarli olcum):
+- phase9 sections: 4/4 PASS
+- 3-run median:
+  - spawn/join: ~30.7k .. ~44.8k ns/task
+  - channel throughput: ~213k .. ~315k msg/s (latency ~3.17 .. ~4.70 us/msg)
+  - parallel_for speedup: 2T ~1.79 .. ~1.84x, 4T ~2.91 .. ~3.14x, 8T ~4.36 .. ~5.18x
+  - par_reduce best chunk: 64..256 bandi
+
+Not:
+- Tekil run'larda OS scheduling kaynakli dalgalanma var; kararlar median snapshot'a gore alindi.
+
+-------------------------------------------------------------------------------
+34) PHASE 10 UYGULAMA NOTLARI (2026-02-17)
+-------------------------------------------------------------------------------
+Yapilanlar:
+- Multi-arch build kapisi eklendi:
+  - `scripts/phase10/multiarch_build.py`
+  - hedefler: `x86_64-linux-gnu`, `aarch64-linux-gnu`, `riscv64-linux-gnu`
+  - JSON artifact: `bench/results/phase10_multiarch.json`
+- CPU dispatch gozlemlenebilirligi:
+  - `sparkc --print-cpu-features`
+  - dispatch test override: `SPARK_CPU_ARCH`, `SPARK_CPU_FEATURES`
+- Final perf pipeline:
+  - `scripts/pgo_cycle.sh` (instrument -> merge -> use)
+  - `scripts/bolt_opt.sh` (perf/perf2bolt/llvm-bolt varsa)
+- Safety gates:
+  - differential: `scripts/phase10/differential_check.py`
+  - parser fuzz: `scripts/phase10/fuzz_parser.py`
+  - runtime fuzz: `scripts/phase10/fuzz_runtime.py`
+  - sanitizer: `scripts/phase10/run_sanitizers.py`
+  - toplu: `scripts/phase10_safety_gates.sh`
+- Phase10 benchmark orchestrator:
+  - `bench/scripts/run_phase10_benchmarks.py`
+  - JSON/CSV/MD phase10 raporu uretiyor.
+
+Olumlu (yap):
+- PGO cikislarini mutlaka medyan sure ile kaydet (`baseline vs pgo` ayni program).
+- Dispatch dogrulamasini ayni programda farkli forced feature setleriyle yap.
+- Cross-target build sonuclarini PASS/FAIL + log ile artifact'a yaz.
+- Tool yoksa (BOLT gibi) script'i kirmadan "skipped + reason" raporla.
+
+Negatif (yapma):
+- Multi-arch sonucu "toolchain yoksa sessizce gecme"; acik skip/fail yaz.
+- Fast-math'i varsayilan acma; strict sonucu bozan hiz kazanci kabul etme.
+- Differential/fuzz scriptlerinde stderr diagnostiklerini normalize etmeden direkt string karsilastirma.
+- Tek run verisiyle PGO/BOLT karari alma; medyan ve drift bilgisi tut.
+
+Sonuc:
+- Phase10 kapsaminda portability + dispatch + final optimization + safety gating zinciri
+  scriptlenmis ve artifact-ureten hale getirildi.
+
+-------------------------------------------------------------------------------
+35) FAST FOLLOW HIZLANDIRMA NOTLARI (2026-02-17)
+-------------------------------------------------------------------------------
+Yapilanlar:
+- Phase8 own GEMM icin row-tile parallel path eklendi:
+  - kod: `compiler/src/phase8/runtime/03_matmul_kernel.cpp`
+  - yeni env ayarlari:
+    - `SPARK_MATMUL_OWN_THREADS`
+    - `SPARK_MATMUL_OWN_PAR_MIN_VOLUME`
+- Phase10 PGO hattina no-regression secimi eklendi:
+  - kod: `scripts/pgo_cycle.sh`
+  - `raw_speedup_vs_baseline` ve `selected_variant` artifact'a yaziliyor.
+  - raw PGO daha kotu cikarsa etkili secim baseline'a donuyor.
+
+Denenen ama geri alinan:
+- PGO profile workload'unu sadece buyutmek (`N=5_000_000`) kararliligi artirmadi;
+  dalgalanma devam etti. Kalici degisiklik olarak alinmadi.
+
+Olumlu (yap):
+- Matmul'da disjoint satir-tile paralelligi kullan (deterministik + race-free).
+- PGO kararini raw sonuca gore otomatik sec (pgo_use/baseline) ve artifact'a yaz.
+- Karari tek kosu degil, tekrarli benchmark + medyan ile ver.
+
+Negatif (yapma):
+- Kisa sureli tek-run hiz artisina bakip kalici karar verme.
+- PGO yavaslatirken release-perf'e zorla pgo binary surme.
+- Matmul icte race riski olan reduction-paralelligi deneme (row disjoint garanti disina cikma).
+
+Son durum:
+- Phase8 benchmark: `16/16 records PASS`, `4/4 comparisons PASS`.
+- Phase10 benchmark: `4/4 sections PASS` (PGO no-regression secimi aktif).
+- Kontrollu own-GEMM A/B (9 tekrar medyan):
+  - 256: `threads=1 -> ~0.02939s`, `threads=4 -> ~0.02450s` (`~1.20x`)
+  - 512: `threads=1 -> ~0.07498s`, `threads=4 -> ~0.05377s` (`~1.39x`)
+
+-------------------------------------------------------------------------------
+36) PHASE 10 EK HIZLANDIRMA (2026-02-17, AutoFDO + ISA dispatch + BOLT)
+-------------------------------------------------------------------------------
+Yapilanlar:
+- AutoFDO hattı eklendi:
+  - `scripts/autofdo_cycle.sh`
+  - akış: `perf record` -> `llvm-profgen` -> `-fprofile-sample-use`
+  - PGO ile aynı no-regression modeli: raw yavaşsa baseline seçiliyor.
+- Phase10 benchmark orchestrator genisletildi:
+  - `bench/scripts/run_phase10_benchmarks.py`
+  - yeni `autofdo` section + `min_autofdo_speedup` gate
+  - rapor formatı `5/5` section modeline geçirildi.
+- BOLT script iyilestirildi:
+  - `scripts/bolt_opt.sh`
+  - `--profile-runs` ile daha stabil profiling
+  - raw/effective speed + selected variant artifact alanlari eklendi.
+- ISA dispatch tabanlı kernel tuning eklendi:
+  - `compiler/src/phase8/runtime/03_matmul_kernel.cpp`
+  - varyant bazlı (`x86_avx2/avx512`, `arm_neon/sve/sve2`, `riscv_rvv`)
+    - 8-col / 4-col mikro-kernel giris esikleri
+    - paralel thread cap ve min-volume defaultlari
+  - `arm_neon` için kalıcı profil: `j8=max`, `j4=128`, `thread_cap=12`
+  - runtime tuning override env'leri:
+    - `SPARK_MATMUL_OWN_J8_THRESHOLD`
+    - `SPARK_MATMUL_OWN_J4_THRESHOLD`
+    - `SPARK_MATMUL_OWN_DEFAULT_THREADS`
+    - `SPARK_MATMUL_OWN_DEFAULT_MIN_VOLUME`
+
+Denenen ama geri alinan:
+- AutoFDO için sadece profile workload büyütme yaklaşımı önceki denemede stabil fayda üretmedi;
+  tek başına çözüm olarak alınmadı.
+
+Olumlu (yap):
+- AutoFDO/BOLT yoksa build’i kırmadan artifact’a `skipped + reason` yaz.
+- Dispatch tuning’i CPU feature tag ile seç ve env override açık bırak.
+- Release-perf kararı için raw ve effective speed’i ayrı kaydet.
+
+Negatif (yapma):
+- Toolchain eksik hostta AutoFDO/BOLT zorlayıp hatayla pipeline’ı durdurma.
+- Sadece tek benchmark örneğine göre tüm profile kararını kilitleme.
+- ISA varyantlarını semantiği değiştirecek şekilde farklılaştırma.
+
+Son durum:
+- Phase10 benchmark: `5/5 sections PASS`
+  - PGO: PASS (no-regression secimi; host kosusuna gore `pgo_use` veya `baseline`)
+  - AutoFDO: skip-support PASS
+  - BOLT: skip-support PASS
+
+Yeni deneme (matmul sonuc/fark + hiz):
+- 100x100 tekrarli workload'da (`repeats=100`) `auto` backend bu hostta own seciyordu ve BLAS'a gore yavas kaldi.
+- Auto policy guncellendi:
+  - `compiler/src/phase8/runtime/01_schedule.cpp`
+  - yeni env: `SPARK_MATMUL_AUTO_SMALL_BLAS_DIM_THRESHOLD` (default `112`)
+  - auto secim: cok kucuk boyutta da BLAS yolu aktif.
+- Strict FP kontrolu eklendi:
+  - `compiler/src/phase8/runtime/03_matmul_kernel.cpp`
+  - `SPARK_MATMUL_STRICT_FP=1` ile deterministic toplama sirasi (dogrulama modu).
+- Not:
+  - strict FP sonucu yaklastirir ama hiz dusurur.
+  - performans modu icin strict kapali tutulmali; bu mod sadece parity/debug icin.
+
+Numerik fark azaltma (hiz koruma):
+- Yeni builtin: `accumulate_sum(total, list_or_matrix)`
+  - dosya: `compiler/src/phase5/runtime/interpreter_core.cpp`
+  - amac: C tarafindaki `total += c[i][j]` akisina denk birikimi tek builtin ile yapmak.
+  - `reduce_sum` yerine bunu kullaninca runlar arasi grouping farki azalir, fark 1e-12/1e-13 hedefe yaklasir.
+  - interpreter index loop maliyeti olmadan (tek builtin cagrisi) calistigi icin hiz korunur.
+- 100x100x100 tekrar testinde:
+  - eski akıs (`total += c.reduce_sum()`): fark ~`7.218e-05`
+  - yeni akıs (`total = accumulate_sum(total, c)`): C/Java/Python ile ayni double sonuc (`abs diff = 0.0`)
+  - medyan sure: eski `~0.02864s`, yeni `~0.02770s` (hiz kaybi yok, hafif iyilesme)
+
+-------------------------------------------------------------------------------
+37) MATRIX '*' OPERATORU + LOOP HOT-PATH (2026-02-17)
+-------------------------------------------------------------------------------
+Yapilanlar:
+- `matrix * matrix` davranisi runtime'da matmul yoluna sabitlendi:
+  - dosya: `compiler/src/phase5/runtime/interpreter_ops.cpp`
+  - kontrol: `lhs.cols == rhs.rows`, uyusmazlikta acik hata.
+- Type/shape analiz matmul semantigine hizalandi:
+  - dosyalar:
+    - `compiler/src/phase3/semantic_parts/04_analysis.cpp`
+    - `compiler/src/phase3/semantic_parts/05_expr_infer.cpp`
+  - `matrix '*' lowers to matmul kernel path when eligible` reason korunuyor.
+- `for/while` interpreter hot-path iyilestirmeleri:
+  - `compiler/src/phase3/evaluator_parts/stmt/stmt_while.cpp`
+    - empty-body ve single-stmt fast path.
+  - `compiler/src/phase3/evaluator_parts/stmt/stmt_for.cpp`
+    - loop variable slot pointer cache (`get_ptr` bir kez),
+    - body dispatch fast path (empty/single),
+    - matrix iterasyonunda row-list buffer reuse (per-iter allocation azaltimi),
+    - `cols == 1` icin scalar fast path korunuyor.
+- Matrix arithmetic memory/branch hot-path:
+  - `compiler/src/phase5/runtime/interpreter_ops.cpp`
+  - out buffer pre-sized write,
+  - operation branch'i loop disina tasindi (add/sub/mul/div ayrik looplar).
+
+Test/Doğrulama:
+- Derleme:
+  - `cmake --build build -j8` PASS
+- Testler:
+  - `sparkc_smoke_test`, `sparkc_parser_tests`, `sparkc_eval_tests`, `sparkc_typecheck_tests`,
+    `sparkc_codegen_tests`, `sparkc_phase5_tests`, `sparkc_phase6_tests`,
+    `sparkc_phase7_tests`, `sparkc_phase8_tests`, `sparkc_phase9_tests`, `sparkc_phase10_tests`
+  - hepsi PASS.
+- Yeni/guclendirilen testler:
+  - `tests/phase5/matrix/matrix_container_tests.cpp`:
+    - `test_matrix_star_is_matmul` (2x3 * 3x2 => 2x2 dogrulama).
+  - `tests/phase3/typecheck_inference_shape_tests.cpp`:
+    - non-square matmul shape inference + shape mismatch error testi.
+- Loop hiz snapshot'u (`/usr/bin/time`, 9 run, medyan):
+  - not: bu hostta `hyperfine` yok, fallback olarak `/usr/bin/time` kullanildi.
+  - `./k run bench/programs/phase4/scalar_sum.k` => `~0.40s`
+  - `./k run bench/programs/phase4/scalar_for_range_mul.k` => `~0.39s`
+  - `./k run bench/programs/phase5/list_iteration.k` => `~0.36s`
+
+Olumlu (yap):
+- Matrix operator semantigini tek yerde netlestir (`*` => matmul for matrix-matrix).
+- Loop fast-path'lerde semantik degismeden allocation ve dispatch azalt.
+- Her semantic degisiklikte dokuman + testi birlikte guncelle.
+
+Negatif (yapma):
+- Matrix-matrix `*` icin elementwise fallback'e sessiz donme.
+- Loop optimizasyonu adina loop variable gorunurlugunu/son deger semantigini bozma.
+- Dokuman ve runtime semantigini ayrik birakma.
+
+-------------------------------------------------------------------------------
+38) CROSS-LANGUAGE RUNTIME-ONLY BENCH FIX (2026-02-17)
+-------------------------------------------------------------------------------
+Problem:
+- Dil karsilastirmasinda `k run` tarafinda compile/analyze + run birlikte olculebildigi icin
+  sureler adil degildi ve yorum hatasi uretiyordu.
+
+Yapilan:
+- Runtime-only (build haric) adil benchmark araci eklendi:
+  - `bench/scripts/run_crosslang_matmul_runtime.py`
+  - `bench/scripts/run_crosslang_matmul_runtime.sh`
+- Karsilastirilan case'ler:
+  - Spark interpret (own / blas / auto)
+  - C (`clang -O3`)
+  - Python naive
+  - Python+NumPy
+  - Java naive
+- Build adimlari olcum disi bir defa yapiliyor; sadece runtime olculuyor.
+- Cekirdek sabitleme/adalet:
+  - `OPENBLAS_NUM_THREADS=1`, `OMP_NUM_THREADS=1`, `MKL_NUM_THREADS=1`,
+    `VECLIB_MAXIMUM_THREADS=1`, `LC_ALL=C`.
+
+Sonuc (n=100, repeats=100, runtime-only):
+- Spark interpret (own): C'den yavas.
+- Spark interpret (blas): C'ye cok yakin.
+- Spark interpret (auto): C'den hizli gorulebiliyor (host + backend secimine bagli).
+
+Olumlu (yap):
+- Dil karsilastirmasinda runtime-only median raporla.
+- Her dil icin ayni workload ve ayni thread policy kullan.
+- Spark'ta backend modunu (own/blas/auto) ayri raporla.
+
+Negatif (yapma):
+- `k run` full pipeline suresini runtime diye raporlama.
+- Tek kosu (single-run) ile hiz karari verme.

@@ -22,6 +22,11 @@
 #include "phase8/runtime/02_pack_cache.cpp"
 #include "phase8/runtime/03_matmul_kernel.cpp"
 #include "phase8/runtime/04_matmul_entry.cpp"
+#include "phase9/runtime/01_scheduler.cpp"
+#include "phase9/runtime/02_task_runtime.cpp"
+#include "phase9/runtime/03_channel_runtime.cpp"
+#include "phase9/runtime/04_parallel_runtime.cpp"
+#include "phase9/runtime/05_stream_runtime.cpp"
 
 #include "evaluator_parts/expr/expr_number.cpp"
 #include "evaluator_parts/expr/expr_bool.cpp"
@@ -41,5 +46,6 @@
 #include "evaluator_parts/stmt/stmt_for.cpp"
 #include "evaluator_parts/stmt/stmt_function.cpp"
 #include "evaluator_parts/stmt/stmt_class.cpp"
+#include "evaluator_parts/stmt/stmt_with_task_group.cpp"
 
 #include "evaluator_parts/eval_dispatch.cpp"

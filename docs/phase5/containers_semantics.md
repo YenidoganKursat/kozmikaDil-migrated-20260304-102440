@@ -41,14 +41,17 @@ Bu dokümanda Phase 5 için List/Matrix davranışı, normalize kuralları ve ru
   - `m[r]` bir satır listesi döndürür.
 - transpose:
   - `m.T` ile `Matrix[cols, rows]` dönüşümü.
-- elementwise:
-  - `+ - * /` desteklenir.
-  - `mod` desteklenmez.
+- aritmetik:
+  - `matrix * matrix`: matmul (`lhs.cols == rhs.rows`) semantigiyle calisir.
+  - `matrix + matrix`, `matrix - matrix`, `matrix / matrix`: elementwise, shape eslesmesi gerekir.
+  - `matrix <op> scalar` (`+ - * /`): elementwise scalar broadcast.
+  - `mod` matrix icin desteklenmez.
 - view:
   - `m.T`, satır/sütun ve blok seçimi yeni matris döndürür (view optimizasyonu Phase 5 planında tasarım olarak notlandı, runtime’da fiziksel kopya ile)
   (plan hedefi: ileride view metadatasını koruyup cost model’e bırakmak).
 - `for row in m`:
-  - iterasyon bir satır listesi (`List[T]`) üzerinde yapılır, scalar eleman üzerinde değil.
+  - default iterasyon bir satir listesi (`List[T]`) uzerinden yapilir.
+  - interpreter fast path: tek sutunlu matrix (`cols == 1`) icin scalar hucre akisi kullanilir.
 
 ## TypeChecker Davranışı (Phase 5)
 

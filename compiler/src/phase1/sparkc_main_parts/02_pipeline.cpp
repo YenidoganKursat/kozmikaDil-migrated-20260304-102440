@@ -156,7 +156,7 @@ int check_mode_main(const std::string& file_path) {
 
 int analyze_mode_main(const std::string& file_path, bool dump_types, bool dump_shapes,
                       bool dump_tiers, bool dump_pipeline_ir, bool dump_fusion_plan,
-                      bool dump_why_not_fused) {
+                      bool dump_why_not_fused, bool dump_async_sm, bool dump_layout) {
   ProgramBundle bundle;
   if (!parse_and_typecheck(file_path, bundle)) {
     for (const auto& message : bundle.checker.diagnostics()) {
@@ -172,7 +172,8 @@ int analyze_mode_main(const std::string& file_path, bool dump_types, bool dump_s
     std::cout << "Shapes:\n" << bundle.checker.dump_shapes() << "\n";
   }
   if (dump_tiers || (!dump_types && !dump_shapes && !dump_pipeline_ir &&
-                     !dump_fusion_plan && !dump_why_not_fused)) {
+                     !dump_fusion_plan && !dump_why_not_fused &&
+                     !dump_async_sm && !dump_layout)) {
     std::cout << "Tiers:\n" << bundle.checker.dump_tier_report() << "\n";
   }
   if (dump_pipeline_ir) {
@@ -183,6 +184,15 @@ int analyze_mode_main(const std::string& file_path, bool dump_types, bool dump_s
   }
   if (dump_why_not_fused) {
     std::cout << "WhyNotFused:\n" << bundle.checker.dump_why_not_fused() << "\n";
+  }
+  if (dump_async_sm) {
+    std::cout << "AsyncLowering:\n" << bundle.checker.dump_async_lowering() << "\n";
+  }
+  if (dump_layout) {
+    spark::Interpreter interpreter;
+    interpreter.run(*bundle.program);
+    print_layout_summary(interpreter);
+    std::cout << "\n";
   }
   return 0;
 }

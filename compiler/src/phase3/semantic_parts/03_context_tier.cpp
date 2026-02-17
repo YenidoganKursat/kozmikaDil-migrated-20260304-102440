@@ -269,6 +269,135 @@ void TypeChecker::check_function_body(const FunctionDefStmt& fn, TypePtr functio
   }
   check_program_body(fn.body);
 
+  if (fn.is_async) {
+    const auto count_awaits_in_expr = [](const Expr& expr, const auto& self) -> std::size_t {
+      switch (expr.kind) {
+        case Expr::Kind::Unary: {
+          const auto& unary = static_cast<const UnaryExpr&>(expr);
+          std::size_t out = unary.op == UnaryOp::Await ? 1 : 0;
+          if (unary.operand) {
+            out += self(*unary.operand, self);
+          }
+          return out;
+        }
+        case Expr::Kind::Binary: {
+          const auto& binary = static_cast<const BinaryExpr&>(expr);
+          std::size_t out = 0;
+          if (binary.left) {
+            out += self(*binary.left, self);
+          }
+          if (binary.right) {
+            out += self(*binary.right, self);
+          }
+          return out;
+        }
+        case Expr::Kind::Call: {
+          const auto& call = static_cast<const CallExpr&>(expr);
+          std::size_t out = 0;
+          if (call.callee) {
+            out += self(*call.callee, self);
+          }
+          for (const auto& arg : call.args) {
+            out += self(*arg, self);
+          }
+          return out;
+        }
+        case Expr::Kind::Attribute: {
+          const auto& attr = static_cast<const AttributeExpr&>(expr);
+          return attr.target ? self(*attr.target, self) : 0;
+        }
+        case Expr::Kind::Index: {
+          const auto& index = static_cast<const IndexExpr&>(expr);
+          std::size_t out = 0;
+          if (index.target) {
+            out += self(*index.target, self);
+          }
+          for (const auto& item : index.indices) {
+            if (item.index) out += self(*item.index, self);
+            if (item.slice_start) out += self(*item.slice_start, self);
+            if (item.slice_stop) out += self(*item.slice_stop, self);
+            if (item.slice_step) out += self(*item.slice_step, self);
+          }
+          return out;
+        }
+        case Expr::Kind::List: {
+          const auto& list = static_cast<const ListExpr&>(expr);
+          std::size_t out = 0;
+          for (const auto& item : list.elements) {
+            out += self(*item, self);
+          }
+          return out;
+        }
+        default:
+          return 0;
+      }
+    };
+
+    const auto count_awaits_in_stmt = [&](const Stmt& stmt, const auto& self_stmt) -> std::size_t {
+      switch (stmt.kind) {
+        case Stmt::Kind::Expression: {
+          const auto& s = static_cast<const ExpressionStmt&>(stmt);
+          return s.expression ? count_awaits_in_expr(*s.expression, count_awaits_in_expr) : 0;
+        }
+        case Stmt::Kind::Assign: {
+          const auto& s = static_cast<const AssignStmt&>(stmt);
+          std::size_t out = 0;
+          if (s.target) out += count_awaits_in_expr(*s.target, count_awaits_in_expr);
+          if (s.value) out += count_awaits_in_expr(*s.value, count_awaits_in_expr);
+          return out;
+        }
+        case Stmt::Kind::Return: {
+          const auto& s = static_cast<const ReturnStmt&>(stmt);
+          return s.value ? count_awaits_in_expr(*s.value, count_awaits_in_expr) : 0;
+        }
+        case Stmt::Kind::If: {
+          const auto& s = static_cast<const IfStmt&>(stmt);
+          std::size_t out = s.condition ? count_awaits_in_expr(*s.condition, count_awaits_in_expr) : 0;
+          for (const auto& child : s.then_body) out += self_stmt(*child, self_stmt);
+          for (const auto& branch : s.elif_branches) {
+            out += count_awaits_in_expr(*branch.first, count_awaits_in_expr);
+            for (const auto& child : branch.second) out += self_stmt(*child, self_stmt);
+          }
+          for (const auto& child : s.else_body) out += self_stmt(*child, self_stmt);
+          return out;
+        }
+        case Stmt::Kind::While: {
+          const auto& s = static_cast<const WhileStmt&>(stmt);
+          std::size_t out = s.condition ? count_awaits_in_expr(*s.condition, count_awaits_in_expr) : 0;
+          for (const auto& child : s.body) out += self_stmt(*child, self_stmt);
+          return out;
+        }
+        case Stmt::Kind::For: {
+          const auto& s = static_cast<const ForStmt&>(stmt);
+          std::size_t out = s.iterable ? count_awaits_in_expr(*s.iterable, count_awaits_in_expr) : 0;
+          for (const auto& child : s.body) out += self_stmt(*child, self_stmt);
+          return out;
+        }
+        case Stmt::Kind::WithTaskGroup: {
+          const auto& s = static_cast<const WithTaskGroupStmt&>(stmt);
+          std::size_t out = s.timeout_ms ? count_awaits_in_expr(*s.timeout_ms, count_awaits_in_expr) : 0;
+          for (const auto& child : s.body) out += self_stmt(*child, self_stmt);
+          return out;
+        }
+        case Stmt::Kind::FunctionDef:
+        case Stmt::Kind::ClassDef:
+          return 0;
+      }
+      return 0;
+    };
+
+    std::size_t await_points = 0;
+    for (const auto& stmt : fn.body) {
+      await_points += count_awaits_in_stmt(*stmt, count_awaits_in_stmt);
+    }
+    AsyncLoweringRecord record;
+    record.function_name = fn.name;
+    record.await_points = await_points;
+    record.states = await_points + 1;
+    record.heap_frame = await_points > 0 || fn.body.size() > 8;
+    async_lowerings_.push_back(std::move(record));
+  }
+
   pop_function_context();
   pop_scope();
 }
@@ -309,6 +438,30 @@ void TypeChecker::analyze_expr(const Expr& expr, const TypePtr& type) {
 
 TypePtr TypeChecker::check_call(const CallExpr& call) {
   auto callee_expr = infer_expr(*call.callee);
+  const auto is_sendable_for_phase9 = [](const Type& type) {
+    switch (type.kind) {
+      case Type::Kind::Nil:
+      case Type::Kind::Int:
+      case Type::Kind::Float:
+      case Type::Kind::Bool:
+      case Type::Kind::Task:
+      case Type::Kind::Channel:
+        return true;
+      case Type::Kind::Unknown:
+      case Type::Kind::Any:
+        return true;
+      default:
+        return false;
+    }
+  };
+  const auto report_non_sendable_capture = [&](const std::string& site, std::size_t arg_index,
+                                               const TypePtr& arg_type) {
+    add_error(site + " capture arg " + std::to_string(arg_index + 1) +
+              " is not Sendable/Shareable: " + type_to_string(*arg_type));
+    add_context_reason({.message = "Cannot lower to phase9 fast path: non-sendable capture (" + site + ")",
+                        .normalizable = false});
+  };
+
   if (call.callee->kind == Expr::Kind::Attribute) {
     const auto& attribute = static_cast<const AttributeExpr&>(*call.callee);
 
@@ -745,6 +898,113 @@ TypePtr TypeChecker::check_call(const CallExpr& call) {
       }
       if (!call.args.empty()) {
         add_error(attribute.attribute + "() expects no arguments");
+      }
+      return list_type(int_type());
+    }
+
+    if (attribute.attribute == "spawn" || attribute.attribute == "join_all" ||
+        attribute.attribute == "cancel_all") {
+      if (target_type->kind != Type::Kind::TaskGroup) {
+        add_error(attribute.attribute + "() expects task_group receiver");
+        return unknown_type();
+      }
+      if (attribute.attribute == "spawn") {
+        if (call.args.empty()) {
+          add_error("spawn() expects callable first argument");
+          return unknown_type();
+        }
+        if (call.args[0]->kind != Expr::Kind::Variable) {
+          add_error("spawn() callable must be named function for sendable analysis");
+          add_context_reason({.message = "Cannot lower spawn to T4: non-sendable capture candidate",
+                              .normalizable = false});
+        } else {
+          add_context_reason({.message = "task_group.spawn() eligible for phase9 scheduler enqueue path",
+                              .normalizable = true});
+        }
+        for (std::size_t i = 1; i < call.args.size(); ++i) {
+          const auto arg_type = infer_expr(*call.args[i]);
+          analyze_expr(*call.args[i], arg_type);
+          if (arg_type->kind != Type::Kind::Error && !is_sendable_for_phase9(*arg_type)) {
+            report_non_sendable_capture("task_group.spawn()", i, arg_type);
+          }
+        }
+        return task_type(any_type());
+      }
+      if (!call.args.empty()) {
+        add_error(attribute.attribute + "() expects no arguments");
+      }
+      add_context_reason({.message = "structured task_group lifecycle operation (" + attribute.attribute + ")",
+                          .normalizable = true});
+      if (attribute.attribute == "join_all") {
+        return list_type(any_type());
+      }
+      return nil_type();
+    }
+
+    if (attribute.attribute == "join" || attribute.attribute == "cancel") {
+      if (target_type->kind != Type::Kind::Task) {
+        add_error(attribute.attribute + "() expects task receiver");
+        return unknown_type();
+      }
+      if (!call.args.empty()) {
+        add_error(attribute.attribute + "() expects no arguments");
+      }
+      if (attribute.attribute == "join") {
+        add_context_reason({.message = "task.join() resumes async result in phase9 runtime",
+                            .normalizable = true});
+        return target_type->task_result ? target_type->task_result : any_type();
+      }
+      add_context_reason({.message = "task.cancel() uses cooperative cancellation token",
+                          .normalizable = true});
+      return nil_type();
+    }
+
+    if (attribute.attribute == "send" || attribute.attribute == "recv" ||
+        attribute.attribute == "close" || attribute.attribute == "stats" ||
+        attribute.attribute == "anext" || attribute.attribute == "next" ||
+        attribute.attribute == "has_next") {
+      if (target_type->kind != Type::Kind::Channel) {
+        add_error(attribute.attribute + "() expects channel receiver");
+        return unknown_type();
+      }
+      if (attribute.attribute == "send") {
+        if (call.args.size() != 1) {
+          add_error("send() expects exactly one message argument");
+        }
+        add_context_reason({.message = "channel send path uses bounded/unbounded queue with backpressure",
+                            .normalizable = true});
+        return nil_type();
+      }
+      if (attribute.attribute == "recv") {
+        if (call.args.size() > 1) {
+          add_error("recv() expects zero or one timeout argument");
+        }
+        add_context_reason({.message = "channel recv path integrates with phase9 async wait semantics",
+                            .normalizable = true});
+        return target_type->channel_element ? target_type->channel_element : any_type();
+      }
+      if (attribute.attribute == "anext" || attribute.attribute == "next") {
+        if (!call.args.empty()) {
+          add_error(attribute.attribute + "() expects no arguments");
+        }
+        add_context_reason({.message = "stream-style channel consumption path",
+                            .normalizable = true});
+        return target_type->channel_element ? target_type->channel_element : any_type();
+      }
+      if (attribute.attribute == "close") {
+        if (!call.args.empty()) {
+          add_error("close() expects no arguments");
+        }
+        return nil_type();
+      }
+      if (attribute.attribute == "has_next") {
+        if (!call.args.empty()) {
+          add_error("has_next() expects no arguments");
+        }
+        return bool_type();
+      }
+      if (!call.args.empty()) {
+        add_error("stats() expects no arguments");
       }
       return list_type(int_type());
     }

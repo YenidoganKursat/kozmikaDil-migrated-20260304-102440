@@ -30,6 +30,20 @@ struct PackCacheEntry {
   MatrixProbe probe;
 };
 
+const std::vector<double>* dense_f64_if_materialized(const Value& matrix) {
+  if (matrix.kind != Value::Kind::Matrix || !matrix.matrix_value) {
+    return nullptr;
+  }
+  const auto total = matrix.matrix_value->rows * matrix.matrix_value->cols;
+  const auto& cache = matrix.matrix_cache;
+  if (cache.plan == Value::LayoutTag::PackedDouble &&
+      cache.materialized_version == cache.version &&
+      cache.promoted_f64.size() == total) {
+    return &cache.promoted_f64;
+  }
+  return nullptr;
+}
+
 }  // namespace
 
 struct PackedMatrixView {
@@ -131,6 +145,19 @@ PackedMatrixView acquire_packed_matrix(const Value& matrix, bool transpose, bool
     throw EvalException("matmul() expects matrix receiver");
   }
 
+  if (!transpose && !use_f32) {
+    if (const auto* dense = dense_f64_if_materialized(matrix)) {
+      cache_hit = true;
+      PackedMatrixView view;
+      view.rows = matrix.matrix_value->rows;
+      view.cols = matrix.matrix_value->cols;
+      view.use_f32 = false;
+      view.f64 = dense->data();
+      view.f32 = nullptr;
+      return view;
+    }
+  }
+
   const auto key = pack_key(matrix, transpose, use_f32);
   auto& cache = pack_cache_store();
   auto probe = matrix_probe(matrix);
@@ -162,6 +189,7 @@ PackedMatrixView acquire_packed_matrix(const Value& matrix, bool transpose, bool
   if (data.size() != total) {
     throw EvalException("matmul() matrix payload is inconsistent with shape");
   }
+  const auto* dense_f64 = dense_f64_if_materialized(matrix);
 
   if (use_f32) {
     entry.packed_f32.resize(total);
@@ -169,18 +197,32 @@ PackedMatrixView acquire_packed_matrix(const Value& matrix, bool transpose, bool
     entry.packed_f64.resize(total);
   }
 
-  for (std::size_t r = 0; r < rows; ++r) {
-    for (std::size_t c = 0; c < cols; ++c) {
-      const auto input_index = r * cols + c;
-      const auto output_index = transpose ? (c * rows + r) : input_index;
-      const auto& value = data[input_index];
-      if (!matrix_numeric_cell(value)) {
-        throw EvalException("matmul() requires numeric matrix cells");
+  if (dense_f64) {
+    for (std::size_t r = 0; r < rows; ++r) {
+      for (std::size_t c = 0; c < cols; ++c) {
+        const auto input_index = r * cols + c;
+        const auto output_index = transpose ? (c * rows + r) : input_index;
+        if (use_f32) {
+          entry.packed_f32[output_index] = static_cast<float>((*dense_f64)[input_index]);
+        } else {
+          entry.packed_f64[output_index] = (*dense_f64)[input_index];
+        }
       }
-      if (use_f32) {
-        entry.packed_f32[output_index] = matrix_cell_to_f32(value);
-      } else {
-        entry.packed_f64[output_index] = matrix_cell_to_f64(value);
+    }
+  } else {
+    for (std::size_t r = 0; r < rows; ++r) {
+      for (std::size_t c = 0; c < cols; ++c) {
+        const auto input_index = r * cols + c;
+        const auto output_index = transpose ? (c * rows + r) : input_index;
+        const auto& value = data[input_index];
+        if (!matrix_numeric_cell(value)) {
+          throw EvalException("matmul() requires numeric matrix cells");
+        }
+        if (use_f32) {
+          entry.packed_f32[output_index] = matrix_cell_to_f32(value);
+        } else {
+          entry.packed_f64[output_index] = matrix_cell_to_f64(value);
+        }
       }
     }
   }

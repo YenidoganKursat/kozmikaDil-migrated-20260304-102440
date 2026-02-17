@@ -70,7 +70,7 @@ std::string source_of_expr(const Expr& expr, std::size_t indent_level, int paren
       return static_cast<const VariableExpr&>(expr).name;
     case Expr::Kind::Unary: {
       const auto& unary = static_cast<const UnaryExpr&>(expr);
-      const char* op = unary.op == UnaryOp::Neg ? "-" : "not ";
+      const char* op = unary.op == UnaryOp::Neg ? "-" : (unary.op == UnaryOp::Not ? "not " : "await ");
       // Pass a stronger parent precedence so children are not already wrapped twice.
       const std::string inner = source_of_expr(*unary.operand, indent_level, 0);
       if (needs_parentheses(*unary.operand, expr_precedence(expr))) {
@@ -222,7 +222,7 @@ std::string source_of_stmt(const Stmt& stmt, std::size_t indent_level) {
     }
     case Stmt::Kind::For: {
       const auto& for_stmt = static_cast<const ForStmt&>(stmt);
-      std::string result = indent + "for " + for_stmt.name + " in " +
+      std::string result = indent + (for_stmt.is_async ? "async for " : "for ") + for_stmt.name + " in " +
                            source_of_expr(*for_stmt.iterable, indent_level) + ":\n";
       for (const auto& child : for_stmt.body) {
         result += source_of_stmt(*child, indent_level + 1);
@@ -231,7 +231,7 @@ std::string source_of_stmt(const Stmt& stmt, std::size_t indent_level) {
     }
     case Stmt::Kind::FunctionDef: {
       const auto& fn = static_cast<const FunctionDefStmt&>(stmt);
-      std::string result = indent + "def " + fn.name + "(";
+      std::string result = indent + (fn.is_async ? "async def " : "def ") + fn.name + "(";
       for (std::size_t i = 0; i < fn.params.size(); ++i) {
         if (i > 0) {
           result += ", ";
@@ -252,6 +252,18 @@ std::string source_of_stmt(const Stmt& stmt, std::size_t indent_level) {
       }
       result += ":\n";
       for (const auto& child : cls.body) {
+        result += source_of_stmt(*child, indent_level + 1);
+      }
+      return result;
+    }
+    case Stmt::Kind::WithTaskGroup: {
+      const auto& with_stmt = static_cast<const WithTaskGroupStmt&>(stmt);
+      std::string result = indent + "with task_group";
+      if (with_stmt.timeout_ms) {
+        result += "(" + source_of_expr(*with_stmt.timeout_ms, indent_level, 0) + ")";
+      }
+      result += " as " + with_stmt.name + ":\n";
+      for (const auto& child : with_stmt.body) {
         result += source_of_stmt(*child, indent_level + 1);
       }
       return result;

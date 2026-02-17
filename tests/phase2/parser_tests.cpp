@@ -104,6 +104,33 @@ def outer():
                      "def outer():\n  def inner(a, b):\n    return a + b\n  return inner(1, 2)\n");
 }
 
+void test_parser_async_and_task_group_syntax() {
+  assert_ast_snapshot(R"(
+async fn fetch(x):
+  return x
+with task_group(25) as g:
+  t = g.spawn(fetch, 1)
+out = await t
+)",
+                     "async def fetch(x):\n  return x\nwith task_group(25) as g:\n  t = g.spawn(fetch, 1)\nout = await t\n");
+}
+
+void test_parser_deadline_alias_syntax() {
+  assert_ast_snapshot(R"(
+with task_group(deadline(25)) as g:
+  pass_value = 1
+)",
+                      "with task_group(deadline(25)) as g:\n  pass_value = 1\n");
+}
+
+void test_parser_async_for_syntax() {
+  assert_ast_snapshot(R"(
+async for item in stream(ch):
+  out = item
+)",
+                     "async for item in stream(ch):\n  out = item\n");
+}
+
 void test_parser_massive_assignment_snapshot() {
   std::string source;
   std::string expected;
@@ -135,6 +162,9 @@ int main() {
   test_parser_boolean_ops();
   test_parser_unary_and_parentheses();
   test_parser_nested_functions();
+  test_parser_async_and_task_group_syntax();
+  test_parser_deadline_alias_syntax();
+  test_parser_async_for_syntax();
   test_parser_massive_assignment_snapshot();
   return 0;
 }

@@ -1,4 +1,5 @@
 #include <cmath>
+#include <limits>
 #include <optional>
 #include <vector>
 
@@ -42,46 +43,125 @@ double as_numeric_scalar(const Value& value, const std::string& name) {
   throw EvalException(name + " expects numeric scalar");
 }
 
-double bias_at(const Value& bias, std::size_t row, std::size_t col,
-               std::size_t rows, std::size_t cols) {
-  if (bias.kind == Value::Kind::Int || bias.kind == Value::Kind::Double) {
-    return as_numeric_scalar(bias, "matmul_add() bias");
+double numeric_cell_to_double(const Value& value, const char* context) {
+  if (value.kind == Value::Kind::Int) {
+    return static_cast<double>(value.int_value);
   }
+  if (value.kind == Value::Kind::Double) {
+    return value.double_value;
+  }
+  throw EvalException(std::string(context) + " expects numeric values");
+}
 
-  if (bias.kind == Value::Kind::List) {
-    if (bias.list_value.size() != cols) {
+enum class BiasMode {
+  None,
+  Scalar,
+  ListRow,
+  MatrixFull,
+  MatrixRow,
+  MatrixCol,
+};
+
+struct BiasAccess {
+  BiasMode mode = BiasMode::None;
+  double scalar = 0.0;
+  const std::vector<Value>* values = nullptr;
+  std::size_t cols = 0;
+};
+
+struct AccumAccess {
+  bool enabled = false;
+  const std::vector<Value>* values = nullptr;
+};
+
+BiasAccess make_bias_access(const std::optional<Value>& bias,
+                            std::size_t rows, std::size_t cols) {
+  BiasAccess access;
+  if (!bias.has_value()) {
+    return access;
+  }
+  const auto& value = *bias;
+  if (value.kind == Value::Kind::Int || value.kind == Value::Kind::Double) {
+    access.mode = BiasMode::Scalar;
+    access.scalar = as_numeric_scalar(value, "matmul_add() bias");
+    return access;
+  }
+  if (value.kind == Value::Kind::List) {
+    if (value.list_value.size() != cols) {
       throw EvalException("matmul_add() list bias expects cols-sized vector");
     }
-    return as_numeric_scalar(bias.list_value[col], "matmul_add() bias list element");
+    access.mode = BiasMode::ListRow;
+    access.values = &value.list_value;
+    access.cols = cols;
+    return access;
   }
-
-  if (bias.kind != Value::Kind::Matrix || !bias.matrix_value) {
+  if (value.kind != Value::Kind::Matrix || !value.matrix_value) {
     throw EvalException("matmul_add() bias expects scalar/list/matrix");
   }
-  if (bias.matrix_value->rows == rows && bias.matrix_value->cols == cols) {
-    return as_numeric_scalar(bias.matrix_value->data[row * cols + col],
-                             "matmul_add() matrix bias cell");
-  }
-  if (bias.matrix_value->rows == 1 && bias.matrix_value->cols == cols) {
-    return as_numeric_scalar(bias.matrix_value->data[col], "matmul_add() row bias");
-  }
-  if (bias.matrix_value->rows == rows && bias.matrix_value->cols == 1) {
-    return as_numeric_scalar(bias.matrix_value->data[row], "matmul_add() col bias");
-  }
 
+  const auto bias_rows = value.matrix_value->rows;
+  const auto bias_cols = value.matrix_value->cols;
+  if (bias_rows == rows && bias_cols == cols) {
+    access.mode = BiasMode::MatrixFull;
+    access.values = &value.matrix_value->data;
+    access.cols = cols;
+    return access;
+  }
+  if (bias_rows == 1 && bias_cols == cols) {
+    access.mode = BiasMode::MatrixRow;
+    access.values = &value.matrix_value->data;
+    access.cols = cols;
+    return access;
+  }
+  if (bias_rows == rows && bias_cols == 1) {
+    access.mode = BiasMode::MatrixCol;
+    access.values = &value.matrix_value->data;
+    access.cols = cols;
+    return access;
+  }
   throw EvalException("matmul_add() bias shape mismatch");
 }
 
-double accum_at(const Value& accum, std::size_t row, std::size_t col,
-                std::size_t rows, std::size_t cols) {
-  if (accum.kind != Value::Kind::Matrix || !accum.matrix_value) {
+inline double bias_value_at(const BiasAccess& access, std::size_t row, std::size_t col,
+                            std::size_t linear_index) {
+  switch (access.mode) {
+    case BiasMode::None:
+      return 0.0;
+    case BiasMode::Scalar:
+      return access.scalar;
+    case BiasMode::ListRow:
+      return numeric_cell_to_double((*access.values)[col], "matmul_add() list bias");
+    case BiasMode::MatrixFull:
+      return numeric_cell_to_double((*access.values)[linear_index], "matmul_add() matrix bias");
+    case BiasMode::MatrixRow:
+      return numeric_cell_to_double((*access.values)[col], "matmul_add() row bias");
+    case BiasMode::MatrixCol:
+      return numeric_cell_to_double((*access.values)[row], "matmul_add() col bias");
+  }
+  return 0.0;
+}
+
+AccumAccess make_accum_access(const Value* accum, std::size_t rows, std::size_t cols) {
+  AccumAccess access;
+  if (!accum) {
+    return access;
+  }
+  if (accum->kind != Value::Kind::Matrix || !accum->matrix_value) {
     throw EvalException("matmul_axpby() expects matrix accumulator");
   }
-  if (accum.matrix_value->rows != rows || accum.matrix_value->cols != cols) {
+  if (accum->matrix_value->rows != rows || accum->matrix_value->cols != cols) {
     throw EvalException("matmul_axpby() accumulator shape mismatch");
   }
-  return as_numeric_scalar(accum.matrix_value->data[row * cols + col],
-                           "matmul_axpby() accumulator cell");
+  access.enabled = true;
+  access.values = &accum->matrix_value->data;
+  return access;
+}
+
+inline double accum_value_at(const AccumAccess& access, std::size_t linear_index) {
+  if (!access.enabled) {
+    return 0.0;
+  }
+  return numeric_cell_to_double((*access.values)[linear_index], "matmul_axpby() accumulator");
 }
 
 Value matrix_from_f64(std::size_t rows, std::size_t cols, const std::vector<double>& data,
@@ -104,6 +184,8 @@ Value matrix_from_f64(std::size_t rows, std::size_t cols, const std::vector<doub
   result.matrix_cache.live_plan = true;
   result.matrix_cache.operation = "matmul_result";
   result.matrix_cache.analyzed_version = result.matrix_cache.version;
+  result.matrix_cache.materialized_version = std::numeric_limits<std::uint64_t>::max();
+  result.matrix_cache.promoted_f64.clear();
   return result;
 }
 
@@ -118,6 +200,8 @@ Value matrix_from_f32(std::size_t rows, std::size_t cols, const std::vector<floa
   result.matrix_cache.live_plan = true;
   result.matrix_cache.operation = "matmul_result";
   result.matrix_cache.analyzed_version = result.matrix_cache.version;
+  result.matrix_cache.materialized_version = std::numeric_limits<std::uint64_t>::max();
+  result.matrix_cache.promoted_f64.clear();
   return result;
 }
 
@@ -149,26 +233,31 @@ Value run_matmul_impl(Value& lhs, const Value& rhs, bool use_f32,
   ir.use_f64 = !use_f32;
   const auto schedule = resolve_schedule(ir);
   record_matmul_call(ir, schedule);
+  const bool has_bias = bias.has_value();
+  const bool has_axpby = alpha.has_value() || beta.has_value();
+  const auto bias_access = make_bias_access(bias, m, n);
+  const auto accum_access = make_accum_access(has_axpby ? accum : nullptr, m, n);
 
   if (use_f32) {
     std::vector<float> out;
     MatmulBackend backend_used = MatmulBackend::Own;
     run_matmul_f32_kernel(lhs, rhs, schedule, out, backend_used);
     std::vector<double> fused;
-    if (bias.has_value() || alpha.has_value() || beta.has_value()) {
+    if (has_bias || has_axpby) {
       record_epilogue_fused();
       fused.reserve(out.size());
       const auto alpha_value = alpha.value_or(1.0);
       const auto beta_value = beta.value_or(0.0);
       for (std::size_t r = 0; r < m; ++r) {
         for (std::size_t c = 0; c < n; ++c) {
-          auto value = static_cast<double>(out[r * n + c]);
-          if (bias.has_value()) {
-            value += bias_at(*bias, r, c, m, n);
+          const auto linear_index = r * n + c;
+          auto value = static_cast<double>(out[linear_index]);
+          if (has_bias) {
+            value += bias_value_at(bias_access, r, c, linear_index);
           }
-          if (alpha.has_value() || beta.has_value()) {
-            const auto acc = accum ? accum_at(*accum, r, c, m, n) : 0.0;
-            value = alpha_value * value + beta_value * acc;
+          if (has_axpby) {
+            const auto acc_value = accum_value_at(accum_access, linear_index);
+            value = alpha_value * value + beta_value * acc_value;
           }
           fused.push_back(value);
         }
@@ -182,27 +271,28 @@ Value run_matmul_impl(Value& lhs, const Value& rhs, bool use_f32,
   MatmulBackend backend_used = MatmulBackend::Own;
   run_matmul_f64_kernel(lhs, rhs, schedule, out, backend_used);
 
-  if (bias.has_value() || alpha.has_value() || beta.has_value()) {
+  if (has_bias || has_axpby) {
     record_epilogue_fused();
     const auto alpha_value = alpha.value_or(1.0);
     const auto beta_value = beta.value_or(0.0);
     for (std::size_t r = 0; r < m; ++r) {
       for (std::size_t c = 0; c < n; ++c) {
-        auto value = out[r * n + c];
-        if (bias.has_value()) {
-          value += bias_at(*bias, r, c, m, n);
+        const auto linear_index = r * n + c;
+        auto value = out[linear_index];
+        if (has_bias) {
+          value += bias_value_at(bias_access, r, c, linear_index);
         }
-        if (alpha.has_value() || beta.has_value()) {
-          const auto acc = accum ? accum_at(*accum, r, c, m, n) : 0.0;
-          value = alpha_value * value + beta_value * acc;
+        if (has_axpby) {
+          const auto acc_value = accum_value_at(accum_access, linear_index);
+          value = alpha_value * value + beta_value * acc_value;
         }
-        out[r * n + c] = value;
+        out[linear_index] = value;
       }
     }
   }
 
   const bool prefer_int_output = !use_f32 && matrix_all_int(lhs) && matrix_all_int(rhs) &&
-                                 !bias.has_value() && !alpha.has_value() && !beta.has_value();
+                                 !has_bias && !has_axpby;
   return matrix_from_f64(m, n, out, prefer_int_output);
 }
 

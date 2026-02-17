@@ -234,3 +234,27 @@
 - `perf stat` counters are unavailable on current macOS host; script records this explicitly.
 - Matrix hetero path currently prioritizes literal-time numeric normalization (`Matrix[f64]`) and boxed fallback;
   chunk/gather style matrix kernels remain deferred.
+
+## Phase 10 Productization Addendum (2026-02-17)
+
+### External references used for final squeeze
+
+- LLVM PGO flow:
+  - <https://clang.llvm.org/docs/UsersManual.html#profiling-with-instrumentation>
+- ThinLTO/LTO notes:
+  - <https://clang.llvm.org/docs/ThinLTO.html>
+- BOLT optimizer:
+  - <https://llvm.org/docs/BOLT/>
+
+### What was implemented
+
+- Multi-arch build orchestration for `x86_64`, `aarch64`, `riscv64`.
+- CPU feature report + forced-feature dispatch validation path.
+- Scripted `PGO+LTO` pipeline and optional `BOLT` post-link step with measurable artifacts.
+- Differential/fuzz/sanitizer gate scripts for release safety.
+
+### Practical findings
+
+- Dispatch correctness should be tested with forced feature sets on one host; otherwise real multi-CPU lab dependency slows iteration.
+- PGO gains are more stable when profiling run count is explicit (`>=3`) and median timing is used.
+- BOLT integration must be optional; many machines lack a full `perf/perf2bolt/llvm-bolt` stack.

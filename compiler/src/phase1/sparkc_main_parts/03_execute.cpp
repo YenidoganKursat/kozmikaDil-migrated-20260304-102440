@@ -90,7 +90,8 @@ int compile_mode_main(const std::string& file_path, bool emit_c, bool emit_asm,
 }
 
 int build_mode_main(const std::string& file_path, const std::string& output_path,
-                   bool allow_t5_codegen) {
+                   bool allow_t5_codegen, const BuildTuningOptions& tuning) {
+  apply_build_tuning_env(tuning);
   ProgramBundle bundle;
   if (!parse_and_typecheck(file_path, bundle)) {
     for (const auto& message : bundle.checker.diagnostics()) {
@@ -130,20 +131,30 @@ int build_mode_main(const std::string& file_path, const std::string& output_path
   return 0;
 }
 
-int run_interpreter_main(const std::string& file_path) {
+int run_interpreter_main(const std::string& file_path, bool explain_layout) {
   const std::string source = read_file(file_path);
   spark::Parser parser(source);
   auto program = parser.parse_program();
   spark::Interpreter interpreter;
   interpreter.run(*program);
+  if (explain_layout) {
+    print_layout_summary(interpreter);
+  }
   return 0;
 }
 
 int run_mode_main(const std::string& file_path, bool force_interpreter,
-                  bool allow_t5_codegen) {
-  if (force_interpreter) {
-    return run_interpreter_main(file_path);
+                  bool allow_t5_codegen, bool explain_layout,
+                  const BuildTuningOptions& tuning) {
+  if (force_interpreter || explain_layout) {
+    return run_interpreter_main(file_path, explain_layout);
   }
+  if (!target_matches_host(tuning.target_triple)) {
+    std::cerr << "run: --target=" << tuning.target_triple
+              << " differs from host architecture; use `sparkc build` for cross-target output\n";
+    return 1;
+  }
+  apply_build_tuning_env(tuning);
 
   ProgramBundle bundle;
   if (!parse_and_typecheck(file_path, bundle)) {
@@ -156,7 +167,7 @@ int run_mode_main(const std::string& file_path, bool force_interpreter,
   if (has_tier_blockers(bundle.checker, allow_t5_codegen)) {
     print_tier_blocking_report(bundle.checker, "run", allow_t5_codegen);
     std::cerr << "run: non-T4 code detected; falling back to interpreter\n";
-    return run_interpreter_main(file_path);
+    return run_interpreter_main(file_path, false);
   }
 
   PipelineProducts products;
@@ -169,7 +180,7 @@ int run_mode_main(const std::string& file_path, bool force_interpreter,
       std::cerr << "  ir:\n";
       std::cerr << "  " << products.ir << "\n";
     }
-    return run_interpreter_main(file_path);
+    return run_interpreter_main(file_path, false);
   }
 
   TempFileRegistry temp_files;
@@ -178,7 +189,7 @@ int run_mode_main(const std::string& file_path, bool force_interpreter,
   if (!write_temp_source_and_compile(temp_files, products.c_source, binary_path, compile_error)) {
     std::cerr << "run: native compile failed: " << compile_error << "\n";
     std::cerr << "run: falling back to interpreter\n";
-    return run_interpreter_main(file_path);
+    return run_interpreter_main(file_path, false);
   }
 
   const auto status = run_system_command(shell_escape(binary_path.string()));

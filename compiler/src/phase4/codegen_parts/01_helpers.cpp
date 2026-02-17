@@ -345,7 +345,8 @@ std::string describe_expr(const Expr& expr) {
     }
     case Expr::Kind::Unary: {
       const auto& unary = static_cast<const UnaryExpr&>(expr);
-      return std::string(unary.op == UnaryOp::Neg ? "-" : "not ") + describe_expr(*unary.operand);
+      const char* op = unary.op == UnaryOp::Neg ? "-" : (unary.op == UnaryOp::Not ? "not " : "await ");
+      return std::string(op) + describe_expr(*unary.operand);
     }
     case Expr::Kind::Binary: {
       const auto& binary = static_cast<const BinaryExpr&>(expr);

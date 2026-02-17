@@ -183,6 +183,53 @@ TypePtr TypeChecker::infer_expr(const Expr& expr) {
         }
         return function_type({}, int_type());
       }
+      if (attribute.attribute == "spawn" || attribute.attribute == "join_all" ||
+          attribute.attribute == "cancel_all") {
+        if (target_type->kind != Type::Kind::TaskGroup) {
+          add_error(std::string("'.") + attribute.attribute + "' only supported on task_group values");
+          return unknown_type();
+        }
+        if (attribute.attribute == "spawn") {
+          return function_type({any_type(), any_type()}, task_type(any_type()));
+        }
+        if (attribute.attribute == "join_all") {
+          return function_type({}, list_type(any_type()));
+        }
+        return function_type({}, nil_type());
+      }
+      if (attribute.attribute == "join" || attribute.attribute == "cancel") {
+        if (target_type->kind != Type::Kind::Task) {
+          add_error(std::string("'.") + attribute.attribute + "' only supported on task values");
+          return unknown_type();
+        }
+        if (attribute.attribute == "join") {
+          return function_type({}, target_type->task_result ? target_type->task_result : any_type());
+        }
+        return function_type({}, nil_type());
+      }
+      if (attribute.attribute == "send" || attribute.attribute == "recv" ||
+          attribute.attribute == "close" || attribute.attribute == "stats" ||
+          attribute.attribute == "anext" || attribute.attribute == "next" ||
+          attribute.attribute == "has_next") {
+        if (target_type->kind != Type::Kind::Channel) {
+          add_error(std::string("'.") + attribute.attribute + "' only supported on channel values");
+          return unknown_type();
+        }
+        if (attribute.attribute == "send") {
+          return function_type({target_type->channel_element ? target_type->channel_element : any_type()}, nil_type());
+        }
+        if (attribute.attribute == "recv" || attribute.attribute == "anext" ||
+            attribute.attribute == "next") {
+          return function_type({}, target_type->channel_element ? target_type->channel_element : any_type());
+        }
+        if (attribute.attribute == "stats") {
+          return function_type({}, list_type(int_type()));
+        }
+        if (attribute.attribute == "has_next") {
+          return function_type({}, bool_type());
+        }
+        return function_type({}, nil_type());
+      }
       if (attribute.attribute == "T" || attribute.attribute == "transpose") {
         if (target_type->kind != Type::Kind::Matrix) {
           add_error("transpose attribute is only valid on matrix values");
@@ -263,6 +310,12 @@ TypePtr TypeChecker::infer_expr(const Expr& expr) {
       const auto& unary = static_cast<const UnaryExpr&>(expr);
       check_unary(unary);
       auto operand = infer_expr(*unary.operand);
+      if (unary.op == UnaryOp::Await) {
+        if (operand->kind == Type::Kind::Task) {
+          return operand->task_result ? operand->task_result : any_type();
+        }
+        return unknown_type();
+      }
       if (unary.op == UnaryOp::Neg) {
         if (operand->kind == Type::Kind::Int) {
           return int_type();
@@ -311,11 +364,17 @@ TypePtr TypeChecker::infer_expr(const Expr& expr) {
           auto rows = matrix->matrix_rows;
           auto cols = matrix->matrix_cols;
           if (other->kind == Type::Kind::Matrix) {
-            if (rows == 0) {
-              rows = other->matrix_rows;
-            }
-            if (cols == 0) {
-              cols = other->matrix_cols;
+            if (binary.op == BinaryOp::Mul && left->kind == Type::Kind::Matrix &&
+                right->kind == Type::Kind::Matrix) {
+              rows = left->matrix_rows;
+              cols = right->matrix_cols;
+            } else {
+              if (rows == 0) {
+                rows = other->matrix_rows;
+              }
+              if (cols == 0) {
+                cols = other->matrix_cols;
+              }
             }
           }
           return matrix_type(element, rows, cols);

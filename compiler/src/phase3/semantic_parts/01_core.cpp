@@ -111,6 +111,12 @@ std::string kind_to_string(Type::Kind kind) {
       return "List";
     case Type::Kind::Matrix:
       return "Matrix";
+    case Type::Kind::Task:
+      return "Task";
+    case Type::Kind::TaskGroup:
+      return "TaskGroup";
+    case Type::Kind::Channel:
+      return "Channel";
     case Type::Kind::Function:
       return "Function";
     case Type::Kind::Class:

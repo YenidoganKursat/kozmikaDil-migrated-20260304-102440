@@ -23,6 +23,8 @@ Bu notlar Phase 7 tasarım kararları için kullanılan modern kaynakların kıs
 - Materialization sebepleri raporlanıyor (`--why-not-fused`).
 - Heterojen path için plan + cache mantığı korunuyor (Phase 6 uyumlu).
 - Fused/non-fused differential benchmark zorunlu hale getirildi.
+- `map_add/map_mul` affine zincirleri reduce terminalinde formülize edilerek
+  stage-dispatch ve gereksiz per-element aritmetik azaltıldı.
 
 ## Kaynak bağlantıları
 
@@ -33,3 +35,4 @@ Bu notlar Phase 7 tasarım kararları için kullanılan modern kaynakların kıs
 - [Rust iterators vs loops docs](https://doc.rust-lang.org/book/ch13-04-performance.html)
 - [GHC rewrite rules](https://downloads.haskell.org/~ghc/latest/docs/users_guide/exts/rewrite_rules.html)
 - [MLIR canonicalization](https://mlir.llvm.org/docs/Canonicalization/)
+- [LLVM auto-vectorization notes](https://llvm.org/docs/Vectorizers.html)

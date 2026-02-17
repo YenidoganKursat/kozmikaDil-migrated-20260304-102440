@@ -62,9 +62,11 @@ class Parser {
   StmtPtr parse_statement(int indent);
   StmtPtr parse_if_statement(int indent, const std::string& line);
   StmtPtr parse_while_statement(int indent, const std::string& line);
-  StmtPtr parse_for_statement(int indent, const std::string& line);
-  StmtPtr parse_function_statement(int indent, const std::string& line);
+  StmtPtr parse_for_statement(int indent, const std::string& line, bool is_async = false);
+  StmtPtr parse_function_statement(int indent, const std::string& line, bool is_async = false);
+  StmtPtr parse_async_function_statement(int indent, const std::string& line);
   StmtPtr parse_class_statement(int indent, const std::string& line);
+  StmtPtr parse_with_task_group_statement(int indent, const std::string& line);
   StmtPtr parse_return_statement(const std::string& line);
   StmtPtr parse_assignment_or_expression(const std::string& line);
 

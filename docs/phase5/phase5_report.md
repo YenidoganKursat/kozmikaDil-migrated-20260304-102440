@@ -3,11 +3,12 @@
 ## Scope
 - Kod tabanı Phase 5 hedeflerinde: homojen List/Matrix tipi, core operasyonları ve tip doğrulaması.
 - Pythonik syntax’tan çıkan temel programlar: list literal/indexing/mutation/matrix literal/indexing/transpose.
-- Runtime: matrix elementwise ops ve slice seçimi.
+- Runtime: matrix aritmetigi (`*` matmul + elementwise scalar/matrix ops) ve slice secimi.
 
 ## What is done
 - List metotlarının runtime tarafı (`append`, `pop`, `insert`, `remove`) aktif.
-- Matrix literal parse ve matmul-benzeri değildir: elementwise `+ - * /` destekleniyor.
+- Matrix literal parse aktif; matrix-matrix `*` matmul yoluna iniyor.
+- Matrix `+ - /` elementwise calisir; matrix-scalar `*` elementwise scale olarak calisir.
 - Slicing ve transpose runtime’da çalışır.
 - Phase4 codegen tarafı da list/matrix için bu operasyonları doğrudan lower ediyor:
   - `list`: `append/pop/insert/remove`, typed slice default-stop fix.
@@ -18,7 +19,8 @@
   - list mutator arayan method çağrıları eklendi (`append`, `pop`, `insert`, `remove`),
   - matrix forma uyuşmazlığı ve matrix-scalar numerik kontrolleri eklendi.
 - TypeChecker for-loop davranışı matrix iterasyonunda row-list olarak güncellendi.
-- Phase5 testleri list/matrix kapsayıcı davranışlarını genişleterek `pop/insert/remove` + elementwise matrix ops eklendi.
+- Phase5 testleri list/matrix kapsayici davranislarini genisleterek
+  `pop/insert/remove` + matrix arithmetic (matmul dahil) kontrolleriyle guncellendi.
 
 ## What worked
 - `list` ve `matrix` runtime davranışında uyum büyük oranda doğrulandı.
@@ -51,7 +53,8 @@
   - kayıt: `bench/results/phase5_benchmarks_gt1.json` ve `bench/results/phase5_benchmarks_gt1.csv`
 
 ## What failed / Open
-- `matrix` çağrısal API (method-based matmul vb.) eklenmedi, sadece elementwise ops var.
+- Elementwise matrix-matrix carpim operatoru ayri bir syntax olarak tanimli degil;
+  matrix-matrix `*` performans yolu olarak matmul semantigine sabitlendi.
 - `pop`/`insert`/`remove` hata politikası (örn. boş listeden pop, remove not-found) şu an runtime’da konservatif/no-op fallback; exception modeli sonraki fazda netleştirilmeli.
 - view tabanlı `MatrixView` runtime temsili ve stride-aware performans optimizasyonu Phase 6 hedefi.
 - “fully reproducible” metriği:

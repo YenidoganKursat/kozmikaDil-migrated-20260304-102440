@@ -40,4 +40,12 @@ def phase8_benchmarks(root_dir: Path) -> List[BenchmarkDefinition]:
             max_own_vs_blas=2.0,
             max_auto_vs_best=1.25,
         ),
+        BenchmarkDefinition(
+            name="matmul_core_f64_512",
+            source="matmul_core_f64_512.k",
+            baseline_c="c_baselines/matmul_core_f64_512.c",
+            min_own_vs_c=0.005,
+            max_own_vs_blas=2.0,
+            max_auto_vs_best=1.25,
+        ),
     ]

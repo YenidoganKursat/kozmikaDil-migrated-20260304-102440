@@ -1,9 +1,14 @@
 #pragma once
 
 #include <functional>
+#include <atomic>
+#include <condition_variable>
 #include <cstdint>
+#include <deque>
+#include <future>
 #include <limits>
 #include <memory>
+#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -14,9 +19,12 @@
 namespace spark {
 
 struct Environment;
+struct TaskHandle;
+struct TaskGroupHandle;
+struct ChannelHandle;
 
 struct Value {
-  enum class Kind { Nil, Int, Double, Bool, List, Matrix, Function, Builtin };
+  enum class Kind { Nil, Int, Double, Bool, List, Matrix, Function, Builtin, Task, TaskGroup, Channel };
   enum class LayoutTag {
     Unknown = 0,
     PackedInt = 1,
@@ -87,7 +95,10 @@ struct Value {
     std::vector<std::string> params;
     const Program* program = nullptr;  // not owned; program owns function body statements
     const StmtList* body = nullptr;
+    bool is_async = false;
     std::shared_ptr<Environment> closure;
+    std::shared_ptr<Environment> closure_frozen;
+    std::unordered_map<std::string, Value> closure_snapshot;
   };
 
   struct Builtin {
@@ -98,6 +109,9 @@ struct Value {
   std::shared_ptr<Function> function_value;
   std::shared_ptr<Builtin> builtin_value;
   std::shared_ptr<MatrixValue> matrix_value;
+  std::shared_ptr<TaskHandle> task_value;
+  std::shared_ptr<TaskGroupHandle> task_group_value;
+  std::shared_ptr<ChannelHandle> channel_value;
   MatrixCache matrix_cache;
 
   static Value nil();
@@ -108,13 +122,16 @@ struct Value {
   static Value matrix_value_of(std::size_t rows, std::size_t cols, std::vector<Value> values);
   static Value function(std::shared_ptr<Function> fn);
   static Value builtin(std::string name, std::function<Value(const std::vector<Value>&)> impl);
+  static Value task_value_of(std::shared_ptr<TaskHandle> task);
+  static Value task_group_value_of(std::shared_ptr<TaskGroupHandle> task_group);
+  static Value channel_value_of(std::shared_ptr<ChannelHandle> channel);
 
   std::string to_string() const;
   bool equals(const Value& other) const;
 };
 
 struct Environment {
-  explicit Environment(std::shared_ptr<Environment> parent_env = nullptr);
+  explicit Environment(std::shared_ptr<Environment> parent_env = nullptr, bool is_frozen = false);
 
   void define(std::string name, const Value& value);
   bool set(std::string name, const Value& value);
@@ -125,6 +142,7 @@ struct Environment {
   std::vector<std::string> keys() const;
 
   std::shared_ptr<Environment> parent;
+  bool frozen = false;
   std::unordered_map<std::string, Value> values;
 };
 
@@ -160,6 +178,32 @@ class Interpreter {
  private:
   std::shared_ptr<Environment> globals;
   std::shared_ptr<Environment> current_env;
+};
+
+struct TaskHandle {
+  std::shared_future<Value> future;
+  std::shared_ptr<std::atomic<bool>> cancelled;
+  std::size_t scheduler_queue_hint = 0;
+  bool has_scheduler_queue_hint = false;
+};
+
+struct TaskGroupHandle {
+  std::mutex mutex;
+  std::vector<std::shared_ptr<TaskHandle>> tasks;
+  std::shared_ptr<std::atomic<bool>> cancelled;
+  long long timeout_ms = -1;
+};
+
+struct ChannelHandle {
+  mutable std::mutex mutex;
+  std::condition_variable cv_send;
+  std::condition_variable cv_recv;
+  std::deque<std::shared_ptr<Value>> queue;
+  std::size_t capacity = 0;  // 0 means unbounded.
+  bool closed = false;
+  std::size_t send_count = 0;
+  std::size_t recv_count = 0;
+  std::size_t wait_count = 0;
 };
 
 }  // namespace spark

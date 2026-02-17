@@ -13,6 +13,7 @@ void TypeChecker::check(const Program& program) {
   function_reports_.clear();
   loop_reports_.clear();
   pipelines_.clear();
+  async_lowerings_.clear();
   function_stack_.clear();
   loop_stack_.clear();
   next_shape_id_ = 0;
@@ -32,6 +33,24 @@ void TypeChecker::check(const Program& program) {
   define_name("matmul_expected_sum",
               builtin_type({matrix_type(any_type(), 0, 0), matrix_type(any_type(), 0, 0)},
                            float_type(Type::FloatKind::F64), 2));
+  define_name("accumulate_sum",
+              builtin_type({float_type(Type::FloatKind::F64), any_type()},
+                           float_type(Type::FloatKind::F64), 2));
+  define_name("spawn", builtin_type({any_type(), any_type()}, task_type(any_type()), 1));
+  define_name("join", builtin_type({task_type(any_type()), int_type()}, any_type(), 1));
+  define_name("deadline", builtin_type({int_type()}, int_type(), 1));
+  define_name("cancel", builtin_type({task_type(any_type())}, nil_type(), 1));
+  define_name("task_group", builtin_type({int_type()}, task_group_type(), 0));
+  define_name("parallel_for", builtin_type({int_type(), int_type(), any_type(), any_type()}, nil_type(), 3));
+  define_name("par_map", builtin_type({list_type(any_type()), any_type()}, list_type(any_type()), 2));
+  define_name("par_reduce", builtin_type({list_type(any_type()), any_type(), any_type()}, any_type(), 3));
+  define_name("scheduler_stats", builtin_type({}, list_type(int_type()), 0));
+  define_name("channel", builtin_type({int_type()}, channel_type(any_type(), 0), 0));
+  define_name("send", builtin_type({channel_type(any_type(), 0), any_type()}, nil_type(), 2));
+  define_name("recv", builtin_type({channel_type(any_type(), 0), int_type()}, any_type(), 1));
+  define_name("close", builtin_type({channel_type(any_type(), 0)}, nil_type(), 1));
+  define_name("stream", builtin_type({channel_type(any_type(), 0)}, channel_type(any_type(), 0), 1));
+  define_name("anext", builtin_type({channel_type(any_type(), 0), int_type()}, any_type(), 1));
   define_name("None", nil_type());
 
   push_function_context("__main__");
@@ -76,6 +95,10 @@ const std::vector<TierRecord>& TypeChecker::loop_reports() const {
 
 const std::vector<PipelineRecord>& TypeChecker::pipelines() const {
   return pipelines_;
+}
+
+const std::vector<AsyncLoweringRecord>& TypeChecker::async_lowerings() const {
+  return async_lowerings_;
 }
 
 std::string TypeChecker::tier_to_string(TierLevel tier) {
@@ -131,6 +154,27 @@ TypePtr TypeChecker::matrix_type(TypePtr element_type, std::size_t rows, std::si
   type->list_element = std::move(element_type);
   type->matrix_rows = rows;
   type->matrix_cols = cols;
+  return type;
+}
+
+TypePtr TypeChecker::task_type(TypePtr result_type) {
+  auto type = std::make_shared<Type>();
+  type->kind = Type::Kind::Task;
+  type->task_result = std::move(result_type);
+  return type;
+}
+
+TypePtr TypeChecker::task_group_type() {
+  auto type = std::make_shared<Type>();
+  type->kind = Type::Kind::TaskGroup;
+  return type;
+}
+
+TypePtr TypeChecker::channel_type(TypePtr element_type, std::size_t capacity) {
+  auto type = std::make_shared<Type>();
+  type->kind = Type::Kind::Channel;
+  type->channel_element = std::move(element_type);
+  type->channel_capacity = capacity;
   return type;
 }
 
@@ -288,6 +332,21 @@ bool TypeChecker::is_assignable(const Type& source, const Type& target) const {
       return true;
     }
     return target.matrix_cols == source.matrix_cols;
+  }
+  if (target.kind == Type::Kind::Task && source.kind == Type::Kind::Task) {
+    if (!target.task_result || !source.task_result) {
+      return true;
+    }
+    return is_assignable(*source.task_result, *target.task_result);
+  }
+  if (target.kind == Type::Kind::Channel && source.kind == Type::Kind::Channel) {
+    if (!target.channel_element || !source.channel_element) {
+      return true;
+    }
+    return is_assignable(*source.channel_element, *target.channel_element);
+  }
+  if (target.kind == Type::Kind::TaskGroup && source.kind == Type::Kind::TaskGroup) {
+    return true;
   }
   return same_or_unknown(source, target);
 }

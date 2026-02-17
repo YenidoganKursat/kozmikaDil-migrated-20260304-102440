@@ -1,5 +1,6 @@
 #include <memory>
 #include <iostream>
+#include <limits>
 #include <unordered_map>
 
 #include "../../phase3/evaluator_parts/internal_helpers.h"
@@ -144,6 +145,12 @@ void Interpreter::reset() {
     const auto rows = static_cast<std::size_t>(rows_raw);
     const auto cols = static_cast<std::size_t>(cols_raw);
     std::vector<Value> data(rows * cols);
+    const auto total = rows * cols;
+    const bool eager_dense_cache = total >= (128u * 128u);
+    std::vector<double> dense_f64;
+    if (eager_dense_cache) {
+      dense_f64.resize(total);
+    }
     for (std::size_t i = 0; i < rows; ++i) {
       for (std::size_t j = 0; j < cols; ++j) {
         auto raw = static_cast<long long>(i) * mul_i + static_cast<long long>(j) * mul_j;
@@ -152,9 +159,13 @@ void Interpreter::reset() {
           rem += mod;
         }
         const auto value = static_cast<double>(rem) * scale + bias;
-        auto& cell = data[i * cols + j];
+        const auto index = i * cols + j;
+        auto& cell = data[index];
         cell.kind = Value::Kind::Double;
         cell.double_value = value;
+        if (eager_dense_cache) {
+          dense_f64[index] = value;
+        }
       }
     }
     auto result = Value::matrix_value_of(rows, cols, std::move(data));
@@ -162,6 +173,13 @@ void Interpreter::reset() {
     result.matrix_cache.live_plan = true;
     result.matrix_cache.operation = "matrix_fill_affine";
     result.matrix_cache.analyzed_version = result.matrix_cache.version;
+    if (eager_dense_cache) {
+      result.matrix_cache.materialized_version = result.matrix_cache.version;
+      result.matrix_cache.promoted_f64 = std::move(dense_f64);
+    } else {
+      result.matrix_cache.materialized_version = std::numeric_limits<std::uint64_t>::max();
+      result.matrix_cache.promoted_f64.clear();
+    }
     return result;
   });
 
@@ -180,6 +198,20 @@ void Interpreter::reset() {
       throw EvalException("matmul_expected_sum() shape mismatch: lhs.cols must equal rhs.rows");
     }
 
+    const auto packed_f64_if_ready = [](const Value& matrix) -> const std::vector<double>* {
+      if (matrix.kind != Value::Kind::Matrix || !matrix.matrix_value) {
+        return nullptr;
+      }
+      const auto total = matrix.matrix_value->rows * matrix.matrix_value->cols;
+      const auto& cache = matrix.matrix_cache;
+      if (cache.plan == Value::LayoutTag::PackedDouble &&
+          cache.materialized_version == cache.version &&
+          cache.promoted_f64.size() == total) {
+        return &cache.promoted_f64;
+      }
+      return nullptr;
+    };
+
     const auto as_double = [](const Value& cell) {
       if (cell.kind == Value::Kind::Int) {
         return static_cast<double>(cell.int_value);
@@ -190,17 +222,38 @@ void Interpreter::reset() {
       throw EvalException("matmul_expected_sum() expects numeric matrix cells");
     };
 
+    const auto* a_packed = packed_f64_if_ready(args[0]);
+    const auto* b_packed = packed_f64_if_ready(args[1]);
+
     std::vector<double> col_sums(a.cols, 0.0);
-    for (std::size_t i = 0; i < a.rows; ++i) {
-      for (std::size_t k = 0; k < a.cols; ++k) {
-        col_sums[k] += as_double(a.data[i * a.cols + k]);
+    if (a_packed) {
+      for (std::size_t i = 0; i < a.rows; ++i) {
+        const auto base = i * a.cols;
+        for (std::size_t k = 0; k < a.cols; ++k) {
+          col_sums[k] += (*a_packed)[base + k];
+        }
+      }
+    } else {
+      for (std::size_t i = 0; i < a.rows; ++i) {
+        for (std::size_t k = 0; k < a.cols; ++k) {
+          col_sums[k] += as_double(a.data[i * a.cols + k]);
+        }
       }
     }
 
     std::vector<double> row_sums(b.rows, 0.0);
-    for (std::size_t k = 0; k < b.rows; ++k) {
-      for (std::size_t j = 0; j < b.cols; ++j) {
-        row_sums[k] += as_double(b.data[k * b.cols + j]);
+    if (b_packed) {
+      for (std::size_t k = 0; k < b.rows; ++k) {
+        const auto base = k * b.cols;
+        for (std::size_t j = 0; j < b.cols; ++j) {
+          row_sums[k] += (*b_packed)[base + j];
+        }
+      }
+    } else {
+      for (std::size_t k = 0; k < b.rows; ++k) {
+        for (std::size_t j = 0; j < b.cols; ++j) {
+          row_sums[k] += as_double(b.data[k * b.cols + j]);
+        }
       }
     }
 
@@ -211,6 +264,186 @@ void Interpreter::reset() {
     return Value::double_value_of(expected);
   });
 
+  auto accumulate_sum_fn = Value::builtin("accumulate_sum", [](const std::vector<Value>& args) -> Value {
+    if (args.size() != 2) {
+      throw EvalException("accumulate_sum() expects exactly two arguments: total and list/matrix");
+    }
+    if (!is_numeric_kind(args[0])) {
+      throw EvalException("accumulate_sum() first argument must be numeric");
+    }
+    double total = to_number_for_compare(args[0]);
+    const auto& container = args[1];
+    if (container.kind == Value::Kind::List) {
+      for (const auto& item : container.list_value) {
+        if (!is_numeric_kind(item)) {
+          throw EvalException("accumulate_sum() list elements must be numeric");
+        }
+        total += to_number_for_compare(item);
+      }
+      return Value::double_value_of(total);
+    }
+    if (container.kind == Value::Kind::Matrix && container.matrix_value) {
+      for (const auto& cell : container.matrix_value->data) {
+        if (!is_numeric_kind(cell)) {
+          throw EvalException("accumulate_sum() matrix elements must be numeric");
+        }
+        total += matrix_element_to_double(cell);
+      }
+      return Value::double_value_of(total);
+    }
+    throw EvalException("accumulate_sum() second argument must be list or matrix");
+  });
+
+  auto spawn_fn = Value::builtin("spawn", [](const std::vector<Value>& args) -> Value {
+    if (args.empty()) {
+      throw EvalException("spawn() expects at least one callable argument");
+    }
+    std::vector<Value> task_args;
+    task_args.reserve(args.size() - 1);
+    for (std::size_t i = 1; i < args.size(); ++i) {
+      task_args.push_back(args[i]);
+    }
+    return spawn_task_value(args[0], task_args);
+  });
+
+  auto join_fn = Value::builtin("join", [](const std::vector<Value>& args) -> Value {
+    if (args.empty() || args.size() > 2) {
+      throw EvalException("join() expects task and optional timeout_ms");
+    }
+    std::optional<long long> timeout = std::nullopt;
+    if (args.size() == 2) {
+      timeout = value_to_int(args[1]);
+    }
+    return await_task_value(args[0], timeout);
+  });
+
+  // `deadline(ms)` is a small alias for timeout arguments so surface syntax can
+  // express deadline-style intent while runtime still consumes timeout_ms.
+  auto deadline_fn = Value::builtin("deadline", [](const std::vector<Value>& args) -> Value {
+    if (args.size() != 1) {
+      throw EvalException("deadline() expects exactly one timeout_ms argument");
+    }
+    const auto timeout = value_to_int(args[0]);
+    if (timeout < 0) {
+      throw EvalException("deadline() expects non-negative timeout_ms");
+    }
+    return Value::int_value_of(timeout);
+  });
+
+  auto cancel_fn = Value::builtin("cancel", [](const std::vector<Value>& args) -> Value {
+    if (args.size() != 1) {
+      throw EvalException("cancel() expects exactly one task argument");
+    }
+    if (args[0].kind != Value::Kind::Task || !args[0].task_value || !args[0].task_value->cancelled) {
+      throw EvalException("cancel() expects task argument");
+    }
+    args[0].task_value->cancelled->store(true, std::memory_order_relaxed);
+    return Value::nil();
+  });
+
+  auto task_group_fn = Value::builtin("task_group", [](const std::vector<Value>& args) -> Value {
+    if (args.size() > 1) {
+      throw EvalException("task_group() expects zero or one timeout_ms argument");
+    }
+    std::optional<long long> timeout = std::nullopt;
+    if (args.size() == 1) {
+      timeout = value_to_int(args[0]);
+    }
+    return make_task_group_value(timeout);
+  });
+
+  auto parallel_for_fn = Value::builtin("parallel_for", [](const std::vector<Value>& args) -> Value {
+    if (args.size() < 3) {
+      throw EvalException("parallel_for() expects start, stop, fn [, extra...]");
+    }
+    std::vector<Value> extra;
+    extra.reserve(args.size() > 3 ? args.size() - 3 : 0);
+    for (std::size_t i = 3; i < args.size(); ++i) {
+      extra.push_back(args[i]);
+    }
+    return parallel_for_value(args[0], args[1], args[2], extra);
+  });
+
+  auto par_map_fn = Value::builtin("par_map", [](const std::vector<Value>& args) -> Value {
+    if (args.size() != 2) {
+      throw EvalException("par_map() expects list and fn arguments");
+    }
+    return par_map_value(args[0], args[1]);
+  });
+
+  auto par_reduce_fn = Value::builtin("par_reduce", [](const std::vector<Value>& args) -> Value {
+    if (args.size() != 3) {
+      throw EvalException("par_reduce() expects list, init, fn arguments");
+    }
+    return par_reduce_value(args[0], args[1], args[2]);
+  });
+
+  auto scheduler_stats_fn = Value::builtin("scheduler_stats", [](const std::vector<Value>& args) -> Value {
+    if (!args.empty()) {
+      throw EvalException("scheduler_stats() expects no arguments");
+    }
+    return scheduler_stats_value();
+  });
+
+  auto channel_fn = Value::builtin("channel", [](const std::vector<Value>& args) -> Value {
+    if (args.size() > 1) {
+      throw EvalException("channel() expects optional capacity argument");
+    }
+    std::optional<long long> capacity = std::nullopt;
+    if (!args.empty()) {
+      capacity = value_to_int(args[0]);
+    }
+    return channel_make_value(capacity);
+  });
+
+  auto send_fn = Value::builtin("send", [](const std::vector<Value>& args) -> Value {
+    if (args.size() != 2) {
+      throw EvalException("send() expects channel and value");
+    }
+    auto channel = args[0];
+    return channel_send_value(channel, args[1]);
+  });
+
+  auto recv_fn = Value::builtin("recv", [](const std::vector<Value>& args) -> Value {
+    if (args.empty() || args.size() > 2) {
+      throw EvalException("recv() expects channel and optional timeout_ms");
+    }
+    auto channel = args[0];
+    std::optional<long long> timeout = std::nullopt;
+    if (args.size() == 2) {
+      timeout = value_to_int(args[1]);
+    }
+    return channel_recv_value(channel, timeout);
+  });
+
+  auto close_fn = Value::builtin("close", [](const std::vector<Value>& args) -> Value {
+    if (args.size() != 1) {
+      throw EvalException("close() expects channel");
+    }
+    auto channel = args[0];
+    return channel_close_value(channel);
+  });
+
+  auto stream_fn = Value::builtin("stream", [](const std::vector<Value>& args) -> Value {
+    if (args.size() != 1) {
+      throw EvalException("stream() expects channel");
+    }
+    auto channel = args[0];
+    return stream_value(channel);
+  });
+
+  auto anext_fn = Value::builtin("anext", [](const std::vector<Value>& args) -> Value {
+    if (args.empty() || args.size() > 2) {
+      throw EvalException("anext() expects stream and optional timeout_ms");
+    }
+    auto stream = args[0];
+    std::optional<long long> timeout = std::nullopt;
+    if (args.size() == 2) {
+      timeout = value_to_int(args[1]);
+    }
+    return stream_next_value(stream, timeout);
+  });
+
   globals->define("print", print_fn);
   globals->define("range", range_fn);
   globals->define("len", len_fn);
@@ -219,6 +452,23 @@ void Interpreter::reset() {
   globals->define("matrix_f64", matrix_f64_fn);
   globals->define("matrix_fill_affine", matrix_fill_affine_fn);
   globals->define("matmul_expected_sum", matmul_expected_sum_fn);
+  globals->define("accumulate_sum", accumulate_sum_fn);
+  globals->define("spawn", spawn_fn);
+  globals->define("join", join_fn);
+  globals->define("deadline", deadline_fn);
+  globals->define("cancel", cancel_fn);
+  globals->define("task_group", task_group_fn);
+  globals->define("parallel_for", parallel_for_fn);
+  globals->define("par_map", par_map_fn);
+  globals->define("par_reduce", par_reduce_fn);
+  globals->define("scheduler_stats", scheduler_stats_fn);
+  globals->define("channel", channel_fn);
+  globals->define("send", send_fn);
+  globals->define("recv", recv_fn);
+  globals->define("close", close_fn);
+  globals->define("stream", stream_fn);
+  globals->define("anext", anext_fn);
+  globals->define("None", Value::nil());
 }
 
 Value Interpreter::run(const Program& program) {

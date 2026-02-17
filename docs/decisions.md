@@ -212,3 +212,123 @@
   - `matrix_fill_affine` emits `Matrix[f64]` with packed cache pre-marked,
   - `matmul_expected_sum` computes checksum reference in runtime C++,
   - phase8 benchmark programs prefer these builtins for stable, kernel-focused timings.
+
+## Decision 35: Phase 7 Reduce Fast-Path Expansion
+- Decision: add explicit fused reduce fast-paths for `map_mul -> reduce_sum` in both list and matrix pipeline runtimes.
+- Why: common numeric chains were still paying generic stage-dispatch overhead inside hot loops.
+- Implementation rule:
+  - dispatch to specialized path when terminal is `reduce_sum` and transform chain is single `map_mul`,
+  - preserve generic fallback for all other chains.
+
+## Decision 36: Phase 8 Stable Auto Backend + Epilogue Access
+- Decision: lock auto backend with size-based deterministic policy and keep tuned-backend pinning opt-in only; simplify epilogue cell access by pre-validating bias/accumulator shape once.
+- Why: we need repeatable backend choice for large matrices and less per-cell branch/check overhead in fused epilogue loops.
+- Implementation rule:
+  - auto backend defaults:
+    - `SPARK_MATMUL_AUTO_DIM_THRESHOLD=224`
+    - `SPARK_MATMUL_AUTO_VOLUME_THRESHOLD=224^3`
+  - tuned backend pinning only when `SPARK_MATMUL_AUTO_RESPECT_TUNED_BACKEND=1`,
+  - own GEMM hoists transposed/non-transposed branch outside inner-most loop,
+  - epilogue uses prepared bias/accumulator accessors (shape checks once, then direct indexed access).
+
+## Decision 37: Phase 8 Benchmark Matrix Size Coverage (N=512)
+- Decision: extend phase8 benchmark suite with `matmul_core_f64_512` and matching C baseline.
+- Why: phase8 gates need explicit large-size coverage; schedule/auto backend behavior at 512 must be measured directly.
+- Implementation rule:
+  - add `bench/programs/phase8/matmul_core_f64_512.k`,
+  - add `bench/programs/phase8/c_baselines/matmul_core_f64_512.c`,
+  - include the case in `bench/scripts/phase8/definitions.py`,
+  - use `diff < 1e-4` PASS tolerance for this case due deterministic floating accumulation at high total magnitude.
+
+## Decision 38: Phase 7 Affine Reduce Simplification
+- Decision: pipeline terminal `reduce_sum` için saf `map_add/map_mul` zincirlerinde per-element stage uygulaması yerine affine formül kullan.
+- Why: list/matrix fused runtime'da aynı semantik ile daha az inner-loop aritmetik ve dispatch maliyeti.
+- Implementation rule:
+  - `sum(map_add(c, X)) = sum(X) + c*N`
+  - `sum(map_mul(c, X)) = sum(X)*c`
+  - `sum(map_mul(b, map_add(a, X))) = (sum(X) + a*N)*b`
+
+## Decision 39: Phase 8 Size-Aware Kernel + Dense Cache Path
+- Decision: own GEMM için size-aware mikro-kernel kullan ve large matrix setup'ta eager dense-f64 cache ile BLAS giriş maliyetini düşür.
+- Why: 256/512 boyutlarında stead-state throughput'u artırırken küçük boyutta (128) gereksiz setup maliyetini sınırlamak.
+- Implementation rule:
+  - `n>=192` için transposed-B yolunda 4-kolon register-mikro-kernel aktif.
+  - `matrix_fill_affine` çıktılarında yalnızca `rows*cols >= 128^2` ise eager dense-f64 cache hazırla.
+  - `acquire_packed_matrix` non-transpose f64 BLAS yolunda hazır dense cache varsa doğrudan kullan.
+  - matmul sonuç matrislerinde gereksiz dense cache kopyası tutulmaz (hot path allocation azaltımı).
+
+## Decision 40: Phase 8 Adaptive Tiles + Deferred BLAS Probe
+- Decision: schedule çözümünde boyuta göre tile setini adaptif uygula ve auto backend'de BLAS keşfini yalnızca large-problem durumunda tetikle.
+- Why: 128/256/512 karışık yüklerinde tek tuned tile tüm boyutlarda stabil değil; ayrıca küçük workload'larda gereksiz BLAS probe auto modunu yavaşlatıyor.
+- Implementation rule:
+  - f64 için:
+    - `max_dim <= 160` -> `tile_m/n/k = 96`
+    - `max_dim >= 224` -> `tile_m/n/k = 64`
+  - env override (`SPARK_MATMUL_TILE_*`) adaptif kuralların üstünde kalır.
+  - auto seçim koşulu `large_problem && has_blas_backend()` sıralamasıyla çalışır.
+  - transposed-B yolunda `n>=256` için 8-kolon mikro-kernel aktif edilir.
+
+## Decision 41: Phase 9 Concurrency Runtime Baseline
+- Decision: introduce a phase9 runtime baseline with structured task groups, work-stealing scheduler, channels, and parallel builtins in interpreter-native path.
+- Why: Phase 9 needs measurable concurrency behavior now, while full async state-machine lowering is staged after baseline validation.
+- Implementation rule:
+  - syntax supports `async def` and `async fn`,
+  - task scopes use `with task_group([timeout_ms]) as g`,
+  - builtins: `spawn/join/cancel`, `parallel_for/par_map/par_reduce`, `channel/send/recv/close`, `stream/anext`,
+  - static analyzer emits conservative sendable-capture diagnostics for spawn/parallel calls.
+
+## Decision 42: Async-For + Async State-Machine Dump
+- Decision: support `async for` at syntax/runtime level and expose compiler-side pseudo state-machine lowering via analyzer dump.
+- Why: phase9 event-driven model needs stream iteration ergonomics and visible lowering diagnostics before deeper backend lowering work.
+- Implementation rule:
+  - parser accepts `async for name in expr:`,
+  - evaluator executes async-for over channel/stream iterables until drained (`None`),
+  - `sparkc analyze --dump-async-sm` reports async function await points and synthesized state counts.
+
+## Decision 43: Deadline Alias For Structured Timeout APIs
+- Decision: add `deadline(ms)` as an explicit timeout/deadline alias helper for Phase 9 task and channel wait APIs.
+- Why: expectation text uses both timeout and deadline terms; a small alias keeps syntax clear without adding a second runtime clock model yet.
+- Implementation rule:
+  - `deadline(ms)` validates non-negative integer and returns timeout token (`int`),
+  - accepted anywhere timeout args are already used (`join`, `task_group`, `recv`, `anext`),
+  - parser/semantic/runtime tests include `with task_group(deadline(...))` and `join(task, deadline(...))`.
+
+## Decision 44: Phase 9 Runtime Fast-Path Consolidation
+- Decision: keep fixed default chunking (`<=4096 -> 64`) and optimize runtime internals with fire-and-forget scheduler tasks, join-time scheduler assist, and transition-based channel notifications.
+- Why: adaptive chunk heuristics were less stable across runs; fixed chunk 64 gave more predictable scaling while runtime fast-path changes produced larger, repeatable overhead reductions.
+- Implementation rule:
+  - parallel primitives (`parallel_for/par_map/par_reduce`) submit chunk tasks via scheduler fire-and-forget + wait-group error propagation,
+  - `await/join` can assist scheduler by executing pending tasks before blocking,
+  - channel send/recv only notifies on queue state transitions (empty/full boundary),
+  - keep env override `SPARK_PHASE9_CHUNK` for explicit tuning experiments.
+
+## Decision 45: Phase 10 CPU Feature Dispatch Visibility + Override
+- Decision: centralize CPU feature detection in `cpu_features` module and add deterministic override envs.
+- Why: phase10 requires both runtime dispatch and same-machine correctness tests across variants.
+- Implementation rule:
+  - host detection: `x86_64`, `aarch64`, `riscv64` + feature probes,
+  - reporting via `sparkc --print-cpu-features`,
+  - test override support: `SPARK_CPU_ARCH`, `SPARK_CPU_FEATURES`.
+
+## Decision 46: Phase 10 Multi-Arch Build Gate
+- Decision: provide script-first multi-target gate (`x86_64`, `aarch64`, `riscv64`) with machine-readable output.
+- Why: target portability must be continuously verifiable, even when cross toolchains are partially available.
+- Implementation rule:
+  - `scripts/phase10/multiarch_build.py` emits `bench/results/phase10_multiarch.json`,
+  - host smoke run optional; cross targets produce explicit build status and logs.
+
+## Decision 47: Phase 10 Final Perf Pipeline Automation
+- Decision: make `PGO+LTO` and `BOLT` pipelines scriptable and measurable as first-class artifacts.
+- Why: phase10 goal is consistent final-squeeze optimization, not ad-hoc manual tuning.
+- Implementation rule:
+  - `scripts/pgo_cycle.sh`: instrument -> run -> merge -> use + median timing comparison,
+  - `scripts/bolt_opt.sh`: perf -> perf2bolt -> llvm-bolt flow with skip-on-missing-tools behavior,
+  - outputs written under `bench/results/phase10/*`.
+
+## Decision 48: Phase 10 Safety Gates as Dedicated Pipelines
+- Decision: differential, fuzz, and sanitizer checks are explicit scripts with JSON/CSV outputs.
+- Why: perf mode must not silently regress correctness; CI-ready artifacts are required.
+- Implementation rule:
+  - differential: interpreter vs native output parity on representative suites,
+  - fuzz: parser non-crash and runtime output parity fuzz loops,
+  - sanitizer: ASan/UBSan and TSan isolated build profiles.

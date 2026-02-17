@@ -62,48 +62,62 @@ Value matrix_as_int_or_double_cell(double value, bool emit_double) {
   return Value::int_value_of(int_value);
 }
 
+void matrix_write_cell(Value& cell, double value, bool emit_double) {
+  if (emit_double) {
+    cell.kind = Value::Kind::Double;
+    cell.double_value = value;
+    return;
+  }
+  cell.kind = Value::Kind::Int;
+  cell.int_value = static_cast<long long>(value);
+}
+
 Value apply_matrix_matrix_op(const Value& left, const Value& right, BinaryOp op) {
   if (!left.matrix_value || !right.matrix_value) {
     throw EvalException("matrix arithmetic expects matrix values");
   }
-  if (left.matrix_value->rows != right.matrix_value->rows ||
-      left.matrix_value->cols != right.matrix_value->cols) {
-    throw EvalException("matrix shapes must match for elementwise binary ops");
+
+  if (op == BinaryOp::Mul) {
+    if (left.matrix_value->cols != right.matrix_value->rows) {
+      throw EvalException("matrix shapes must satisfy lhs.cols == rhs.rows for matrix multiplication");
+    }
+    Value lhs_work = left;
+    return matrix_matmul_value(lhs_work, right);
+  }
+
+  if (left.matrix_value->rows != right.matrix_value->rows || left.matrix_value->cols != right.matrix_value->cols) {
+    throw EvalException("matrix shapes must match for elementwise add/sub/div ops");
   }
 
   const bool emit_double = should_return_double(left, right);
-  const std::size_t total = left.matrix_value->data.size();
-  std::vector<Value> out_data;
-  out_data.reserve(total);
+  const auto& lhs_data = left.matrix_value->data;
+  const auto& rhs_data = right.matrix_value->data;
+  const std::size_t total = lhs_data.size();
+  std::vector<Value> out_data(total);
 
-  for (std::size_t i = 0; i < total; ++i) {
-    const double lhs = matrix_number(left.matrix_value->data[i]);
-    const double rhs = matrix_number(right.matrix_value->data[i]);
-    double value = 0.0;
-    switch (op) {
-      case BinaryOp::Add:
-        value = lhs + rhs;
-        break;
-      case BinaryOp::Sub:
-        value = lhs - rhs;
-        break;
-      case BinaryOp::Mul:
-        value = lhs * rhs;
-        break;
-      case BinaryOp::Div:
-        if (rhs == 0.0) {
-          throw EvalException("division by zero");
-        }
-        value = lhs / rhs;
-        break;
-      default:
-        throw EvalException("unsupported matrix arithmetic operator");
+  if (op == BinaryOp::Add) {
+    for (std::size_t i = 0; i < total; ++i) {
+      const double lhs = matrix_number(lhs_data[i]);
+      const double rhs = matrix_number(rhs_data[i]);
+      matrix_write_cell(out_data[i], lhs + rhs, emit_double);
     }
-    if (op == BinaryOp::Div) {
-      out_data.push_back(matrix_as_int_or_double_cell(value, emit_double));
-      continue;
+  } else if (op == BinaryOp::Sub) {
+    for (std::size_t i = 0; i < total; ++i) {
+      const double lhs = matrix_number(lhs_data[i]);
+      const double rhs = matrix_number(rhs_data[i]);
+      matrix_write_cell(out_data[i], lhs - rhs, emit_double);
     }
-    out_data.push_back(matrix_as_int_or_double_cell(value, emit_double));
+  } else if (op == BinaryOp::Div) {
+    for (std::size_t i = 0; i < total; ++i) {
+      const double lhs = matrix_number(lhs_data[i]);
+      const double rhs = matrix_number(rhs_data[i]);
+      if (rhs == 0.0) {
+        throw EvalException("division by zero");
+      }
+      matrix_write_cell(out_data[i], lhs / rhs, true);
+    }
+  } else {
+    throw EvalException("unsupported matrix arithmetic operator");
   }
 
   return Value::matrix_value_of(left.matrix_value->rows, left.matrix_value->cols, std::move(out_data));
@@ -115,39 +129,44 @@ Value apply_matrix_scalar_op(const Value& matrix, const Value& scalar, BinaryOp 
   }
 
   const bool emit_double = should_return_double(matrix, scalar);
-  std::vector<Value> out_data;
-  out_data.reserve(matrix.matrix_value->data.size());
+  const auto& matrix_data = matrix.matrix_value->data;
+  const std::size_t total = matrix_data.size();
+  std::vector<Value> out_data(total);
 
   const double rhs = matrix_number(scalar);
-  for (const auto& item : matrix.matrix_value->data) {
-    const double lhs = matrix_number(item);
-    double value = 0.0;
-    switch (op) {
-      case BinaryOp::Add:
-        value = matrix_on_left ? lhs + rhs : rhs + lhs;
-        break;
-      case BinaryOp::Sub:
-        value = matrix_on_left ? lhs - rhs : rhs - lhs;
-        break;
-      case BinaryOp::Mul:
-        value = lhs * rhs;
-        break;
-      case BinaryOp::Div:
-        if (matrix_on_left && rhs == 0.0) {
-          throw EvalException("division by zero");
-        }
-        if (!matrix_on_left && lhs == 0.0) {
-          // scalar / matrix has no stable runtime behavior with zero cells here.
-          // Keep explicit hard error to avoid silently returning inf.
-          throw EvalException("division by zero");
-        }
-        value = matrix_on_left ? lhs / rhs : rhs / lhs;
-        break;
-      default:
-        throw EvalException("unsupported matrix arithmetic operator");
+  if (op == BinaryOp::Add) {
+    for (std::size_t i = 0; i < total; ++i) {
+      const double lhs = matrix_number(matrix_data[i]);
+      const double value = matrix_on_left ? lhs + rhs : rhs + lhs;
+      matrix_write_cell(out_data[i], value, emit_double);
     }
-    const bool as_double = (op == BinaryOp::Div) || emit_double;
-    out_data.push_back(matrix_as_int_or_double_cell(value, as_double));
+  } else if (op == BinaryOp::Sub) {
+    for (std::size_t i = 0; i < total; ++i) {
+      const double lhs = matrix_number(matrix_data[i]);
+      const double value = matrix_on_left ? lhs - rhs : rhs - lhs;
+      matrix_write_cell(out_data[i], value, emit_double);
+    }
+  } else if (op == BinaryOp::Mul) {
+    for (std::size_t i = 0; i < total; ++i) {
+      const double lhs = matrix_number(matrix_data[i]);
+      matrix_write_cell(out_data[i], lhs * rhs, emit_double);
+    }
+  } else if (op == BinaryOp::Div) {
+    if (matrix_on_left && rhs == 0.0) {
+      throw EvalException("division by zero");
+    }
+    for (std::size_t i = 0; i < total; ++i) {
+      const double lhs = matrix_number(matrix_data[i]);
+      if (!matrix_on_left && lhs == 0.0) {
+        // scalar / matrix has no stable runtime behavior with zero cells here.
+        // Keep explicit hard error to avoid silently returning inf.
+        throw EvalException("division by zero");
+      }
+      const double value = matrix_on_left ? lhs / rhs : rhs / lhs;
+      matrix_write_cell(out_data[i], value, true);
+    }
+  } else {
+    throw EvalException("unsupported matrix arithmetic operator");
   }
   return Value::matrix_value_of(matrix.matrix_value->rows, matrix.matrix_value->cols, std::move(out_data));
 }
@@ -187,6 +206,8 @@ Value Interpreter::eval_unary(UnaryOp op, const Value& operand) const {
       return Value::double_value_of(-operand.double_value);
     case UnaryOp::Not:
       return Value::bool_value_of(!truthy(operand));
+    case UnaryOp::Await:
+      return await_task_value(operand);
   }
 
   return Value::nil();

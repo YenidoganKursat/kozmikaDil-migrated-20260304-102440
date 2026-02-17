@@ -53,4 +53,25 @@ Value Value::builtin(std::string name, std::function<Value(const std::vector<Val
   return value;
 }
 
+Value Value::task_value_of(std::shared_ptr<TaskHandle> task) {
+  Value value;
+  value.kind = Kind::Task;
+  value.task_value = std::move(task);
+  return value;
+}
+
+Value Value::task_group_value_of(std::shared_ptr<TaskGroupHandle> task_group) {
+  Value value;
+  value.kind = Kind::TaskGroup;
+  value.task_group_value = std::move(task_group);
+  return value;
+}
+
+Value Value::channel_value_of(std::shared_ptr<ChannelHandle> channel) {
+  Value value;
+  value.kind = Kind::Channel;
+  value.channel_value = std::move(channel);
+  return value;
+}
+
 }  // namespace spark

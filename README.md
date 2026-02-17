@@ -111,6 +111,8 @@ cmake --build build -j4
 ./build/compiler/sparkc_phase6_tests
 ./build/compiler/sparkc_phase7_tests
 ./build/compiler/sparkc_phase8_tests
+./build/compiler/sparkc_phase9_tests
+./build/compiler/sparkc_phase10_tests
 ```
 
 ## Phase 7 Commands
@@ -129,4 +131,33 @@ cmake --build build -j4
 ./k run --interpret bench/programs/phase8/matmul_epilogue_f64.k
 ./bench/scripts/run_phase8_benchmarks.sh
 python3 tune/matmul_tuner.py
+# Runtime-only fair cross-language compare (build excluded):
+./bench/scripts/run_crosslang_matmul_runtime.sh --n 100 --repeats 100 --runs 5 --warmup 1
+```
+
+## Phase 9 Commands
+
+```bash
+./k analyze bench/programs/phase9/spawn_join_overhead.k --dump-async-sm
+./bench/scripts/run_phase9_benchmarks.sh
+```
+
+## Phase 10 Commands
+
+```bash
+./k --print-cpu-features
+./k build bench/programs/phase4/scalar_sum.k --target aarch64-linux-gnu -o build/scalar.aarch64.bin
+./k analyze bench/programs/phase6/hetero_promote_reduce_steady.k --dump-layout
+
+# Multi-arch and final perf pipeline
+./scripts/phase10_multiarch.sh --run-host-smoke
+./scripts/pgo_cycle.sh --program bench/programs/phase10/pgo_call_chain_large.k --lto thin
+./scripts/bolt_opt.sh --binary bench/results/phase10/pgo/native_pgo.bin --profile-cmd bench/results/phase10/pgo/native_pgo.bin
+./bench/scripts/run_phase10_benchmarks.sh
+
+# Correctness/safety gates
+./scripts/phase10_safety_gates.sh
+
+# Release artifact
+./scripts/release_package.sh 0.10.0-rc1
 ```

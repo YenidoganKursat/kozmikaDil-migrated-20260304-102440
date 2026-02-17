@@ -1,0 +1,62 @@
+{
+  "program": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/pgo_call_chain_large.k",
+  "lto_mode": "full",
+  "profile_runs": 5,
+  "baseline_median_sec": 0.002282792003825307,
+  "pgo_median_sec": 0.0020714999991469085,
+  "speedup_vs_baseline": 1.1019995195584906,
+  "baseline": {
+    "command": [
+      "/Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10/pgo_full_trial/native_baseline.bin"
+    ],
+    "statuses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "status_ok": true,
+    "timing": {
+      "sample_count": 11,
+      "median_sec": 0.002282792003825307,
+      "mean_sec": 0.0021605881112110284,
+      "stdev_sec": 0.00018437884871818326,
+      "max_drift_percent": 16.440043655388635
+    },
+    "first_output": "500001000000\n"
+  },
+  "pgo_use": {
+    "command": [
+      "/Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10/pgo_full_trial/native_pgo.bin"
+    ],
+    "statuses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "status_ok": true,
+    "timing": {
+      "sample_count": 11,
+      "median_sec": 0.0020714999991469085,
+      "mean_sec": 0.002065472217509523,
+      "stdev_sec": 0.0001110537524283038,
+      "max_drift_percent": 10.384987127297808
+    },
+    "first_output": "500001000000\n"
+  }
+}

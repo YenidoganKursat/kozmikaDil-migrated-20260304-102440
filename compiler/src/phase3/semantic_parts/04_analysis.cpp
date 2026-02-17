@@ -22,6 +22,51 @@
         const auto& callee_var = static_cast<const VariableExpr&>(*call.callee).name;
         if (callee_var == "append") {
           add_context_reason({.message = "global append() call is mutating", .normalizable = true});
+        } else if (callee_var == "spawn") {
+          add_context_reason(
+              {.message = "spawn() lowers to phase9 scheduler task enqueue path", .normalizable = true});
+          if (call.args.empty()) {
+            add_error("spawn() expects callable first argument");
+          } else if (call.args[0]->kind != Expr::Kind::Variable) {
+            add_error("spawn() callable must be named function for sendable analysis");
+            add_context_reason(
+                {.message = "non-sendable capture risk: spawn() callable is not a named function",
+                 .normalizable = false});
+          }
+          for (std::size_t i = 1; i < call.args.size(); ++i) {
+            auto arg_type = infer_expr(*call.args[i]);
+            analyze_expr(*call.args[i], arg_type);
+            if (arg_type->kind != Type::Kind::Error && !is_sendable_for_phase9(*arg_type)) {
+              report_non_sendable_capture("spawn()", i, arg_type);
+            }
+          }
+        } else if (callee_var == "parallel_for" || callee_var == "par_map" || callee_var == "par_reduce") {
+          add_context_reason(
+              {.message = callee_var + "() lowers to phase9 work-stealing scheduler", .normalizable = true});
+          const std::size_t fn_index = (callee_var == "parallel_for") ? 2 : (callee_var == "par_map" ? 1 : 2);
+          if (call.args.size() > fn_index && call.args[fn_index]->kind != Expr::Kind::Variable) {
+            add_error(callee_var + "() callable must be named function for sendable analysis");
+            add_context_reason(
+                {.message = "non-sendable capture risk in " + callee_var + "() callable",
+                 .normalizable = false});
+          }
+          const std::size_t capture_start = (callee_var == "parallel_for") ? 3 : call.args.size();
+          for (std::size_t i = capture_start; i < call.args.size(); ++i) {
+            auto arg_type = infer_expr(*call.args[i]);
+            analyze_expr(*call.args[i], arg_type);
+            if (arg_type->kind != Type::Kind::Error && !is_sendable_for_phase9(*arg_type)) {
+              report_non_sendable_capture(callee_var + "()", i, arg_type);
+            }
+          }
+        } else if (callee_var == "task_group" || callee_var == "join" || callee_var == "cancel") {
+          add_context_reason(
+              {.message = "structured concurrency runtime primitive invoked (" + callee_var + ")",
+               .normalizable = true});
+        } else if (callee_var == "channel" || callee_var == "send" || callee_var == "recv" ||
+                   callee_var == "close" || callee_var == "stream" || callee_var == "anext") {
+          add_context_reason(
+              {.message = "event-driven channel primitive invoked (" + callee_var + ")",
+               .normalizable = true});
         }
       }
     }
@@ -44,6 +89,11 @@ void TypeChecker::check_unary(const UnaryExpr& unary) {
     if (!is_bool_like(*value)) {
       add_error("unary not expects bool-like value");
       add_context_reason({.message = "invalid unary operator usage", .normalizable = false});
+    }
+  } else if (unary.op == UnaryOp::Await) {
+    if (value->kind != Type::Kind::Task && value->kind != Type::Kind::Unknown) {
+      add_error("await expects task value");
+      add_context_reason({.message = "await on non-task value", .normalizable = false});
     }
   }
 }
@@ -70,13 +120,24 @@ void TypeChecker::check_binary(const BinaryExpr& binary) {
       auto matrix = (left->kind == Type::Kind::Matrix) ? left : right;
       auto other = (left->kind == Type::Kind::Matrix) ? right : left;
       if (other->kind == Type::Kind::Matrix) {
-        if (matrix->matrix_cols != 0 && other->matrix_cols != 0 && matrix->matrix_cols != other->matrix_cols) {
-          add_error("matrix shapes differ in column count");
-          add_context_reason({.message = "matrix shape mismatch in arithmetic", .normalizable = false});
-        }
-        if (matrix->matrix_rows != 0 && other->matrix_rows != 0 && matrix->matrix_rows != other->matrix_rows) {
-          add_error("matrix shapes differ in row count");
-          add_context_reason({.message = "matrix shape mismatch in arithmetic", .normalizable = false});
+        if (binary.op == BinaryOp::Mul) {
+          if (left->matrix_cols != 0 && right->matrix_rows != 0 &&
+              left->matrix_cols != right->matrix_rows) {
+            add_error("matrix multiplication shape mismatch: lhs.cols must equal rhs.rows");
+            add_context_reason({.message = "matrix matmul shape mismatch", .normalizable = false});
+          } else {
+            add_context_reason(
+                {.message = "matrix '*' lowers to matmul kernel path when eligible", .normalizable = true});
+          }
+        } else {
+          if (matrix->matrix_cols != 0 && other->matrix_cols != 0 && matrix->matrix_cols != other->matrix_cols) {
+            add_error("matrix shapes differ in column count");
+            add_context_reason({.message = "matrix shape mismatch in arithmetic", .normalizable = false});
+          }
+          if (matrix->matrix_rows != 0 && other->matrix_rows != 0 && matrix->matrix_rows != other->matrix_rows) {
+            add_error("matrix shapes differ in row count");
+            add_context_reason({.message = "matrix shape mismatch in arithmetic", .normalizable = false});
+          }
         }
         if (other->list_element && matrix->list_element &&
             other->list_element->kind != Type::Kind::Unknown &&
@@ -270,11 +331,20 @@ void TypeChecker::check_stmt(const Stmt& stmt) {
       analyze_expr(*loop.iterable, iterable);
       const std::string owner =
           function_stack_.empty() ? "__main__" : function_stack_.back().name;
-      push_loop_context(owner, "for");
+      push_loop_context(owner, loop.is_async ? "async_for" : "for");
       if (iterable->kind != Type::Kind::List && iterable->kind != Type::Kind::Matrix &&
+          (!loop.is_async || iterable->kind != Type::Kind::Channel) &&
           iterable->kind != Type::Kind::Unknown) {
-        add_error("for loop iterable must be List");
-        add_context_reason({.message = "for iterable is not a List/Matrix", .normalizable = false});
+        add_error(loop.is_async ? "async for iterable must be Channel/List/Matrix"
+                                : "for loop iterable must be List");
+        add_context_reason({.message = loop.is_async
+                                           ? "async for iterable is not a Channel/List/Matrix"
+                                           : "for iterable is not a List/Matrix",
+                            .normalizable = false});
+      }
+      if (loop.is_async) {
+        add_context_reason({.message = "async for lowered to stream/await loop form",
+                            .normalizable = true});
       }
       if (iterable->kind == Type::Kind::List && iterable->list_element &&
           iterable->list_element->kind == Type::Kind::Any) {
@@ -287,6 +357,8 @@ void TypeChecker::check_stmt(const Stmt& stmt) {
       } else if (iterable->kind == Type::Kind::Matrix && iterable->list_element) {
         // Matrix iteration follows Python-like row iteration semantics.
         define_name(loop.name, list_type(iterable->list_element));
+      } else if (iterable->kind == Type::Kind::Channel && iterable->channel_element) {
+        define_name(loop.name, iterable->channel_element);
       } else {
         define_name(loop.name, unknown_type());
       }
@@ -302,9 +374,35 @@ void TypeChecker::check_stmt(const Stmt& stmt) {
         (void)i;
         params.push_back(unknown_type());
       }
-      auto fn_type = function_type(params, unknown_type());
+      auto fn_type = function_type(params, fn.is_async ? task_type(unknown_type()) : unknown_type());
+      if (fn.is_async) {
+        add_context_reason(
+            {.message = "async function lowers to state-machine task frame (phase9 runtime path)",
+             .normalizable = true});
+      }
       define_name(fn.name, fn_type);
       check_function_body(fn, fn_type);
+      break;
+    }
+    case Stmt::Kind::WithTaskGroup: {
+      const auto& with_stmt = static_cast<const WithTaskGroupStmt&>(stmt);
+      // Keep `as <name>` binding in outer scope (Python-style), while still
+      // analyzing body declarations in a dedicated nested scope.
+      define_name(with_stmt.name, task_group_type());
+      push_scope("task_group");
+      if (with_stmt.timeout_ms) {
+        auto timeout_type = infer_expr(*with_stmt.timeout_ms);
+        analyze_expr(*with_stmt.timeout_ms, timeout_type);
+        if (!is_numeric_type(*timeout_type) && timeout_type->kind != Type::Kind::Unknown) {
+          add_error("task_group timeout must be numeric");
+          add_context_reason({.message = "task_group timeout is non-numeric", .normalizable = false});
+        }
+      }
+      add_context_reason(
+          {.message = "structured concurrency scope enables cooperative cancellation + join",
+           .normalizable = true});
+      check_program_body(with_stmt.body);
+      pop_scope();
       break;
     }
     case Stmt::Kind::ClassDef: {

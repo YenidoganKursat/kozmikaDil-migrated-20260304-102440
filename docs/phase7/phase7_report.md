@@ -72,17 +72,19 @@ Yeni modüler benchmark hattı:
 - `bench/results/phase7_benchmarks.json`
 - `bench/results/phase7_benchmarks.csv`
 
-## Benchmark Snapshot (runs=5, warmup=1)
+## Benchmark Snapshot (runs=7, warmup=1, sample_repeat=3)
 
-- `list_pipeline_reduce`: speedup `3.216x` (fused vs non-fused)
-- `hetero_pipeline_reduce`: speedup `2.405x`
-- `matrix_pipeline_reduce`: speedup `3.627x`
+- `list_pipeline_reduce`: speedup `3.874x` (fused vs non-fused)
+- `hetero_pipeline_reduce`: speedup `2.284x`
+- `matrix_pipeline_reduce`: speedup `3.604x`
 
 Phase 7 late-pass optimizations:
 
 - pipeline receiver value kopyası kaldırıldı (list/matrix payload copy overhead düşürüldü)
 - `PackedInt` reduce için doğrudan integer fast path eklendi
 - küçük transform zincirleri için inner-loop dispatch sadeleştirildi
+- `map_mul -> reduce_sum` için list/matrix fused fast-path eklendi
+- `map_add/map_mul` affine zincirleri için reduce formülü (tek-pass toplam + sabit düzeltme) eklendi
 
 Allocation side:
 
@@ -95,7 +97,7 @@ Allocation side:
 - Why-not-fused diagnostics: PASS
 - Fused execution path (list + matrix subset): PASS
 - Differential behavior (`fusion on/off` same checksum): PASS
-- Fused vs non-fused measurable speedup: PASS (`2.0x-3.6x` bandı)
+- Fused vs non-fused measurable speedup: PASS (`1.8x-3.6x` bandı)
 - Allocation reduction: PASS (fused path zero-last-allocation)
 
 ## Deferred / Next

@@ -438,6 +438,10 @@ Code CodeGenerator::emit_expr(const Expr& expr, FunctionContext& ctx, ExpectedEx
     }
     case Expr::Kind::Unary: {
       const auto& unary = static_cast<const UnaryExpr&>(expr);
+      if (unary.op == UnaryOp::Await) {
+        add_error("await is unsupported in phase4 codegen");
+        return {"", ScalarKind::Invalid, false};
+      }
       if (unary.op == UnaryOp::Not) {
         auto operand = emit_expr(*unary.operand, ctx, ExpectedExprContext::Bool);
         if (operand.kind == ScalarKind::Invalid) {

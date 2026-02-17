@@ -55,6 +55,75 @@ Value evaluate_case_attribute(const AttributeExpr& attribute, Interpreter& self,
     });
   };
 
+  auto make_task_group_builtin = [env, target_is_variable, target_name, captured_target](
+                                     const std::string& method, std::size_t expected, auto handler) {
+    return Value::builtin(method, [env, target_is_variable, target_name, captured_target, expected, method, handler](
+                                      const std::vector<Value>& args) -> Value {
+      if (args.size() != expected && expected != static_cast<std::size_t>(-1)) {
+        throw EvalException(method + " expects exactly " + std::to_string(expected) + " arguments");
+      }
+
+      Value local;
+      Value* current = nullptr;
+      if (target_is_variable) {
+        current = env->get_ptr(target_name);
+      } else if (captured_target.has_value()) {
+        local = *captured_target;
+        current = &local;
+      }
+      if (!current || current->kind != Value::Kind::TaskGroup || !current->task_group_value) {
+        throw EvalException(method + "() only supported on task_group values");
+      }
+      return handler(*current, args);
+    });
+  };
+
+  auto make_task_builtin = [env, target_is_variable, target_name, captured_target](
+                               const std::string& method, std::size_t expected, auto handler) {
+    return Value::builtin(method, [env, target_is_variable, target_name, captured_target, expected, method, handler](
+                                      const std::vector<Value>& args) -> Value {
+      if (args.size() != expected && expected != static_cast<std::size_t>(-1)) {
+        throw EvalException(method + " expects exactly " + std::to_string(expected) + " arguments");
+      }
+
+      Value local;
+      Value* current = nullptr;
+      if (target_is_variable) {
+        current = env->get_ptr(target_name);
+      } else if (captured_target.has_value()) {
+        local = *captured_target;
+        current = &local;
+      }
+      if (!current || current->kind != Value::Kind::Task || !current->task_value) {
+        throw EvalException(method + "() only supported on task values");
+      }
+      return handler(*current, args);
+    });
+  };
+
+  auto make_channel_builtin = [env, target_is_variable, target_name, captured_target](
+                                  const std::string& method, std::size_t expected, auto handler) {
+    return Value::builtin(method, [env, target_is_variable, target_name, captured_target, expected, method, handler](
+                                      const std::vector<Value>& args) -> Value {
+      if (args.size() != expected && expected != static_cast<std::size_t>(-1)) {
+        throw EvalException(method + " expects exactly " + std::to_string(expected) + " arguments");
+      }
+
+      Value local;
+      Value* current = nullptr;
+      if (target_is_variable) {
+        current = env->get_ptr(target_name);
+      } else if (captured_target.has_value()) {
+        local = *captured_target;
+        current = &local;
+      }
+      if (!current || current->kind != Value::Kind::Channel || !current->channel_value) {
+        throw EvalException(method + "() only supported on channel values");
+      }
+      return handler(*current, args);
+    });
+  };
+
   if (attribute.attribute == "T" || attribute.attribute == "transpose") {
     auto value = self.evaluate(*attribute.target, env);
     if (value.kind != Value::Kind::Matrix || !value.matrix_value) {
@@ -104,6 +173,93 @@ Value evaluate_case_attribute(const AttributeExpr& attribute, Interpreter& self,
     return make_matrix_value_builtin("matmul_schedule", 0, [](Value& current, const std::vector<Value>& args) {
       (void)args;
       return matrix_matmul_schedule_value(current);
+    });
+  }
+
+  if (attribute.attribute == "spawn") {
+    return make_task_group_builtin("spawn", static_cast<std::size_t>(-1),
+                                   [](Value& current, const std::vector<Value>& args) {
+      if (args.empty()) {
+        throw EvalException("task_group.spawn() expects at least callable argument");
+      }
+      std::vector<Value> task_args;
+      task_args.reserve(args.size() - 1);
+      for (std::size_t i = 1; i < args.size(); ++i) {
+        task_args.push_back(args[i]);
+      }
+      return task_group_spawn_value(current, args[0], task_args);
+    });
+  }
+
+  if (attribute.attribute == "join_all") {
+    return make_task_group_builtin("join_all", 0, [](Value& current, const std::vector<Value>& args) {
+      (void)args;
+      return task_group_join_all_value(current);
+    });
+  }
+
+  if (attribute.attribute == "cancel_all") {
+    return make_task_group_builtin("cancel_all", 0, [](Value& current, const std::vector<Value>& args) {
+      (void)args;
+      return task_group_cancel_all_value(current);
+    });
+  }
+
+  if (attribute.attribute == "join") {
+    return make_task_builtin("join", 0, [](Value& current, const std::vector<Value>& args) {
+      (void)args;
+      return await_task_value(current);
+    });
+  }
+
+  if (attribute.attribute == "cancel") {
+    return make_task_builtin("cancel", 0, [](Value& current, const std::vector<Value>& args) {
+      (void)args;
+      if (current.task_value && current.task_value->cancelled) {
+        current.task_value->cancelled->store(true, std::memory_order_relaxed);
+      }
+      return Value::nil();
+    });
+  }
+
+  if (attribute.attribute == "send") {
+    return make_channel_builtin("send", 1, [](Value& current, const std::vector<Value>& args) {
+      return channel_send_value(current, args[0]);
+    });
+  }
+
+  if (attribute.attribute == "recv") {
+    return make_channel_builtin("recv", 0, [](Value& current, const std::vector<Value>& args) {
+      (void)args;
+      return channel_recv_value(current);
+    });
+  }
+
+  if (attribute.attribute == "close") {
+    return make_channel_builtin("close", 0, [](Value& current, const std::vector<Value>& args) {
+      (void)args;
+      return channel_close_value(current);
+    });
+  }
+
+  if (attribute.attribute == "stats") {
+    return make_channel_builtin("stats", 0, [](Value& current, const std::vector<Value>& args) {
+      (void)args;
+      return channel_stats_value(current);
+    });
+  }
+
+  if (attribute.attribute == "anext" || attribute.attribute == "next") {
+    return make_channel_builtin(attribute.attribute, 0, [](Value& current, const std::vector<Value>& args) {
+      (void)args;
+      return stream_next_value(current);
+    });
+  }
+
+  if (attribute.attribute == "has_next") {
+    return make_channel_builtin("has_next", 0, [](Value& current, const std::vector<Value>& args) {
+      (void)args;
+      return stream_has_next_value(current);
     });
   }
 

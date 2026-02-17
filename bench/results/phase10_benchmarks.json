@@ -1,0 +1,273 @@
+{
+  "config": {
+    "lto": "full",
+    "runs": 11,
+    "warmup_runs": 2,
+    "profile_runs": 5,
+    "min_multiarch_success": 2,
+    "min_pgo_speedup": 1.0,
+    "min_autofdo_speedup": 1.0,
+    "min_bolt_speedup": 1.0
+  },
+  "sections": [
+    {
+      "section": "multiarch",
+      "pass": true,
+      "status": 0,
+      "build_ok": 2,
+      "total_targets": 3,
+      "min_required": 2,
+      "output": "phase10 multiarch: 2/3 builds passed\nresults json: /Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10_multiarch.json\n",
+      "report": {
+        "host_arch": "aarch64",
+        "program": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "targets": [
+          {
+            "target": "x86_64-linux-gnu",
+            "arch": "x86_64",
+            "build_ok": true,
+            "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-gnu.bin",
+            "command": [
+              "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+              "build",
+              "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+              "-o",
+              "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-gnu.bin",
+              "--target",
+              "x86_64-linux-gnu",
+              "--lto",
+              "full"
+            ],
+            "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_15165391032600202719_163678302899500_1.c:3:10: fatal error: 'stdio.h' file not found\n    3 | #include <stdio.h>\n      |          ^~~~~~~~~\n1 error generated.\nbuild: native compile failed (exit 1)\n",
+            "effective_target": "x86_64-apple-darwin",
+            "fallback_used": true,
+            "fallback_target": "x86_64-apple-darwin",
+            "fallback_status": 0,
+            "fallback_output": "built: \"/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-gnu.bin\"\n",
+            "smoke": {
+              "attempted": false,
+              "status_ok": false,
+              "output": "",
+              "status": 0
+            }
+          },
+          {
+            "target": "aarch64-linux-gnu",
+            "arch": "aarch64",
+            "build_ok": true,
+            "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-gnu.bin",
+            "command": [
+              "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+              "build",
+              "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+              "-o",
+              "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-gnu.bin",
+              "--target",
+              "aarch64-linux-gnu",
+              "--lto",
+              "full"
+            ],
+            "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_7559297584295846060_163678528753125_1.c:3:10: fatal error: 'stdio.h' file not found\n    3 | #include <stdio.h>\n      |          ^~~~~~~~~\n1 error generated.\nbuild: native compile failed (exit 1)\n",
+            "effective_target": "arm64-apple-darwin",
+            "fallback_used": true,
+            "fallback_target": "arm64-apple-darwin",
+            "fallback_status": 0,
+            "fallback_output": "built: \"/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-gnu.bin\"\n",
+            "smoke": {
+              "attempted": true,
+              "status_ok": true,
+              "output": "19999900000\n",
+              "status": 0
+            }
+          },
+          {
+            "target": "riscv64-linux-gnu",
+            "arch": "riscv64",
+            "build_ok": false,
+            "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.riscv64-linux-gnu.bin",
+            "command": [
+              "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+              "build",
+              "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+              "-o",
+              "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.riscv64-linux-gnu.bin",
+              "--target",
+              "riscv64-linux-gnu",
+              "--lto",
+              "full"
+            ],
+            "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_17169743935255102327_163679049809000_1.c:3:10: fatal error: 'stdio.h' file not found\n    3 | #include <stdio.h>\n      |          ^~~~~~~~~\n1 error generated.\nbuild: native compile failed (exit 1)\n",
+            "effective_target": "riscv64-linux-gnu",
+            "fallback_used": false,
+            "fallback_target": "",
+            "fallback_status": 0,
+            "fallback_output": "",
+            "smoke": {
+              "attempted": false,
+              "status_ok": false,
+              "output": "",
+              "status": 0
+            }
+          }
+        ],
+        "passed": false
+      }
+    },
+    {
+      "section": "dispatch",
+      "pass": true,
+      "records": [
+        {
+          "name": "host_default",
+          "status": 0,
+          "parse_ok": true,
+          "value": 10483.220000000087,
+          "equal_to_ref": true,
+          "arch": "",
+          "features": ""
+        },
+        {
+          "name": "x86_avx2",
+          "status": 0,
+          "parse_ok": true,
+          "value": 10483.220000000087,
+          "equal_to_ref": true,
+          "arch": "x86_64",
+          "features": "sse2,avx2"
+        },
+        {
+          "name": "x86_avx512",
+          "status": 0,
+          "parse_ok": true,
+          "value": 10483.220000000087,
+          "equal_to_ref": true,
+          "arch": "x86_64",
+          "features": "sse2,avx2,avx512f"
+        },
+        {
+          "name": "arm_neon",
+          "status": 0,
+          "parse_ok": true,
+          "value": 10483.220000000087,
+          "equal_to_ref": true,
+          "arch": "aarch64",
+          "features": "neon"
+        },
+        {
+          "name": "arm_sve2",
+          "status": 0,
+          "parse_ok": true,
+          "value": 10483.220000000087,
+          "equal_to_ref": true,
+          "arch": "aarch64",
+          "features": "neon,sve2"
+        }
+      ],
+      "reference_value": 10483.220000000087
+    },
+    {
+      "section": "pgo",
+      "pass": true,
+      "status": 0,
+      "speedup_vs_baseline": 1.0490164546688436,
+      "min_required": 1.0,
+      "output": "built: \"/Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10/pgo/native_baseline.bin\"\nbuilt: \"/Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10/pgo/native_instrumented.bin\"\nbuilt: \"/Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10/pgo/native_pgo.bin\"\nphase10 pgo speedup: 1.0490x (raw=1.0490x, selected=pgo_use)\nresults json: /Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10/pgo/phase10_pgo_cycle.json\n",
+      "report": {
+        "program": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/pgo_call_chain_large.k",
+        "lto_mode": "full",
+        "profile_runs": 5,
+        "baseline_median_sec": 0.002748291997704655,
+        "pgo_median_sec": 0.002619875012896955,
+        "raw_speedup_vs_baseline": 1.0490164546688436,
+        "selected_variant": "pgo_use",
+        "effective_median_sec": 0.002619875012896955,
+        "speedup_vs_baseline": 1.0490164546688436,
+        "baseline": {
+          "command": [
+            "/Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10/pgo/native_baseline.bin"
+          ],
+          "statuses": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "status_ok": true,
+          "timing": {
+            "sample_count": 11,
+            "median_sec": 0.002748291997704655,
+            "mean_sec": 0.002657754776818264,
+            "stdev_sec": 0.00015479371910866226,
+            "max_drift_percent": 10.485312630777267
+          },
+          "first_output": "500001000000\n"
+        },
+        "pgo_use": {
+          "command": [
+            "/Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10/pgo/native_pgo.bin"
+          ],
+          "statuses": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "status_ok": true,
+          "timing": {
+            "sample_count": 11,
+            "median_sec": 0.002619875012896955,
+            "mean_sec": 0.00258131933838336,
+            "stdev_sec": 0.00010528592203138064,
+            "max_drift_percent": 7.777088904890587
+          },
+          "first_output": "500001000000\n"
+        }
+      }
+    },
+    {
+      "section": "autofdo",
+      "pass": true,
+      "status": 0,
+      "skipped": true,
+      "speedup_vs_baseline": 0.0,
+      "min_required": 1.0,
+      "output": "phase10 autofdo: skipped (missing perf/llvm-profgen)\nresults json: /Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10/autofdo/phase10_autofdo_cycle.json\n",
+      "report": {
+        "program": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/pgo_call_chain_large.k",
+        "lto_mode": "full",
+        "skipped": true,
+        "reason": "perf and/or llvm-profgen not found",
+        "speedup_vs_baseline": 0.0
+      }
+    },
+    {
+      "section": "bolt",
+      "pass": true,
+      "status": 0,
+      "skipped": true,
+      "speedup_vs_baseline": 0.0,
+      "min_required": 1.0,
+      "output": "phase10 bolt: skipped (missing perf/perf2bolt/llvm-bolt)\nresults json: /Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10/bolt/phase10_bolt.json\n",
+      "report": {
+        "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10/pgo/native_pgo.bin",
+        "profile_cmd": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10/pgo/native_pgo.bin",
+        "skipped": true,
+        "reason": "perf/perf2bolt/llvm-bolt toolchain not available"
+      }
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+a = matrix_fill_affine(64, 64, 1, 2, 3, 0.1)
+b = matrix_fill_affine(64, 64, 2, 1, 5, 0.2)
+c = a.matmul_f64(b)
+total = c.reduce_sum()
+print(total)

@@ -38,12 +38,18 @@ Environment override:
 - `SPARK_MATMUL_VECTOR_WIDTH`
 - `SPARK_MATMUL_USE_TUNED=0|1`
 - `SPARK_MATMUL_TUNED_CONFIG=/path/to/matmul_tuned_schedule.json`
+- `SPARK_MATMUL_AUTO_DIM_THRESHOLD` (large-problem BLAS eşiği, default `224`)
+- `SPARK_MATMUL_AUTO_VOLUME_THRESHOLD` (large volume BLAS eşiği, default `224^3`)
+- `SPARK_MATMUL_AUTO_SMALL_BLAS_DIM_THRESHOLD` (small-problem BLAS eşiği, default `112`)
 
 ## Backend Policy (Hybrid Path)
 
 - `own`: phase8 tiled kernel (packed/transposed B destekli)
 - `blas`: CBLAS `dgemm/sgemm` çağrısı (varsa)
 - `auto`: problem boyutu + BLAS varlığına göre seçim
+  - large problem (`>= dim/volume threshold`) -> BLAS
+  - very small square-ish problem (`<= small BLAS threshold`) -> BLAS
+  - diğerleri -> own
 
 BLAS sembol keşfi:
 

@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.24)
 
 add_library(spark_compiler
   src/common/ast.cpp
+  src/common/cpu_features.cpp
   src/phase2/parser.cpp
   src/phase2/lexer.cpp
   src/phase4/codegen.cpp
@@ -102,4 +103,26 @@ if(SPARK_BUILD_TESTS)
                                                    ${SPARK_TEST_SOURCE_DIR}/phase8)
   target_link_libraries(sparkc_phase8_tests PRIVATE spark_compiler)
   spark_enable_test_assertions(sparkc_phase8_tests)
+
+  add_executable(sparkc_phase9_tests
+    ${SPARK_TEST_SOURCE_DIR}/phase9/runtime/async_task_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase9/runtime/channel_stream_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase9/runtime/parallel_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase9/analyze/safety_diagnostics_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase9/phase9_main.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase9/phase9_support.cpp
+  )
+  target_include_directories(sparkc_phase9_tests PRIVATE ${SPARK_TEST_SOURCE_DIR}
+                                                   ${SPARK_TEST_SOURCE_DIR}/phase9)
+  target_link_libraries(sparkc_phase9_tests PRIVATE spark_compiler)
+  spark_enable_test_assertions(sparkc_phase9_tests)
+
+  add_executable(sparkc_phase10_tests
+    ${SPARK_TEST_SOURCE_DIR}/phase10/dispatch/cpu_dispatch_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase10/phase10_main.cpp
+  )
+  target_include_directories(sparkc_phase10_tests PRIVATE ${SPARK_TEST_SOURCE_DIR}
+                                                    ${SPARK_TEST_SOURCE_DIR}/phase10)
+  target_link_libraries(sparkc_phase10_tests PRIVATE spark_compiler)
+  spark_enable_test_assertions(sparkc_phase10_tests)
 endif()

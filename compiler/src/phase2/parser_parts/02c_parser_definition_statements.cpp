@@ -6,10 +6,20 @@
 
 namespace spark {
 
-StmtPtr Parser::parse_function_statement(int indent, const std::string& line) {
+StmtPtr Parser::parse_function_statement(int indent, const std::string& line, bool is_async) {
   auto line_no = lines[index].line_no;
   auto line_text = lines[index].text;
-  auto header = trim_static(line.substr(4));
+  std::size_t prefix_len = std::string("def ").size();
+  if (is_async) {
+    if (line.rfind("async def ", 0) == 0) {
+      prefix_len = std::string("async def ").size();
+    } else if (line.rfind("async fn ", 0) == 0) {
+      prefix_len = std::string("async fn ").size();
+    } else {
+      throw parse_error(line_no, "invalid async function declaration", line_text);
+    }
+  }
+  auto header = trim_static(line.substr(prefix_len));
   if (header.empty() || header.back() != ':') {
     throw parse_error(line_no, "invalid function declaration", line_text);
   }
@@ -49,7 +59,11 @@ StmtPtr Parser::parse_function_statement(int indent, const std::string& line) {
     throw parse_error(line_no, "function body missing indentation", line_text);
   }
   auto body = parse_block(lines[index].indent);
-  return std::make_unique<FunctionDefStmt>(std::move(name), std::move(params), std::move(body));
+  return std::make_unique<FunctionDefStmt>(std::move(name), std::move(params), is_async, std::move(body));
+}
+
+StmtPtr Parser::parse_async_function_statement(int indent, const std::string& line) {
+  return parse_function_statement(indent, line, true);
 }
 
 StmtPtr Parser::parse_class_statement(int indent, const std::string& line) {

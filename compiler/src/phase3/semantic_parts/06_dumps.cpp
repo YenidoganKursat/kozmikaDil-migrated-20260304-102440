@@ -31,6 +31,20 @@ std::string TypeChecker::type_to_string(const Type& type) {
       out += "][" + std::to_string(type.matrix_rows) + "," + std::to_string(type.matrix_cols) + "]";
       return out;
     }
+    case Type::Kind::Task: {
+      if (!type.task_result) {
+        return "Task[Unknown]";
+      }
+      return "Task[" + type_to_string(*type.task_result) + "]";
+    }
+    case Type::Kind::TaskGroup:
+      return "TaskGroup";
+    case Type::Kind::Channel: {
+      if (!type.channel_element) {
+        return "Channel[Unknown]";
+      }
+      return "Channel[" + type_to_string(*type.channel_element) + "]";
+    }
     case Type::Kind::Function: {
       std::string out = "Function(";
       for (std::size_t i = 0; i < type.function_params.size(); ++i) {
@@ -179,6 +193,27 @@ std::string TypeChecker::dump_why_not_fused() const {
     stream << pipeline.id << "|" << pipeline.receiver << "\n";
     for (const auto& reason : pipeline.reasons) {
       stream << "  reason|" << reason << "\n";
+    }
+  }
+  return stream.str();
+}
+
+std::string TypeChecker::dump_async_lowering() const {
+  std::ostringstream stream;
+  for (const auto& entry : async_lowerings_) {
+    stream << entry.function_name
+           << "|await_points=" << entry.await_points
+           << "|states=" << entry.states
+           << "|frame=" << (entry.heap_frame ? "heap" : "stack_or_inline")
+           << "\n";
+    for (std::size_t state = 0; state < entry.states; ++state) {
+      stream << "  state|" << state;
+      if (state < entry.await_points) {
+        stream << "|suspend_on=await";
+      } else {
+        stream << "|terminal=return";
+      }
+      stream << "\n";
     }
   }
   return stream.str();

@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <fstream>
+#include <limits>
 #include <optional>
 #include <regex>
 #include <string>
@@ -9,6 +10,7 @@
 #include <dlfcn.h>
 
 #include "../../phase3/evaluator_parts/internal_helpers.h"
+#include "spark/cpu_features.h"
 
 namespace spark {
 namespace phase8 {
@@ -81,6 +83,21 @@ std::optional<std::size_t> env_size(const char* name) {
     return std::nullopt;
   }
   return static_cast<std::size_t>(parsed);
+}
+
+std::size_t saturating_volume3(std::size_t a, std::size_t b, std::size_t c) {
+  constexpr auto kMax = std::numeric_limits<std::size_t>::max();
+  if (a == 0 || b == 0 || c == 0) {
+    return 0;
+  }
+  if (a > kMax / b) {
+    return kMax;
+  }
+  const auto ab = a * b;
+  if (ab > kMax / c) {
+    return kMax;
+  }
+  return ab * c;
 }
 
 BlasSymbols& blas_symbols() {
@@ -214,6 +231,10 @@ void maybe_apply_tuned_file(MatmulSchedule& schedule) {
 
 MatmulSchedule resolve_schedule(const MatmulKernelIR& ir) {
   MatmulSchedule schedule;
+  const auto variant = spark::phase8_matmul_variant_tag(ir.use_f32);
+  schedule.vector_width = spark::phase8_recommended_vector_width(ir.use_f32);
+  schedule.source = "cpu_dispatch:" + variant;
+  const auto max_dim = std::max({ir.m, ir.n, ir.k});
   if (ir.m >= 512 || ir.n >= 512 || ir.k >= 512) {
     schedule.tile_m = 128;
     schedule.tile_n = 128;
@@ -223,6 +244,28 @@ MatmulSchedule resolve_schedule(const MatmulKernelIR& ir) {
   }
 
   maybe_apply_tuned_file(schedule);
+
+  // Keep tuned/default schedule adaptive by size: 128 prefers wider tiles,
+  // while 256/512 benefit from shorter cache-friendly tiles.
+  if (!env_bool_enabled("SPARK_MATMUL_DISABLE_DIM_ADAPTIVE", false)) {
+    if (!ir.use_f32) {
+      if (max_dim <= 160) {
+        schedule.tile_m = 96;
+        schedule.tile_n = 96;
+        schedule.tile_k = 96;
+      } else if (max_dim >= 224) {
+        schedule.tile_m = 64;
+        schedule.tile_n = 64;
+        schedule.tile_k = 64;
+      }
+      schedule.unroll = std::max<std::size_t>(schedule.unroll, 8);
+    } else if (max_dim >= 256) {
+      schedule.tile_m = 96;
+      schedule.tile_n = 96;
+      schedule.tile_k = 96;
+      schedule.unroll = std::max<std::size_t>(schedule.unroll, 8);
+    }
+  }
 
   if (const auto v = env_size("SPARK_MATMUL_TILE_M")) schedule.tile_m = *v;
   if (const auto v = env_size("SPARK_MATMUL_TILE_N")) schedule.tile_n = *v;
@@ -240,10 +283,29 @@ MatmulSchedule resolve_schedule(const MatmulKernelIR& ir) {
     schedule.backend = has_blas_backend() ? MatmulBackend::Blas : MatmulBackend::Own;
     schedule.source = has_blas_backend() ? "env_blas" : "env_blas_fallback";
   } else {
-    const bool large_problem = (ir.m * ir.n * ir.k) >= (192ull * 192ull * 192ull);
-    if (has_blas_backend() && large_problem) {
-      schedule.backend = MatmulBackend::Blas;
-      schedule.source = "auto_blas";
+    const bool respect_tuned_backend =
+        env_bool_enabled("SPARK_MATMUL_AUTO_RESPECT_TUNED_BACKEND", false);
+    if (!(respect_tuned_backend && schedule.source == "tuned_file")) {
+      const auto dim_threshold = env_size("SPARK_MATMUL_AUTO_DIM_THRESHOLD").value_or(224ull);
+      const auto small_dim_blas_threshold =
+          env_size("SPARK_MATMUL_AUTO_SMALL_BLAS_DIM_THRESHOLD").value_or(112ull);
+      const auto volume_threshold =
+          env_size("SPARK_MATMUL_AUTO_VOLUME_THRESHOLD")
+              .value_or(224ull * 224ull * 224ull);
+      const auto volume = saturating_volume3(ir.m, ir.n, ir.k);
+      const bool large_problem = (ir.m >= dim_threshold && ir.n >= dim_threshold &&
+                                  ir.k >= dim_threshold) ||
+                                 (volume >= volume_threshold);
+      const bool small_problem =
+          small_dim_blas_threshold > 0 && ir.m <= small_dim_blas_threshold &&
+          ir.n <= small_dim_blas_threshold && ir.k <= small_dim_blas_threshold;
+      if ((large_problem || small_problem) && has_blas_backend()) {
+        schedule.backend = MatmulBackend::Blas;
+        schedule.source = large_problem ? "auto_blas_large" : "auto_blas_small";
+      } else {
+        schedule.backend = MatmulBackend::Own;
+        schedule.source = "auto_own";
+      }
     }
   }
 

@@ -18,8 +18,18 @@ StmtPtr Parser::parse_statement(int indent) {
   if (line.rfind("class ", 0) == 0 && !line.empty() && line.back() == ':') {
     return parse_class_statement(indent, line);
   }
+  if ((line.rfind("async def ", 0) == 0 || line.rfind("async fn ", 0) == 0) &&
+      !line.empty() && line.back() == ':') {
+    return parse_async_function_statement(indent, line);
+  }
+  if (line.rfind("async for ", 0) == 0 && !line.empty() && line.back() == ':') {
+    return parse_for_statement(indent, line, true);
+  }
   if (line.rfind("def ", 0) == 0 && !line.empty() && line.back() == ':') {
     return parse_function_statement(indent, line);
+  }
+  if (line.rfind("with task_group", 0) == 0 && !line.empty() && line.back() == ':') {
+    return parse_with_task_group_statement(indent, line);
   }
   if (line.rfind("if ", 0) == 0 && !line.empty() && line.back() == ':') {
     return parse_if_statement(indent, line);

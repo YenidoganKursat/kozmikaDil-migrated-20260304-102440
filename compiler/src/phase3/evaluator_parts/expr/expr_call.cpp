@@ -17,32 +17,11 @@ Value evaluate_case_call(const CallExpr& call, Interpreter& self,
   for (const auto& arg : call.args) {
     args.push_back(self.evaluate(*arg, env));
   }
-  if (callee.kind == Value::Kind::Builtin) {
-    return callee.builtin_value->impl(args);
+  if (callee.kind == Value::Kind::Function && callee.function_value &&
+      callee.function_value->is_async) {
+    return spawn_task_value(callee, args);
   }
-  if (callee.kind == Value::Kind::Function) {
-    const auto& fn = callee.function_value;
-    if (!fn || !fn->body) {
-      throw EvalException("invalid function value");
-    }
-    if (fn->params.size() != args.size()) {
-      throw EvalException("function argument count mismatch");
-    }
-    auto local_env = std::make_shared<Environment>(fn->closure);
-    for (std::size_t i = 0; i < fn->params.size(); ++i) {
-      local_env->define(fn->params[i], args[i]);
-    }
-    Value result = Value::nil();
-    try {
-      for (const auto& stmt : *fn->body) {
-        result = self.execute(*stmt, local_env);
-      }
-    } catch (const Interpreter::ReturnSignal& signal) {
-      return signal.value;
-    }
-    return result;
-  }
-  throw EvalException("attempted to call non-callable value");
+  return invoke_callable_sync(callee, args);
 }
 
 }  // namespace spark

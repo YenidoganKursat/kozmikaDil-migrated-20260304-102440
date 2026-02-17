@@ -1,6 +1,6 @@
 {
   "config": {
-    "runs": 5,
+    "runs": 7,
     "warmup_runs": 1,
     "sample_repeat": 3,
     "drift_limit": 3.0,
@@ -32,6 +32,12 @@
         0,
         0,
         0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
         0
       ],
       "parse_error": "",
@@ -48,12 +54,12 @@
         "plan_id": 1.0
       },
       "timing": {
-        "sample_count": 5.0,
-        "median_time_sec": 0.4882592920039315,
-        "mean_time_sec": 0.48914104200472747,
-        "stdev_time_sec": 0.0018081240411243625,
-        "max_drift_percent": 0.696615929992039,
-        "reproducible": 1.0
+        "sample_count": 7.0,
+        "median_time_sec": 0.7047850420058239,
+        "mean_time_sec": 0.7122152087977156,
+        "stdev_time_sec": 0.011664805759088567,
+        "max_drift_percent": 3.319948438105432,
+        "reproducible": 0.0
       },
       "expected_checksum": 275089008.0,
       "expected_plan": 1,
@@ -84,6 +90,12 @@
         0,
         0,
         0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
         0
       ],
       "parse_error": "",
@@ -100,11 +112,11 @@
         "plan_id": 1.0
       },
       "timing": {
-        "sample_count": 5.0,
-        "median_time_sec": 1.8771689999994123,
-        "mean_time_sec": 1.9058484030053175,
-        "stdev_time_sec": 0.06219508111649719,
-        "max_drift_percent": 6.1278046893870455,
+        "sample_count": 7.0,
+        "median_time_sec": 2.4809187919890974,
+        "mean_time_sec": 2.5042038420040624,
+        "stdev_time_sec": 0.03380971627755271,
+        "max_drift_percent": 3.102889431887204,
         "reproducible": 0.0
       },
       "expected_checksum": 275089008.0,
@@ -136,6 +148,12 @@
         0,
         0,
         0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
         0
       ],
       "parse_error": "",
@@ -152,11 +170,11 @@
         "plan_id": 5.0
       },
       "timing": {
-        "sample_count": 5.0,
-        "median_time_sec": 0.34621620799589437,
-        "mean_time_sec": 0.3472735416629196,
-        "stdev_time_sec": 0.0019825434809400775,
-        "max_drift_percent": 1.107641385245799,
+        "sample_count": 7.0,
+        "median_time_sec": 0.49295383400749415,
+        "mean_time_sec": 0.49204375840490683,
+        "stdev_time_sec": 0.002403924246629292,
+        "max_drift_percent": 1.11026299290503,
         "reproducible": 1.0
       },
       "expected_checksum": 43193100.0,
@@ -188,6 +206,12 @@
         0,
         0,
         0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
         0
       ],
       "parse_error": "",
@@ -204,11 +228,11 @@
         "plan_id": 5.0
       },
       "timing": {
-        "sample_count": 5.0,
-        "median_time_sec": 0.8022612500062678,
-        "mean_time_sec": 0.8023578473366797,
-        "stdev_time_sec": 0.0021149957499610635,
-        "max_drift_percent": 0.34077116316673794,
+        "sample_count": 7.0,
+        "median_time_sec": 1.0585000829887576,
+        "mean_time_sec": 1.060021774598863,
+        "stdev_time_sec": 0.0035950785232128375,
+        "max_drift_percent": 0.8151983316620851,
         "reproducible": 1.0
       },
       "expected_checksum": 43193100.0,
@@ -240,6 +264,12 @@
         0,
         0,
         0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
         0
       ],
       "parse_error": "",
@@ -256,11 +286,11 @@
         "plan_id": 1.0
       },
       "timing": {
-        "sample_count": 5.0,
-        "median_time_sec": 0.09603083301044535,
-        "mean_time_sec": 0.09607640267252766,
-        "stdev_time_sec": 0.0001684347386762338,
-        "max_drift_percent": 0.28202815743289117,
+        "sample_count": 7.0,
+        "median_time_sec": 0.14481608400819823,
+        "mean_time_sec": 0.144397741794819,
+        "stdev_time_sec": 0.0013012115544535408,
+        "max_drift_percent": 1.3864433896968413,
         "reproducible": 1.0
       },
       "expected_checksum": 15681852.0,
@@ -292,6 +322,12 @@
         0,
         0,
         0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
         0
       ],
       "parse_error": "",
@@ -308,11 +344,11 @@
         "plan_id": 1.0
       },
       "timing": {
-        "sample_count": 5.0,
-        "median_time_sec": 0.38152558299771044,
-        "mean_time_sec": 0.38137475000015303,
-        "stdev_time_sec": 0.0016911665883005795,
-        "max_drift_percent": 0.60110621638761,
+        "sample_count": 7.0,
+        "median_time_sec": 0.5130108330049552,
+        "mean_time_sec": 0.5150979165977333,
+        "stdev_time_sec": 0.0053833311466165695,
+        "max_drift_percent": 2.424550945046145,
         "reproducible": 1.0
       },
       "expected_checksum": 15681852.0,
@@ -324,7 +360,7 @@
     {
       "name": "list_pipeline_reduce",
       "pass": true,
-      "speedup": 3.844615004243068,
+      "speedup": 3.520107045587095,
       "speedup_ok": true,
       "min_speedup": 1.5,
       "alloc_ratio": Infinity
@@ -332,7 +368,7 @@
     {
       "name": "hetero_pipeline_reduce",
       "pass": true,
-      "speedup": 2.317226147932917,
+      "speedup": 2.147260067709841,
       "speedup_ok": true,
       "min_speedup": 1.8,
       "alloc_ratio": Infinity
@@ -340,7 +376,7 @@
     {
       "name": "matrix_pipeline_reduce",
       "pass": true,
-      "speedup": 3.9729488023519655,
+      "speedup": 3.542499001532958,
       "speedup_ok": true,
       "min_speedup": 1.2,
       "alloc_ratio": Infinity

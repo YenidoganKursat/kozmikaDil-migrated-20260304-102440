@@ -6,8 +6,8 @@
 
 namespace spark {
 
-Environment::Environment(std::shared_ptr<Environment> parent_env)
-    : parent(std::move(parent_env)) {}
+Environment::Environment(std::shared_ptr<Environment> parent_env, bool is_frozen)
+    : parent(std::move(parent_env)), frozen(is_frozen) {}
 
 void Environment::define(std::string name, const Value& value) {
   values.emplace(std::move(name), value);
@@ -18,6 +18,9 @@ bool Environment::set(std::string name, const Value& value) {
   while (current) {
     auto it = current->values.find(name);
     if (it != current->values.end()) {
+      if (current->frozen) {
+        return false;
+      }
       it->second = value;
       return true;
     }

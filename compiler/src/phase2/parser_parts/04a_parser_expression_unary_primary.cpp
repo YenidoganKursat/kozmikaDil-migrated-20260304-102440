@@ -10,9 +10,14 @@ namespace spark {
 ExprPtr Parser::parse_expr_unary(std::vector<ExprToken>& tokens, std::size_t& pos) {
   if (pos < tokens.size() && tokens[pos].type == ExprToken::Type::Operator) {
     const std::string op = tokens[pos].text;
-    if (op == "-" || op == "not") {
+    if (op == "-" || op == "not" || op == "await") {
       ++pos;
-      UnaryOp uop = (op == "-") ? UnaryOp::Neg : UnaryOp::Not;
+      UnaryOp uop = UnaryOp::Neg;
+      if (op == "not") {
+        uop = UnaryOp::Not;
+      } else if (op == "await") {
+        uop = UnaryOp::Await;
+      }
       return std::make_unique<UnaryExpr>(uop, parse_expr_unary(tokens, pos));
     }
   }

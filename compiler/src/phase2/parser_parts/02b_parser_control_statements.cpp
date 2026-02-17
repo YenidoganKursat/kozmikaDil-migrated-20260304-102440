@@ -85,10 +85,11 @@ StmtPtr Parser::parse_while_statement(int indent, const std::string& line) {
   return std::make_unique<WhileStmt>(std::move(cond), std::move(body));
 }
 
-StmtPtr Parser::parse_for_statement(int indent, const std::string& line) {
+StmtPtr Parser::parse_for_statement(int indent, const std::string& line, bool is_async) {
   auto line_no = lines[index].line_no;
   auto line_text = lines[index].text;
-  auto header = trim_static(line.substr(4));
+  const auto prefix_len = is_async ? std::string("async for ").size() : std::string("for ").size();
+  auto header = trim_static(line.substr(prefix_len));
   if (header.empty() || header.back() != ':') {
     throw parse_error(line_no, "invalid for statement", line_text);
   }
@@ -109,7 +110,61 @@ StmtPtr Parser::parse_for_statement(int indent, const std::string& line) {
     throw parse_error(line_no, "for body missing indentation", line_text);
   }
   auto body = parse_block(lines[index].indent);
-  return std::make_unique<ForStmt>(var_name, std::move(iterable), std::move(body));
+  return std::make_unique<ForStmt>(var_name, std::move(iterable), std::move(body), is_async);
+}
+
+StmtPtr Parser::parse_with_task_group_statement(int indent, const std::string& line) {
+  auto line_no = lines[index].line_no;
+  auto line_text = lines[index].text;
+
+  constexpr std::string_view prefix = "with task_group";
+  auto header = trim_static(line.substr(prefix.size()));
+  if (header.empty() || header.back() != ':') {
+    throw parse_error(line_no, "invalid with task_group statement", line_text);
+  }
+  header.pop_back();
+  header = trim_static(header);
+
+  ExprPtr timeout_expr = nullptr;
+  if (!header.empty() && header[0] == '(') {
+    std::size_t close = std::string::npos;
+    int depth = 0;
+    for (std::size_t i = 0; i < header.size(); ++i) {
+      if (header[i] == '(') {
+        depth += 1;
+      } else if (header[i] == ')') {
+        depth -= 1;
+        if (depth == 0) {
+          close = i;
+          break;
+        }
+      }
+    }
+    if (close == std::string::npos || depth != 0) {
+      throw parse_error(line_no, "with task_group timeout missing ')'", line_text);
+    }
+    const auto timeout_src = trim_static(header.substr(1, close - 1));
+    if (timeout_src.empty()) {
+      throw parse_error(line_no, "with task_group timeout expression is empty", line_text);
+    }
+    timeout_expr = parse_expression(timeout_src);
+    header = trim_static(header.substr(close + 1));
+  }
+
+  if (header.rfind("as ", 0) != 0) {
+    throw parse_error(line_no, "with task_group must declare 'as <name>'", line_text);
+  }
+  const auto name = trim_static(header.substr(3));
+  if (!is_identifier_token(name)) {
+    throw parse_error(line_no, "invalid task_group variable name", line_text);
+  }
+
+  ++index;
+  if (index >= lines.size() || lines[index].indent <= indent) {
+    throw parse_error(line_no, "with task_group body missing indentation", line_text);
+  }
+  auto body = parse_block(lines[index].indent);
+  return std::make_unique<WithTaskGroupStmt>(name, std::move(timeout_expr), std::move(body));
 }
 
 }  // namespace spark

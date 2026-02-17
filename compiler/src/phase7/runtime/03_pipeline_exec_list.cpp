@@ -406,30 +406,64 @@ Value execute_list_pipeline(PipelineChain& chain, const std::shared_ptr<Environm
       terminal == StageKind::ReduceSum && plan == Value::LayoutTag::PackedInt &&
       !has_value_transform && !plan_requires_cache(plan);
 
+  const auto source_sum = [&]() {
+    double sum = 0.0;
+    if (plan_requires_cache(plan)) {
+      for (std::size_t i = 0; i < effective_length; ++i) {
+        sum += numeric_cache[i];
+      }
+      return sum;
+    }
+    if (packed_int_source) {
+      for (std::size_t i = 0; i < effective_length; ++i) {
+        sum += static_cast<double>(source.list_value[i].int_value);
+      }
+      return sum;
+    }
+    if (packed_double_source) {
+      for (std::size_t i = 0; i < effective_length; ++i) {
+        sum += source.list_value[i].double_value;
+      }
+      return sum;
+    }
+    for (std::size_t i = 0; i < effective_length; ++i) {
+      if (!is_numeric_value(source.list_value[i])) {
+        continue;
+      }
+      sum += numeric_value_as_double(source.list_value[i]);
+    }
+    return sum;
+  };
+
   if (terminal == StageKind::ReduceSum && transform_count == 1 &&
       runtime_stages[0].kind == StageKind::MapAdd) {
     const double add = runtime_stages[0].scalar;
-    double reduce_sum = 0.0;
-    if (plan_requires_cache(plan)) {
-      for (std::size_t i = 0; i < effective_length; ++i) {
-        reduce_sum += numeric_cache[i] + add;
-      }
-    } else if (packed_int_source) {
-      for (std::size_t i = 0; i < effective_length; ++i) {
-        reduce_sum += static_cast<double>(source.list_value[i].int_value) + add;
-      }
-    } else if (packed_double_source) {
-      for (std::size_t i = 0; i < effective_length; ++i) {
-        reduce_sum += source.list_value[i].double_value + add;
-      }
-    } else {
-      for (std::size_t i = 0; i < effective_length; ++i) {
-        if (!is_numeric_value(source.list_value[i])) {
-          continue;
-        }
-        reduce_sum += numeric_value_as_double(source.list_value[i]) + add;
-      }
+    const double reduce_sum = source_sum() + add * static_cast<double>(effective_length);
+    if (stats) {
+      stats->last_allocations = allocations;
+      stats->total_allocations += allocations;
     }
+    return Value::double_value_of(reduce_sum);
+  }
+
+  if (terminal == StageKind::ReduceSum && transform_count == 1 &&
+      runtime_stages[0].kind == StageKind::MapMul) {
+    const double mul = runtime_stages[0].scalar;
+    const double reduce_sum = source_sum() * mul;
+    if (stats) {
+      stats->last_allocations = allocations;
+      stats->total_allocations += allocations;
+    }
+    return Value::double_value_of(reduce_sum);
+  }
+
+  if (terminal == StageKind::ReduceSum && transform_count == 2 &&
+      runtime_stages[0].kind == StageKind::MapAdd &&
+      runtime_stages[1].kind == StageKind::MapMul) {
+    const double add = runtime_stages[0].scalar;
+    const double mul = runtime_stages[1].scalar;
+    const double reduce_sum =
+        (source_sum() + add * static_cast<double>(effective_length)) * mul;
     if (stats) {
       stats->last_allocations = allocations;
       stats->total_allocations += allocations;

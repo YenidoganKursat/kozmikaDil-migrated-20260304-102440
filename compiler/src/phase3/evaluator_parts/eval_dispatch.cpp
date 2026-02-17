@@ -45,6 +45,8 @@ Value Interpreter::execute(const Stmt& stmt, const std::shared_ptr<Environment>&
       return execute_case_function_def(static_cast<const FunctionDefStmt&>(stmt), *this, env);
     case Stmt::Kind::ClassDef:
       return execute_case_class_def(static_cast<const ClassDefStmt&>(stmt), *this, env);
+    case Stmt::Kind::WithTaskGroup:
+      return execute_case_with_task_group(static_cast<const WithTaskGroupStmt&>(stmt), *this, env);
   }
 
   throw EvalException("unsupported statement");

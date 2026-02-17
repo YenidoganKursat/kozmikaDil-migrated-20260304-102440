@@ -64,6 +64,7 @@ struct ListExpr : Expr {
 enum class UnaryOp {
   Neg,
   Not,
+  Await,
 };
 
 struct UnaryExpr : Expr {
@@ -140,6 +141,7 @@ struct Stmt : Node {
     For,
     FunctionDef,
     ClassDef,
+    WithTaskGroup,
   };
 
   Kind kind;
@@ -189,20 +191,24 @@ struct WhileStmt : Stmt {
 struct ForStmt : Stmt {
   std::string name;
   ExprPtr iterable;
+  bool is_async = false;
   StmtList body;
 
-  ForStmt(std::string target_name, ExprPtr it_expr, StmtList loop_body)
-      : Stmt(Kind::For), name(std::move(target_name)), iterable(std::move(it_expr)), body(std::move(loop_body)) {}
+  ForStmt(std::string target_name, ExprPtr it_expr, StmtList loop_body, bool async_loop = false)
+      : Stmt(Kind::For), name(std::move(target_name)), iterable(std::move(it_expr)),
+        is_async(async_loop), body(std::move(loop_body)) {}
 };
 
 struct FunctionDefStmt : Stmt {
   std::string name;
   std::vector<std::string> params;
+  bool is_async = false;
   StmtList body;
 
-  FunctionDefStmt(std::string name_value, std::vector<std::string> parameters, StmtList block)
+  FunctionDefStmt(std::string name_value, std::vector<std::string> parameters,
+                  bool async_flag, StmtList block)
       : Stmt(Kind::FunctionDef), name(std::move(name_value)), params(std::move(parameters)),
-        body(std::move(block)) {}
+        is_async(async_flag), body(std::move(block)) {}
 };
 
 struct ClassDefStmt : Stmt {
@@ -212,6 +218,16 @@ struct ClassDefStmt : Stmt {
 
   ClassDefStmt(std::string name_value, bool open, StmtList block)
       : Stmt(Kind::ClassDef), name(std::move(name_value)), open_shape(open), body(std::move(block)) {}
+};
+
+struct WithTaskGroupStmt : Stmt {
+  std::string name;
+  ExprPtr timeout_ms;
+  StmtList body;
+
+  WithTaskGroupStmt(std::string group_name, ExprPtr timeout_expr, StmtList block)
+      : Stmt(Kind::WithTaskGroup), name(std::move(group_name)),
+        timeout_ms(std::move(timeout_expr)), body(std::move(block)) {}
 };
 
 struct Program {

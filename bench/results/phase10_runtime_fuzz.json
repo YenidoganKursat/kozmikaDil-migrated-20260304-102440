@@ -1,0 +1,967 @@
+{
+  "seed": 4242,
+  "cases": 120,
+  "passed": 120,
+  "records": [
+    {
+      "case": 0,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 1,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 2,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 3,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 4,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 5,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 6,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 7,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 8,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 9,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 10,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 11,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 12,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 13,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 14,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 15,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 16,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 17,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 18,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 19,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 20,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 21,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 22,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 23,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 24,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 25,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 26,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 27,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 28,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 29,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 30,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 31,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 32,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 33,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 34,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 35,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 36,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 37,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 38,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 39,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 40,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 41,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 42,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 43,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 44,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 45,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 46,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 47,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 48,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 49,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 50,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 51,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 52,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 53,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 54,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 55,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 56,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 57,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 58,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 59,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 60,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 61,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 62,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 63,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 64,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 65,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 66,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 67,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 68,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 69,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 70,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 71,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 72,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 73,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 74,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 75,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 76,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 77,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 78,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 79,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 80,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 81,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 82,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 83,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 84,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 85,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 86,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 87,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 88,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 89,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 90,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 91,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 92,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 93,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 94,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 95,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 96,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 97,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 98,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 99,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 100,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 101,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 102,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 103,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 104,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 105,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 106,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 107,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 108,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 109,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 110,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 111,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 112,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 113,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 114,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 115,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 116,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 117,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 118,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    },
+    {
+      "case": 119,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_status": 0,
+      "native_status": 0
+    }
+  ]
+}

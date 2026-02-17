@@ -23,6 +23,9 @@ struct Type {
     Any,
     List,
     Matrix,
+    Task,
+    TaskGroup,
+    Channel,
     Function,
     Class,
     Builtin,
@@ -53,6 +56,9 @@ struct Type {
   std::size_t class_shape_id = 0;
   std::size_t matrix_rows = 0;
   std::size_t matrix_cols = 0;
+  std::shared_ptr<Type> task_result;
+  std::shared_ptr<Type> channel_element;
+  std::size_t channel_capacity = 0;
 };
 
 using TypePtr = std::shared_ptr<Type>;
@@ -106,6 +112,13 @@ struct PipelineRecord {
   std::vector<std::string> reasons;
 };
 
+struct AsyncLoweringRecord {
+  std::string function_name;
+  std::size_t await_points = 0;
+  std::size_t states = 1;
+  bool heap_frame = false;
+};
+
 class TypeChecker {
  public:
   explicit TypeChecker();
@@ -122,12 +135,14 @@ class TypeChecker {
   std::string dump_pipeline_ir() const;
   std::string dump_fusion_plan() const;
   std::string dump_why_not_fused() const;
+  std::string dump_async_lowering() const;
 
   const std::vector<SymbolRecord>& symbols() const;
   const std::vector<ShapeRecord>& shapes() const;
   const std::vector<TierRecord>& function_reports() const;
   const std::vector<TierRecord>& loop_reports() const;
   const std::vector<PipelineRecord>& pipelines() const;
+  const std::vector<AsyncLoweringRecord>& async_lowerings() const;
 
   static std::string type_to_string(const Type& type);
   static std::string tier_to_string(TierLevel tier);
@@ -142,6 +157,9 @@ class TypeChecker {
   TypePtr error_type() const;
   TypePtr list_type(TypePtr element_type);
   TypePtr matrix_type(TypePtr element_type, std::size_t rows, std::size_t cols);
+  TypePtr task_type(TypePtr result_type);
+  TypePtr task_group_type();
+  TypePtr channel_type(TypePtr element_type, std::size_t capacity = 0);
   TypePtr function_type(std::vector<TypePtr> params, TypePtr return_type);
   TypePtr builtin_type(std::vector<TypePtr> params, TypePtr return_type,
                        std::optional<std::size_t> min_arity = std::nullopt);
@@ -196,6 +214,7 @@ class TypeChecker {
   std::vector<TierRecord> function_reports_;
   std::vector<TierRecord> loop_reports_;
   std::vector<PipelineRecord> pipelines_;
+  std::vector<AsyncLoweringRecord> async_lowerings_;
 
   struct FunctionContext {
     std::string name;

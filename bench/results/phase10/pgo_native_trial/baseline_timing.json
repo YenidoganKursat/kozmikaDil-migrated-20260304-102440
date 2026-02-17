@@ -1,0 +1,27 @@
+{
+  "command": [
+    "/Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10/pgo_native_trial/native_baseline.bin"
+  ],
+  "statuses": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "status_ok": true,
+  "timing": {
+    "sample_count": 11,
+    "median_sec": 0.002321084000868723,
+    "mean_sec": 0.0022613799988499116,
+    "stdev_sec": 0.0001571017637286957,
+    "max_drift_percent": 13.544362281100502
+  },
+  "first_output": "500001000000\n"
+}

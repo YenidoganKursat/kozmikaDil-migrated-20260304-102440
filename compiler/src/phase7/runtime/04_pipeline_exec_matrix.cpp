@@ -168,6 +168,24 @@ Value execute_matrix_pipeline(PipelineChain& chain, const std::shared_ptr<Enviro
 
   const bool packed_int_source = plan == Value::LayoutTag::PackedInt;
   const bool packed_double_source = plan == Value::LayoutTag::PackedDouble;
+  const auto total_values = source.matrix_value->data.size();
+
+  const auto source_sum = [&]() {
+    double sum = 0.0;
+    for (const auto& cell : source.matrix_value->data) {
+      if (packed_int_source) {
+        sum += static_cast<double>(cell.int_value);
+      } else if (packed_double_source) {
+        sum += cell.double_value;
+      } else {
+        if (!is_numeric_value(cell)) {
+          throw EvalException("matrix pipeline expects numeric elements");
+        }
+        sum += numeric_value_as_double(cell);
+      }
+    }
+    return sum;
+  };
 
   if (terminal == StageKind::ReduceSum && transform_count == 0 && packed_int_source) {
     long long total = 0;
@@ -181,6 +199,28 @@ Value execute_matrix_pipeline(PipelineChain& chain, const std::shared_ptr<Enviro
     return Value::int_value_of(total);
   }
 
+  if (terminal == StageKind::ReduceSum && transform_count == 1 &&
+      stages[0].kind == StageKind::MapAdd) {
+    const double add = stages[0].scalar;
+    const double reduce_sum = source_sum() + add * static_cast<double>(total_values);
+    if (stats) {
+      stats->last_allocations = allocations;
+      stats->total_allocations += allocations;
+    }
+    return Value::double_value_of(reduce_sum);
+  }
+
+  if (terminal == StageKind::ReduceSum && transform_count == 1 &&
+      stages[0].kind == StageKind::MapMul) {
+    const double mul = stages[0].scalar;
+    const double reduce_sum = source_sum() * mul;
+    if (stats) {
+      stats->last_allocations = allocations;
+      stats->total_allocations += allocations;
+    }
+    return Value::double_value_of(reduce_sum);
+  }
+
   const bool emit_int_reduce =
       terminal == StageKind::ReduceSum &&
       plan == Value::LayoutTag::PackedInt &&
@@ -191,23 +231,8 @@ Value execute_matrix_pipeline(PipelineChain& chain, const std::shared_ptr<Enviro
       stages[1].kind == StageKind::MapMul) {
     const double add = stages[0].scalar;
     const double mul = stages[1].scalar;
-    double reduce_sum = 0.0;
-    const auto accumulate = [&](double value) {
-      reduce_sum += (value + add) * mul;
-    };
-
-    for (const auto& cell : source.matrix_value->data) {
-      if (packed_int_source) {
-        accumulate(static_cast<double>(cell.int_value));
-      } else if (packed_double_source) {
-        accumulate(cell.double_value);
-      } else {
-        if (!is_numeric_value(cell)) {
-          throw EvalException("matrix pipeline expects numeric elements");
-        }
-        accumulate(numeric_value_as_double(cell));
-      }
-    }
+    const double reduce_sum =
+        (source_sum() + add * static_cast<double>(total_values)) * mul;
 
     if (stats) {
       stats->last_allocations = allocations;

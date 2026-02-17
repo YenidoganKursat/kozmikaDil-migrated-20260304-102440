@@ -16,6 +16,7 @@
 
 #include "spark/ast.h"
 #include "spark/codegen.h"
+#include "spark/cpu_features.h"
 #include "spark/evaluator.h"
 #include "spark/parser.h"
 #include "spark/semantic.h"

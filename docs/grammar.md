@@ -6,14 +6,19 @@ The language uses Python-like indentation for blocks and Python-flavored stateme
 
 ```ebnf
 program        -> statement*
-statement      -> class_def | function_def | if_stmt | while_stmt | for_stmt | return_stmt | assignment | expression_stmt
+statement      -> class_def | function_def | async_function_def | with_task_group_stmt
+               | if_stmt | while_stmt | for_stmt | async_for_stmt
+               | return_stmt | assignment | expression_stmt
 class_def      -> "class" IDENTIFIER [ "(" ( "open" | "slots" ) ")" ] ":" NEWLINE INDENT block
 function_def   -> "def" IDENTIFIER "(" [param_list] ")" ":" NEWLINE INDENT block
+async_function_def -> ("async def" | "async fn") IDENTIFIER "(" [param_list] ")" ":" NEWLINE INDENT block
+with_task_group_stmt -> "with task_group" ["(" expression ")"] "as" IDENTIFIER ":" NEWLINE INDENT block
 param_list     -> IDENTIFIER ("," IDENTIFIER)*
 return_stmt    -> "return" [expression]
 if_stmt        -> "if" expression ":" NEWLINE INDENT block {"elif" expression ":" NEWLINE INDENT block} ["else" ":" NEWLINE INDENT block]
 while_stmt     -> "while" expression ":" NEWLINE INDENT block
 for_stmt       -> "for" IDENTIFIER "in" expression ":" NEWLINE INDENT block
+async_for_stmt -> "async for" IDENTIFIER "in" expression ":" NEWLINE INDENT block
 assignment     -> IDENTIFIER "=" expression
 expression_stmt -> expression
 block          -> (statement NEWLINE)*
@@ -29,7 +34,7 @@ equality_expr  -> comparison_expr (("==" | "!=") comparison_expr)*
 comparison_expr-> term (("<" | "<=" | ">" | ">=") term)*
 term           -> factor (("+" | "-") factor)*
 factor         -> unary (("*" | "/" | "%") unary)*
-unary          -> ("-" | "not") unary | call_or_atom
+unary          -> ("-" | "not" | "await") unary | call_or_atom
 call_or_atom   -> atom (call_or_index)*
 call_or_index  -> "(" [arg_list] ")" | "[" expression "]" | "." IDENTIFIER
 arg_list       -> expression ("," expression)*
@@ -52,14 +57,25 @@ matrix_rows    -> list_expr (";" list_expr)*
 - `IDENTIFIER`: `[A-Za-z_][A-Za-z0-9_]*`
 - `NUMBER`: integer and float literals
 - `TRUE` / `FALSE`
+- unary keywords: `not`, `await`
 - comments: `# ...` till end of line
 
-### Known unsupported syntax (Phase 2)
+### Concurrency Runtime Builtins (Phase 9)
 
-- No class inheritance
-- No async/concurrency
-- No comprehensions, lambdas, generators
-- No mutation by index assignment (`x[i] = ...`)
+- Task primitives:
+  - `spawn(fn, ...)`
+  - `join(task [, timeout_ms])`
+  - `deadline(timeout_ms)` (timeout/deadline alias helper)
+  - `cancel(task)`
+  - `task_group([timeout_ms])`
+- Parallel primitives:
+  - `parallel_for(start, stop, fn [, extra...])`
+  - `par_map(list, fn)`
+  - `par_reduce(list, init, fn)`
+- Event-driven primitives:
+  - `channel([capacity])`, `send(ch, v)`, `recv(ch [, timeout_ms])`, `close(ch)`
+  - `stream(ch)`, `anext(ch_or_stream [, timeout_ms])`
+  - channel methods: `.send()`, `.recv()`, `.anext()`, `.has_next()`, `.close()`, `.stats()`
 
 ### Phase 7 method-chain note
 

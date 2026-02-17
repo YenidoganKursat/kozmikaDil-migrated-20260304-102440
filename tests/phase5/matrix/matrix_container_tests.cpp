@@ -77,6 +77,15 @@ div = right / left
   phase5_test::expect_global_matrix_double(source, "div", 2, 2, {1.0, 0.5, 0.333333333333, 0.25});
 }
 
+void test_matrix_star_is_matmul() {
+  const char* source = R"(
+left = [[1, 2, 3]; [4, 5, 6]]
+right = [[7, 8]; [9, 10]; [11, 12]]
+out = left * right
+)";
+  phase5_test::expect_global_matrix(source, "out", 2, 2, {58, 64, 139, 154});
+}
+
 void test_matrix_mutate_by_slice() {
   const char* source = R"(
 mat = [[1, 2, 3]; [4, 5, 6]]
@@ -105,6 +114,7 @@ void run_matrix_container_tests() {
   test_matrix_row_and_column_slice();
   test_matrix_block_slice();
   test_matrix_elementwise_arithmetic();
+  test_matrix_star_is_matmul();
   test_matrix_mutate_by_slice();
   test_matrix_transpose();
   test_matrix_for_loop_rows();

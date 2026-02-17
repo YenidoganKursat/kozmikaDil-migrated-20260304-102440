@@ -41,6 +41,14 @@ struct TierSummary {
   std::vector<spark::TierRecord> blocking_records;
 };
 
+struct BuildTuningOptions {
+  std::string target_triple;
+  std::string sysroot;
+  std::string lto_mode;
+  std::string pgo_mode;
+  std::string pgo_profile;
+};
+
 struct TempFileRegistry {
   ~TempFileRegistry() {
     for (const auto& path : paths_) {
@@ -172,6 +180,17 @@ std::vector<std::string> resolve_native_cxx_flags() {
     }
   }
 
+  if (const auto* target = std::getenv("SPARK_TARGET_TRIPLE")) {
+    if (*target != '\0') {
+      append_if_missing(flags, "--target=" + std::string(target));
+    }
+  }
+  if (const auto* sysroot = std::getenv("SPARK_SYSROOT")) {
+    if (*sysroot != '\0') {
+      append_if_missing(flags, "--sysroot=" + std::string(sysroot));
+    }
+  }
+
   return flags;
 }
 
@@ -201,6 +220,96 @@ void write_file(const std::filesystem::path& path, const std::string& data) {
     throw std::runtime_error("failed to open output file: " + path.string());
   }
   out << data;
+}
+
+std::string layout_tag_to_string(spark::Value::LayoutTag tag) {
+  switch (tag) {
+    case spark::Value::LayoutTag::Unknown:
+      return "Unknown";
+    case spark::Value::LayoutTag::PackedInt:
+      return "PackedInt";
+    case spark::Value::LayoutTag::PackedDouble:
+      return "PackedDouble";
+    case spark::Value::LayoutTag::PromotedPackedDouble:
+      return "PromotedPackedDouble";
+    case spark::Value::LayoutTag::ChunkedUnion:
+      return "ChunkedUnion";
+    case spark::Value::LayoutTag::GatherScatter:
+      return "GatherScatter";
+    case spark::Value::LayoutTag::BoxedAny:
+      return "BoxedAny";
+  }
+  return "Unknown";
+}
+
+void apply_build_tuning_env(const BuildTuningOptions& options) {
+  if (!options.target_triple.empty()) {
+    setenv("SPARK_TARGET_TRIPLE", options.target_triple.c_str(), 1);
+  }
+  if (!options.sysroot.empty()) {
+    setenv("SPARK_SYSROOT", options.sysroot.c_str(), 1);
+  }
+  if (!options.lto_mode.empty()) {
+    setenv("SPARK_LTO", options.lto_mode.c_str(), 1);
+  }
+  if (!options.pgo_mode.empty()) {
+    setenv("SPARK_PGO", options.pgo_mode.c_str(), 1);
+  }
+  if (!options.pgo_profile.empty()) {
+    setenv("SPARK_PGO_PROFILE", options.pgo_profile.c_str(), 1);
+  }
+}
+
+bool target_matches_host(const std::string& target_triple) {
+  if (target_triple.empty()) {
+    return true;
+  }
+  const auto host = spark::detect_cpu_features();
+  const std::string arch = host.arch.empty() ? "unknown" : host.arch;
+  if (arch == "unknown") {
+    return true;
+  }
+  return target_triple.find(arch) != std::string::npos;
+}
+
+void print_layout_summary(const spark::Interpreter& interpreter) {
+  auto globals = interpreter.snapshot_globals();
+  std::vector<std::string> names;
+  names.reserve(globals.size());
+  for (const auto& it : globals) {
+    names.push_back(it.first);
+  }
+  std::sort(names.begin(), names.end());
+  std::cout << "LayoutSummary:\n";
+  for (const auto& name : names) {
+    const auto iter = globals.find(name);
+    if (iter == globals.end()) {
+      continue;
+    }
+    const auto& value = iter->second;
+    if (value.kind == spark::Value::Kind::List) {
+      std::cout << "  " << name
+                << " kind=list"
+                << " plan=" << layout_tag_to_string(value.list_cache.plan)
+                << " live=" << (value.list_cache.live_plan ? "1" : "0")
+                << " analyze=" << value.list_cache.analyze_count
+                << " materialize=" << value.list_cache.materialize_count
+                << " cache_hits=" << value.list_cache.cache_hit_count
+                << " invalidations=" << value.list_cache.invalidation_count
+                << "\n";
+    } else if (value.kind == spark::Value::Kind::Matrix && value.matrix_value) {
+      std::cout << "  " << name
+                << " kind=matrix"
+                << " shape=" << value.matrix_value->rows << "x" << value.matrix_value->cols
+                << " plan=" << layout_tag_to_string(value.matrix_cache.plan)
+                << " live=" << (value.matrix_cache.live_plan ? "1" : "0")
+                << " analyze=" << value.matrix_cache.analyze_count
+                << " materialize=" << value.matrix_cache.materialize_count
+                << " cache_hits=" << value.matrix_cache.cache_hit_count
+                << " invalidations=" << value.matrix_cache.invalidation_count
+                << "\n";
+    }
+  }
 }
 
 bool parse_and_typecheck(const std::string& file_path, ProgramBundle& out) {

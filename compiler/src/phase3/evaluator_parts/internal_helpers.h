@@ -73,6 +73,28 @@ Value matrix_matmul_axpby_value(Value& lhs, const Value& rhs, const Value& alpha
 Value matrix_matmul_stats_value(const Value& matrix);
 Value matrix_matmul_schedule_value(const Value& matrix);
 
+// Phase9 concurrency runtime helpers.
+Value invoke_callable_sync(const Value& callee, const std::vector<Value>& args);
+Value spawn_task_value(const Value& callee, const std::vector<Value>& args,
+                       const std::shared_ptr<std::atomic<bool>>& cancel_token = nullptr);
+Value await_task_value(const Value& task, const std::optional<long long>& timeout_ms = std::nullopt);
+Value make_task_group_value(const std::optional<long long>& timeout_ms = std::nullopt);
+Value task_group_spawn_value(Value& group, const Value& callee, const std::vector<Value>& args);
+Value task_group_join_all_value(Value& group);
+Value task_group_cancel_all_value(Value& group);
+Value parallel_for_value(const Value& start, const Value& stop, const Value& fn, const std::vector<Value>& extra_args);
+Value par_map_value(const Value& list, const Value& fn);
+Value par_reduce_value(const Value& list, const Value& init, const Value& fn);
+Value scheduler_stats_value();
+Value channel_make_value(const std::optional<long long>& capacity = std::nullopt);
+Value channel_send_value(Value& channel, const Value& message);
+Value channel_recv_value(Value& channel, const std::optional<long long>& timeout_ms = std::nullopt);
+Value channel_close_value(Value& channel);
+Value channel_stats_value(const Value& channel);
+Value stream_value(Value& channel);
+Value stream_next_value(Value& stream, const std::optional<long long>& timeout_ms = std::nullopt);
+Value stream_has_next_value(const Value& stream);
+
 bool all_rows_have_same_type(const std::vector<Value>& row_values, bool& force_double);
 std::optional<Value> evaluate_as_matrix_literal(const ExprEvaluator& evaluator, const ListExpr& list,
                                                const std::shared_ptr<Environment>& env);
@@ -141,5 +163,7 @@ Value execute_case_function_def(const FunctionDefStmt& stmt, Interpreter& self,
                                const std::shared_ptr<Environment>& env);
 Value execute_case_class_def(const ClassDefStmt& stmt, Interpreter& self,
                             const std::shared_ptr<Environment>& env);
+Value execute_case_with_task_group(const WithTaskGroupStmt& stmt, Interpreter& self,
+                                  const std::shared_ptr<Environment>& env);
 
 }  // namespace spark

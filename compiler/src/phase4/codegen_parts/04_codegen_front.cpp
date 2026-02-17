@@ -21,6 +21,10 @@ bool CodeGenerator::infer_top_level(const Program& program) {
   for (const auto& stmt : program.body) {
     if (stmt->kind == Stmt::Kind::FunctionDef) {
       const auto& fn = static_cast<const FunctionDefStmt&>(*stmt);
+      if (fn.is_async) {
+        add_error("async function definitions are unsupported in phase4 codegen: " + fn.name);
+        return false;
+      }
       FunctionSignature signature;
       signature.name = fn.name;
       signature.params = fn.params;
@@ -234,6 +238,9 @@ bool CodeGenerator::compile_stmt(const Stmt& stmt, FunctionContext& ctx) {
     }
     case Stmt::Kind::ClassDef:
       add_error("class definitions unsupported in phase4");
+      return false;
+    case Stmt::Kind::WithTaskGroup:
+      add_error("with task_group is unsupported in phase4 codegen");
       return false;
   }
   return true;
@@ -628,6 +635,10 @@ bool CodeGenerator::emit_range_loop_setup(const Expr& iterable, FunctionContext&
 }
 
 bool CodeGenerator::emit_for_statement(const ForStmt& for_stmt, FunctionContext& ctx) {
+  if (for_stmt.is_async) {
+    add_error("async for is unsupported in phase4 codegen");
+    return false;
+  }
   if (!for_stmt.iterable) {
     add_error("for loop requires an iterable expression");
     return false;

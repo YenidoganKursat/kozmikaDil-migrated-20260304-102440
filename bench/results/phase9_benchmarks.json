@@ -1,0 +1,447 @@
+{
+  "config": {
+    "runs": 5,
+    "warmup_runs": 1,
+    "sample_repeat": 3,
+    "drift_limit": 3.0,
+    "require_reproducible": false
+  },
+  "spawn_join": {
+    "name": "spawn_join_overhead",
+    "pass": true,
+    "checksum_ok": true,
+    "counters_ok": true,
+    "ns_per_task": 30724.916625331385,
+    "allocs_per_task_est": 1.0,
+    "status_ok": true,
+    "reproducible_ok": true,
+    "statuses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "timing": {
+      "sample_count": 5.0,
+      "median_time_sec": 0.2457993330026511,
+      "mean_time_sec": 0.2457151386673407,
+      "stdev_time_sec": 0.0028787665245770468,
+      "max_drift_percent": 1.48547677509312,
+      "reproducible": 1.0
+    },
+    "parsed": [
+      32004000.0,
+      8000.0,
+      8000.0,
+      8000.0
+    ],
+    "parse_error": "",
+    "output": "32004000\n8000\n8000\n8000\n"
+  },
+  "channel": {
+    "name": "channel_throughput",
+    "pass": true,
+    "checksum_ok": true,
+    "counters_ok": true,
+    "throughput_msg_per_s": 315131.5668420073,
+    "latency_ns": 3173.277783692659,
+    "allocs_per_msg_est": 1.0,
+    "status_ok": true,
+    "reproducible_ok": true,
+    "statuses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "timing": {
+      "sample_count": 5.0,
+      "median_time_sec": 0.19039666702155955,
+      "mean_time_sec": 0.1896357083460316,
+      "stdev_time_sec": 0.001490132789398369,
+      "max_drift_percent": 1.4933738409900728,
+      "reproducible": 1.0
+    },
+    "parsed": [
+      1800030000.0,
+      60000.0,
+      60000.0,
+      60000.0
+    ],
+    "parse_error": "",
+    "output": "1800030000\n60000\n60000\n60000\n"
+  },
+  "parallel_scaling": {
+    "name": "parallel_for_scaling",
+    "pass": true,
+    "scaling_ok": true,
+    "runs": [
+      {
+        "threads": 1,
+        "pass": true,
+        "checksum_ok": true,
+        "counters_ok": true,
+        "speedup_vs_1": 1.0,
+        "efficiency": 1.0,
+        "allocs_per_iter_est": 0.015625,
+        "status_ok": true,
+        "reproducible_ok": true,
+        "statuses": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "timing": {
+          "sample_count": 5.0,
+          "median_time_sec": 3.08303308399627,
+          "mean_time_sec": 3.0811084723294093,
+          "stdev_time_sec": 0.011969381257556502,
+          "max_drift_percent": 0.5660430016267736,
+          "reproducible": 1.0
+        },
+        "parsed": [
+          4194304.0,
+          4096.0,
+          1.0,
+          64.0,
+          64.0,
+          0.0
+        ],
+        "parse_error": "",
+        "output": "4194304\n4096\n1\n64\n64\n0\n"
+      },
+      {
+        "threads": 2,
+        "pass": true,
+        "checksum_ok": true,
+        "counters_ok": true,
+        "speedup_vs_1": 1.7926761039100696,
+        "efficiency": 0.8963380519550348,
+        "allocs_per_iter_est": 0.015625,
+        "status_ok": true,
+        "reproducible_ok": true,
+        "statuses": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "timing": {
+          "sample_count": 5.0,
+          "median_time_sec": 1.7197937080054544,
+          "mean_time_sec": 1.726099389003745,
+          "stdev_time_sec": 0.017405343762509767,
+          "max_drift_percent": 1.748133619176721,
+          "reproducible": 1.0
+        },
+        "parsed": [
+          4194304.0,
+          4096.0,
+          2.0,
+          64.0,
+          64.0,
+          0.0
+        ],
+        "parse_error": "",
+        "output": "4194304\n4096\n2\n64\n64\n0\n"
+      },
+      {
+        "threads": 4,
+        "pass": true,
+        "checksum_ok": true,
+        "counters_ok": true,
+        "speedup_vs_1": 2.91266820784147,
+        "efficiency": 0.7281670519603675,
+        "allocs_per_iter_est": 0.015625,
+        "status_ok": true,
+        "reproducible_ok": true,
+        "statuses": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "timing": {
+          "sample_count": 5.0,
+          "median_time_sec": 1.0584910000034142,
+          "mean_time_sec": 1.073808611331818,
+          "stdev_time_sec": 0.022082570330091356,
+          "max_drift_percent": 4.397317406062308,
+          "reproducible": 0.0
+        },
+        "parsed": [
+          4194304.0,
+          4096.0,
+          4.0,
+          64.0,
+          64.0,
+          3.0
+        ],
+        "parse_error": "",
+        "output": "4194304\n4096\n4\n64\n64\n3\n"
+      },
+      {
+        "threads": 8,
+        "pass": true,
+        "checksum_ok": true,
+        "counters_ok": true,
+        "speedup_vs_1": 4.359745492490252,
+        "efficiency": 0.5449681865612815,
+        "allocs_per_iter_est": 0.015625,
+        "status_ok": true,
+        "reproducible_ok": true,
+        "statuses": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "timing": {
+          "sample_count": 5.0,
+          "median_time_sec": 0.707158959005028,
+          "mean_time_sec": 0.7082437780045439,
+          "stdev_time_sec": 0.004569507825093364,
+          "max_drift_percent": 1.0102807709642014,
+          "reproducible": 1.0
+        },
+        "parsed": [
+          4194304.0,
+          4096.0,
+          8.0,
+          64.0,
+          64.0,
+          7.0
+        ],
+        "parse_error": "",
+        "output": "4194304\n4096\n8\n64\n64\n7\n"
+      }
+    ]
+  },
+  "chunk_sweep": {
+    "name": "par_reduce_chunk",
+    "pass": true,
+    "best_chunk": 128,
+    "best_time_sec": 0.29730912498780526,
+    "runs": [
+      {
+        "chunk": 64,
+        "pass": true,
+        "checksum_ok": true,
+        "status_ok": true,
+        "reproducible_ok": true,
+        "statuses": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "timing": {
+          "sample_count": 5.0,
+          "median_time_sec": 0.30619400000432506,
+          "mean_time_sec": 0.3064355000096839,
+          "stdev_time_sec": 0.001676109817312943,
+          "max_drift_percent": 0.7852456291613085,
+          "reproducible": 1.0
+        },
+        "parsed": [
+          8796440049180.0,
+          8192.0
+        ],
+        "parse_error": "",
+        "output": "8796440049180\n8192\n"
+      },
+      {
+        "chunk": 128,
+        "pass": true,
+        "checksum_ok": true,
+        "status_ok": true,
+        "reproducible_ok": true,
+        "statuses": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "timing": {
+          "sample_count": 5.0,
+          "median_time_sec": 0.29730912498780526,
+          "mean_time_sec": 0.2975447356584482,
+          "stdev_time_sec": 0.0011102487558599123,
+          "max_drift_percent": 0.5710524400393524,
+          "reproducible": 1.0
+        },
+        "parsed": [
+          8796440049180.0,
+          8192.0
+        ],
+        "parse_error": "",
+        "output": "8796440049180\n8192\n"
+      },
+      {
+        "chunk": 256,
+        "pass": true,
+        "checksum_ok": true,
+        "status_ok": true,
+        "reproducible_ok": true,
+        "statuses": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "timing": {
+          "sample_count": 5.0,
+          "median_time_sec": 0.319406374997925,
+          "mean_time_sec": 0.3176255139987916,
+          "stdev_time_sec": 0.003313405953055423,
+          "max_drift_percent": 2.011504935889533,
+          "reproducible": 1.0
+        },
+        "parsed": [
+          8796440049180.0,
+          8192.0
+        ],
+        "parse_error": "",
+        "output": "8796440049180\n8192\n"
+      },
+      {
+        "chunk": 512,
+        "pass": true,
+        "checksum_ok": true,
+        "status_ok": true,
+        "reproducible_ok": true,
+        "statuses": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "timing": {
+          "sample_count": 5.0,
+          "median_time_sec": 0.3444336669926997,
+          "mean_time_sec": 0.3469649306692493,
+          "stdev_time_sec": 0.003885021099370185,
+          "max_drift_percent": 2.328459955272175,
+          "reproducible": 1.0
+        },
+        "parsed": [
+          8796440049180.0,
+          8192.0
+        ],
+        "parse_error": "",
+        "output": "8796440049180\n8192\n"
+      }
+    ]
+  }
+}

@@ -1,0 +1,206 @@
+{
+  "cases": [
+    {
+      "program": "bench/programs/phase4/scalar_axpy_int.k",
+      "interpret_status": 0,
+      "native_status": 0,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_output": "7500050000",
+      "native_output": "7500050000"
+    },
+    {
+      "program": "bench/programs/phase4/scalar_bool.k",
+      "interpret_status": 0,
+      "native_status": 0,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_output": "16666",
+      "native_output": "16666"
+    },
+    {
+      "program": "bench/programs/phase4/scalar_branches.k",
+      "interpret_status": 0,
+      "native_status": 0,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_output": "21",
+      "native_output": "21"
+    },
+    {
+      "program": "bench/programs/phase4/scalar_call_chain.k",
+      "interpret_status": 0,
+      "native_status": 0,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_output": "5000100000",
+      "native_output": "5000100000"
+    },
+    {
+      "program": "bench/programs/phase4/scalar_f64.k",
+      "interpret_status": 0,
+      "native_status": 0,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_output": "1250012500",
+      "native_output": "1250012500"
+    },
+    {
+      "program": "bench/programs/phase4/scalar_for_range.k",
+      "interpret_status": 0,
+      "native_status": 0,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_output": "41665416675000",
+      "native_output": "41665416675000"
+    },
+    {
+      "program": "bench/programs/phase4/scalar_for_range_branch.k",
+      "interpret_status": 0,
+      "native_status": 0,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_output": "625025000",
+      "native_output": "625025000"
+    },
+    {
+      "program": "bench/programs/phase4/scalar_for_range_mul.k",
+      "interpret_status": 0,
+      "native_status": 0,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_output": "134550",
+      "native_output": "134550"
+    },
+    {
+      "program": "bench/programs/phase4/scalar_functions.k",
+      "interpret_status": 0,
+      "native_status": 0,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_output": "41665416675000",
+      "native_output": "41665416675000"
+    },
+    {
+      "program": "bench/programs/phase4/scalar_if_chain.k",
+      "interpret_status": 0,
+      "native_status": 0,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_output": "149970",
+      "native_output": "149970"
+    },
+    {
+      "program": "bench/programs/phase4/scalar_if_else.k",
+      "interpret_status": 0,
+      "native_status": 0,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_output": "10",
+      "native_output": "10"
+    },
+    {
+      "program": "bench/programs/phase4/scalar_matrix_like_guard.k",
+      "interpret_status": 0,
+      "native_status": 0,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_output": "18",
+      "native_output": "18"
+    },
+    {
+      "program": "bench/programs/phase4/scalar_nested_calls.k",
+      "interpret_status": 0,
+      "native_status": 0,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_output": "8",
+      "native_output": "8"
+    },
+    {
+      "program": "bench/programs/phase4/scalar_parity.k",
+      "interpret_status": 0,
+      "native_status": 0,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_output": "-1",
+      "native_output": "-1"
+    },
+    {
+      "program": "bench/programs/phase4/scalar_sum.k",
+      "interpret_status": 0,
+      "native_status": 0,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_output": "19999900000",
+      "native_output": "19999900000"
+    },
+    {
+      "program": "bench/programs/phase4/scalar_sum_large.k",
+      "interpret_status": 0,
+      "native_status": 0,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_output": "61249825000",
+      "native_output": "61249825000"
+    },
+    {
+      "program": "bench/programs/phase4/scalar_sum_small.k",
+      "interpret_status": 0,
+      "native_status": 0,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_output": "1249975000",
+      "native_output": "1249975000"
+    },
+    {
+      "program": "bench/programs/phase4/scalar_while_branch.k",
+      "interpret_status": 0,
+      "native_status": 0,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_output": "149965",
+      "native_output": "149965"
+    },
+    {
+      "program": "bench/programs/phase4/scalar_while_decr.k",
+      "interpret_status": 0,
+      "native_status": 0,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_output": "83332",
+      "native_output": "83332"
+    },
+    {
+      "program": "bench/programs/phase4/scalar_while_if.k",
+      "interpret_status": 0,
+      "native_status": 0,
+      "status_ok": true,
+      "equal_output": true,
+      "pass": true,
+      "interpret_output": "25000",
+      "native_output": "25000"
+    }
+  ],
+  "total": 20,
+  "passed": 20
+}

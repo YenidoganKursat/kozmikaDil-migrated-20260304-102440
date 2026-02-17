@@ -29,6 +29,12 @@ std::string Value::to_string() const {
       return "<fn>";
     case Kind::Builtin:
       return "<builtin " + builtin_value->name + ">";
+    case Kind::Task:
+      return "<task>";
+    case Kind::TaskGroup:
+      return "<task_group>";
+    case Kind::Channel:
+      return "<channel>";
     case Kind::Matrix:
       if (!matrix_value) {
         return "<invalid matrix>";
@@ -71,6 +77,12 @@ bool Value::equals(const Value& other) const {
       return function_value == other.function_value;
     case Kind::Builtin:
       return builtin_value == other.builtin_value;
+    case Kind::Task:
+      return task_value == other.task_value;
+    case Kind::TaskGroup:
+      return task_group_value == other.task_group_value;
+    case Kind::Channel:
+      return channel_value == other.channel_value;
     case Kind::Matrix: {
       if (!matrix_value || !other.matrix_value) {
         return matrix_value == other.matrix_value;

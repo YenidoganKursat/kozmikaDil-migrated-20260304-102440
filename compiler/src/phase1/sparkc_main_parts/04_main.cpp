@@ -2,8 +2,12 @@
 void print_usage() {
   std::cerr << "usage:\n"
             << "  sparkc run <file.k>\n"
-            << "  sparkc run [--interpret] [--allow-t5] <file.k>\n"
+            << "  sparkc run [--interpret] [--allow-t5] [--explain-layout]\n"
+            << "            [--target <triple>] [--sysroot <path>] [--lto <mode>]\n"
+            << "            [--pgo <instrument|use>] [--pgo-profile <path>] <file.k>\n"
             << "  sparkc build <file.k> [--allow-t5] [-o <out_binary>]\n"
+            << "              [--target <triple>] [--sysroot <path>] [--lto <mode>]\n"
+            << "              [--pgo <instrument|use>] [--pgo-profile <path>]\n"
             << "  sparkc compile <file.k>\n"
             << "  sparkc compile <file.k> --emit-c [--emit-c-out <path>]\n"
             << "  sparkc compile <file.k> --emit-asm [--out <path>]  (C->assembly)\n"
@@ -12,6 +16,9 @@ void print_usage() {
             << "  sparkc check <file.k>\n"
             << "  sparkc analyze <file.k> [--dump-types] [--dump-shapes] [--dump-tiers|--dump-tier]\n"
             << "                            [--dump-pipeline-ir] [--dump-fusion-plan] [--why-not-fused]\n"
+            << "                            [--dump-async-sm] [--dump-layout|--explain-layout]\n"
+            << "  sparkc env --print-cpu-features\n"
+            << "  sparkc --print-cpu-features\n"
             << "  sparkc <file.k>               (legacy: run)\n";
 }
 
@@ -23,6 +30,20 @@ int main(int argc, char** argv) {
 
   const std::string command = argv[1];
   try {
+    if (command == "--print-cpu-features") {
+      std::cout << spark::cpu_feature_report();
+      return 0;
+    }
+
+    if (command == "env") {
+      if (argc != 3 || std::string(argv[2]) != "--print-cpu-features") {
+        print_usage();
+        return 1;
+      }
+      std::cout << spark::cpu_feature_report();
+      return 0;
+    }
+
     if (command == "parse") {
       if (argc < 3) {
         print_usage();
@@ -69,6 +90,8 @@ int main(int argc, char** argv) {
       bool dump_pipeline_ir = false;
       bool dump_fusion_plan = false;
       bool dump_why_not_fused = false;
+      bool dump_async_sm = false;
+      bool dump_layout = false;
       std::string file_path;
       for (int i = 2; i < argc; ++i) {
         const std::string arg = argv[i];
@@ -96,6 +119,14 @@ int main(int argc, char** argv) {
           dump_why_not_fused = true;
           continue;
         }
+        if (arg == "--dump-async-sm") {
+          dump_async_sm = true;
+          continue;
+        }
+        if (arg == "--dump-layout" || arg == "--explain-layout") {
+          dump_layout = true;
+          continue;
+        }
         if (!file_path.empty()) {
           std::cerr << "unexpected extra argument: " << arg << "\n";
           print_usage();
@@ -108,7 +139,8 @@ int main(int argc, char** argv) {
         return 1;
       }
       return analyze_mode_main(file_path, dump_types, dump_shapes, dump_tiers,
-                               dump_pipeline_ir, dump_fusion_plan, dump_why_not_fused);
+                               dump_pipeline_ir, dump_fusion_plan, dump_why_not_fused,
+                               dump_async_sm, dump_layout);
     }
 
     if (command == "compile") {
@@ -178,6 +210,7 @@ int main(int argc, char** argv) {
       }
       std::string output_path = "a.out";
       bool allow_t5_codegen = false;
+      BuildTuningOptions tuning;
       std::string file_path;
       for (int i = 2; i < argc; ++i) {
         const std::string arg = argv[i];
@@ -194,6 +227,71 @@ int main(int argc, char** argv) {
           allow_t5_codegen = true;
           continue;
         }
+        if (arg == "--target") {
+          if (i + 1 >= argc) {
+            std::cerr << "--target requires a target triple\n";
+            return 1;
+          }
+          tuning.target_triple = argv[i + 1];
+          ++i;
+          continue;
+        }
+        if (arg.rfind("--target=", 0) == 0) {
+          tuning.target_triple = arg.substr(std::string("--target=").size());
+          continue;
+        }
+        if (arg == "--sysroot") {
+          if (i + 1 >= argc) {
+            std::cerr << "--sysroot requires a path\n";
+            return 1;
+          }
+          tuning.sysroot = argv[i + 1];
+          ++i;
+          continue;
+        }
+        if (arg.rfind("--sysroot=", 0) == 0) {
+          tuning.sysroot = arg.substr(std::string("--sysroot=").size());
+          continue;
+        }
+        if (arg == "--lto") {
+          if (i + 1 >= argc) {
+            std::cerr << "--lto requires mode (thin|full)\n";
+            return 1;
+          }
+          tuning.lto_mode = argv[i + 1];
+          ++i;
+          continue;
+        }
+        if (arg.rfind("--lto=", 0) == 0) {
+          tuning.lto_mode = arg.substr(std::string("--lto=").size());
+          continue;
+        }
+        if (arg == "--pgo") {
+          if (i + 1 >= argc) {
+            std::cerr << "--pgo requires mode (instrument|use)\n";
+            return 1;
+          }
+          tuning.pgo_mode = argv[i + 1];
+          ++i;
+          continue;
+        }
+        if (arg.rfind("--pgo=", 0) == 0) {
+          tuning.pgo_mode = arg.substr(std::string("--pgo=").size());
+          continue;
+        }
+        if (arg == "--pgo-profile") {
+          if (i + 1 >= argc) {
+            std::cerr << "--pgo-profile requires profile path\n";
+            return 1;
+          }
+          tuning.pgo_profile = argv[i + 1];
+          ++i;
+          continue;
+        }
+        if (arg.rfind("--pgo-profile=", 0) == 0) {
+          tuning.pgo_profile = arg.substr(std::string("--pgo-profile=").size());
+          continue;
+        }
         if (!file_path.empty()) {
           std::cerr << "unexpected extra argument: " << arg << "\n";
           print_usage();
@@ -205,7 +303,7 @@ int main(int argc, char** argv) {
         print_usage();
         return 1;
       }
-      return build_mode_main(file_path, output_path, allow_t5_codegen);
+      return build_mode_main(file_path, output_path, allow_t5_codegen, tuning);
     }
 
     if (command == "run") {
@@ -215,6 +313,8 @@ int main(int argc, char** argv) {
       }
       bool force_interpreter = false;
       bool allow_t5_codegen = false;
+      bool explain_layout = false;
+      BuildTuningOptions tuning;
       std::string file_path;
       for (int i = 2; i < argc; ++i) {
         const std::string arg = argv[i];
@@ -226,6 +326,75 @@ int main(int argc, char** argv) {
           allow_t5_codegen = true;
           continue;
         }
+        if (arg == "--explain-layout") {
+          explain_layout = true;
+          continue;
+        }
+        if (arg == "--target") {
+          if (i + 1 >= argc) {
+            std::cerr << "--target requires a target triple\n";
+            return 1;
+          }
+          tuning.target_triple = argv[i + 1];
+          ++i;
+          continue;
+        }
+        if (arg.rfind("--target=", 0) == 0) {
+          tuning.target_triple = arg.substr(std::string("--target=").size());
+          continue;
+        }
+        if (arg == "--sysroot") {
+          if (i + 1 >= argc) {
+            std::cerr << "--sysroot requires a path\n";
+            return 1;
+          }
+          tuning.sysroot = argv[i + 1];
+          ++i;
+          continue;
+        }
+        if (arg.rfind("--sysroot=", 0) == 0) {
+          tuning.sysroot = arg.substr(std::string("--sysroot=").size());
+          continue;
+        }
+        if (arg == "--lto") {
+          if (i + 1 >= argc) {
+            std::cerr << "--lto requires mode (thin|full)\n";
+            return 1;
+          }
+          tuning.lto_mode = argv[i + 1];
+          ++i;
+          continue;
+        }
+        if (arg.rfind("--lto=", 0) == 0) {
+          tuning.lto_mode = arg.substr(std::string("--lto=").size());
+          continue;
+        }
+        if (arg == "--pgo") {
+          if (i + 1 >= argc) {
+            std::cerr << "--pgo requires mode (instrument|use)\n";
+            return 1;
+          }
+          tuning.pgo_mode = argv[i + 1];
+          ++i;
+          continue;
+        }
+        if (arg.rfind("--pgo=", 0) == 0) {
+          tuning.pgo_mode = arg.substr(std::string("--pgo=").size());
+          continue;
+        }
+        if (arg == "--pgo-profile") {
+          if (i + 1 >= argc) {
+            std::cerr << "--pgo-profile requires profile path\n";
+            return 1;
+          }
+          tuning.pgo_profile = argv[i + 1];
+          ++i;
+          continue;
+        }
+        if (arg.rfind("--pgo-profile=", 0) == 0) {
+          tuning.pgo_profile = arg.substr(std::string("--pgo-profile=").size());
+          continue;
+        }
         if (!file_path.empty()) {
           std::cerr << "unexpected extra argument: " << arg << "\n";
           print_usage();
@@ -237,11 +406,11 @@ int main(int argc, char** argv) {
         print_usage();
         return 1;
       }
-      return run_mode_main(file_path, force_interpreter, allow_t5_codegen);
+      return run_mode_main(file_path, force_interpreter, allow_t5_codegen, explain_layout, tuning);
     }
 
     // Legacy: sparkc <file.k> as run.
-    return run_mode_main(command, false, false);
+    return run_mode_main(command, false, false, false, BuildTuningOptions{});
   } catch (const std::exception& err) {
     std::cerr << "error: " << err.what() << "\n";
   }
