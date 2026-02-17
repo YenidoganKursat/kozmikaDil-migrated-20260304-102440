@@ -1,0 +1,4 @@
+group,pass,speedup_ok,overhead_ok,first_vs_steady,steady_vs_packed
+promote,PASS,1,1,74.01652805350214,1.118145264786629
+chunk,PASS,1,1,79.17213545428756,1.232199929729978
+gather,PASS,1,1,76.05993284257563,1.3209439357411052

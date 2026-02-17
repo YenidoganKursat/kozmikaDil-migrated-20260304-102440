@@ -1,0 +1,4 @@
+add_executable(spark_bench_scalar_c bench_scalar.c)
+add_executable(spark_bench_list_c bench_list.c)
+add_executable(spark_bench_matrix_elemwise_c bench_matrix_elemwise.c)
+add_executable(spark_bench_matmul_c bench_matmul.c)

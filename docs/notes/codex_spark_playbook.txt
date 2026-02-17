@@ -1,0 +1,906 @@
+ULTRA-PERFORMANCE PYTHONIC LANGUAGE — CODEX 5.3-CODEX-SPARK EXECUTION PLAYBOOK (Ubuntu)
+Version: 0.1 (living document)
+Audience: Codex 5.3-Codex-Spark acting as a senior compiler/runtime engineer.
+Primary constraint: Build time is cheap; runtime performance is expensive.
+Primary deliverable: A new language + compiler + runtime that feels Python/MATLAB-simple but hits near-hardware limits for list/matrix-heavy workloads.
+
+-------------------------------------------------------------------------------
+0) YOUR ROLE (CODEX) + OPERATING MODE
+-------------------------------------------------------------------------------
+You (Codex) are an engineering agent. Execute this playbook in phases. Do not jump ahead.
+For each phase:
+  - Create a short “Phase Plan” (tasks, choices, risks).
+  - Implement or prototype what is required.
+  - Run the verification checklist.
+  - Produce a “Phase Report” with measured results and a GO/NO-GO recommendation.
+  - STOP and ask the human to approve moving to the next phase.
+
+Rules:
+  - Prefer primary sources (papers, official docs) for design decisions.
+  - Prefer correctness and measured speedups over speculation.
+  - Maintain a reproducible benchmark harness from Phase 1 onward.
+  - “Fast” means: fewer allocations, fewer passes, fewer branches, fewer cache misses, higher bandwidth utilization.
+  - Assume multi-CPU targets (x86_64, aarch64, riscv64). Optimize for baseline + multiversion dispatch.
+  - Never introduce “performance hacks” that can silently change numerical results without a verification gate.
+
+-------------------------------------------------------------------------------
+1) REQUIREMENTS (EXTRACTED FROM FULL CONVERSATION) — DO NOT DROP ANY
+-------------------------------------------------------------------------------
+User-visible goals (non-negotiable):
+  [R1] Python-like syntax (close to Python; MATLAB-like ease for math).
+  [R2] Multiparadigm: OOP + Functional + Data-Oriented + Event-Driven built-in.
+  [R3] Classes can accept variable/optional inputs like Python (dynamic-ish).
+  [R4] First-class math: matrices/lists are central; extremely fast numeric/data workloads.
+  [R5] Built-in float types: f8, f16, f32, f64, f128, f256, f512 (and optionally bf16).
+  [R6] Primitive baseline: Int (at least i64) and Double (f64) exist and are fast.
+  [R7] A single “List” primitive can hold primitives + objects; supports homo/hetero.
+  [R8] Object create/access/replace/delete/copy should be near-zero cost when feasible.
+  [R9] Language is natively parallel + async-friendly (low overhead concurrency).
+  [R10] Memory management must be “innovative” and a differentiator.
+  [R11] Runs on (almost) every CPU without serious performance loss.
+  [R12] Build time is not important; runtime performance is paramount.
+  [R13] Functional pipeline performance must be maximal (fusion, no intermediates).
+  [R14] Matrix/list ops: indexing, iteration, replace, delete, matmul, slicing must avoid slowdowns.
+  [R15] Heterogeneous lists/matrices must “work”, but fast paths for homogeneous must hit near-max.
+  [R16] If a technique risks wrong results, either (a) prove/safeguard it in compile-time layers or
+       (b) don’t use it for the “fast/perf tier”.
+
+Engineering constraints (derived):
+  [E1] We can create multiple layers/tiers (T0..Tn). Each tier has one main responsibility.
+  [E2] Heavy compile-time analyses are allowed: whole-program, auto-tuning, profile-guided, multi-versioning.
+  [E3] Target portability must not rely on a slow “one-size-fits-all” runtime; prefer AOT per target + dispatch.
+
+-------------------------------------------------------------------------------
+2) REALITY CHECK — “DOABLE” VS “NOT GUARANTEED / PHYSICALLY LIMITED”
+-------------------------------------------------------------------------------
+You must keep expectations realistic while still pushing aggressively.
+
+Doable:
+  - Be 2×–10× faster than *naïve* C for many list/matrix pipelines by eliminating passes/allocations
+    (fusion), improving locality, and auto-scheduling (inspired by Weld/stream fusion/Halide/TVM).
+  - Reach parity with optimized C for many scalar/array loops (LLVM+LTO+PGO, good layouts).
+  - Approach vendor-library performance on some kernels via tiling + auto-tuning; or call vendor libs.
+
+Not guaranteed (treat as “cannot guarantee across all workloads”):
+  - “Always 4–5× faster than the best hand-tuned C/ASM for every program.”
+    Peak is bounded by memory bandwidth, cache, ISA, and algorithmic limits.
+  - “Zero overhead” for fully general heterogeneity with arbitrary per-element operations.
+    You can move overhead out of hot loops via analyze+plan+materialize+cache, but not remove it universally.
+  - f128/f256/f512 being as fast as f64 on commodity CPUs (most will be software-emulated).
+    Provide them for correctness/precision; don’t promise speed.
+
+-------------------------------------------------------------------------------
+3) ACADEMIC/THEORETICAL BACKBONE — WHAT WE’RE BUILDING ON (READ + STEAL IDEAS)
+-------------------------------------------------------------------------------
+You must build the design around proven concepts. Use these as anchors:
+
+(Compilation + IR)
+  - MLIR (multi-level IR with extensible dialects; helps heterogenous targets and domain lowering). 
+    Ref: https://mlir.llvm.org/
+  - Multi-level verification dialects and tooling ideas (robustness for evolving IR stacks).
+    Ref: pldi25 “First-Class Verification Dialects for MLIR” (Fehr et al.)
+
+Array/pipeline optimization & schedule separation
+  - Halide: separate “algorithm” from “schedule”; scheduling should not change semantics.
+    Ref: halide12 paper (Ragan-Kelley et al.), and formal semantics work.
+  - Weld: a common IR/runtime that fuses across library boundaries; big gains from reduced data movement.
+    Ref: CIDR’17 Weld paper (Palkar et al.), and follow-up works.
+  - Stream Fusion: deforestation for list pipelines; eliminate intermediate lists.
+    Ref: Coutts/Leshchinskiy/Stewart (2007), and follow-ups.
+
+Functional array languages / performance portability
+  - Futhark: purely functional data-parallel arrays; race-free semantics; compiler transforms for performance.
+    Ref: PLDI’17 Futhark paper + thesis/book.
+
+Kernel / tiling compilers (matrix-heavy)
+  - Triton: tiled IR/compiler for matrix/tensor kernels; near vendor performance in some cases.
+    Ref: Tillet et al. (2019).
+  - TVM: end-to-end optimizing compiler; graph+operator fusion; auto-tuning/cost models.
+    Ref: Chen et al. (OSDI’18 / arXiv).
+
+Dynamic objects at speed (object model)
+  - V8 hidden classes (“Maps”) + inline caching: optimize property access by stabilizing shapes.
+    Ref: https://v8.dev/docs/hidden-classes and related shape/IC explanations.
+
+Memory management theory
+  - Region-based memory management (Tofte & Talpin, 1997).
+  - Cyclone regions (Grossman et al., 2002) and modern region/effect variants (e.g., Spegion 2025).
+
+Parallelism + scheduling
+  - Cilk work-stealing scheduler: efficient for well-structured parallelism; provable bounds.
+    Ref: Blumofe/Leiserson (1996), and later work.
+  - Structured concurrency (Swift, Kotlin): lifecycle-scoped tasks, cancellation, safety by structure.
+    Refs: Swift concurrency docs, Kotlin coroutine docs.
+
+Profile-guided + post-link optimization (build-time heavy is OK)
+  - AutoFDO (sample-based profiling -> FDO), Propeller (profile-guided relinking), BOLT (post-link optimizer).
+    These yield single-digit to sometimes double-digit % improvements beyond PGO/LTO in practice.
+
+-------------------------------------------------------------------------------
+4) CORE DESIGN DECISION (RECOMMENDED): “PYTHONIC SURFACE, STATIC PERF CORE”
+-------------------------------------------------------------------------------
+To reconcile Python feel with C-class performance, use a tiered design:
+
+T8: Surface language (Pythonic)
+  - Dynamic-feel syntax, flexible classes, convenience features.
+  - Allowed: hetero lists, open objects, dynamic calls.
+  - Promise: “it runs” + good defaults.
+
+T6: Adaptive runtime tier
+  - Performs analyze+plan steps for container layouts (homogeneous fast paths).
+  - Inserts guards once; never per-element checks in hot loops if avoidable.
+
+T4: Performance tier (“Perf Core”)
+  - Hot code must be stabilizable: known types/shapes/contiguity/effects.
+  - Disallows or strongly constrains features that prevent specialization.
+  - Goal: generate predictable, low-level code comparable to C/Fortran.
+
+T2: Kernel tier
+  - Very small “unsafe-ish” subset used by the compiler to express kernels.
+  - Any UB risk is contained here, never exposed to surface.
+
+T0: FFI/Intrinsics (optional)
+  - Optional for truly last-mile tuning (intrinsics, asm), but keep minimal.
+
+Key idea:
+  - Users write T8.
+  - Compiler + analyzer lowers to T4/T2 for hot regions automatically.
+  - When impossible, it falls back to slower paths *explicitly* and transparently (with diagnostics).
+
+-------------------------------------------------------------------------------
+5) LIST + MATRIX: MULTI-REPRESENTATION WITH STATE MACHINE (THE PERFORMANCE CENTERPIECE)
+-------------------------------------------------------------------------------
+Design List/Matrix as “one semantic type, many physical reps.”
+
+List semantic API:
+  - indexing: x[i]
+  - iteration: for v in x
+  - update: x[i] = ...
+  - append/pop/insert/delete/slice
+  - map/filter/reduce/zip/scan (must fuse when possible)
+
+Physical reps (choose dynamically or statically):
+  (L1) Packed[T]          : unboxed, contiguous, homogeneous
+  (L2) PackedNumeric[U]   : promoted numeric common type (e.g., i64->f64)
+  (L3) ChunkedUnion       : segments per type (good for iter-heavy hetero)
+  (L4) Boxed[Any]         : tagged cells / pointers (general fallback)
+  (L5) GatherScatterView  : typed views + index map (preserve order; fast kernels)
+  (L6) SmallList          : inline small-vector optimization (avoid heap for tiny lists)
+
+State machine transitions (core rule):
+  - Never pay per-element tag checks inside hot loops if a one-time analyze+materialize can avoid it.
+  - “Analyze once, cache plan”:
+      layout = analyze(x)
+      plan   = choose(layout, op)
+      x_rep  = materialize_if_needed(x, plan)
+      run fast kernel over x_rep
+      cache(x.layout_state = x_rep)
+
+Matrix reps:
+  (M1) Matrix[T] contiguous (row-major or column-major; pick one canonical; allow views/strides)
+  (M2) MatrixView[T] (slice/transpose) with strides; lower to contiguous when needed
+  (M3) BlockedMatrix[T] (tiling-friendly internal layout)
+  (M4) Sparse variants (future; optional, inspired by Taichi sparse structures)
+
+Rule for max performance:
+  - Matmul/conv/BLAS-like ops should operate on contiguous/blocked typed reps.
+  - If surface code creates hetero “matrix”, enforce an explicit normalize (or error in perf tier).
+
+-------------------------------------------------------------------------------
+6) OBJECT MODEL: “VALUE/SHAPE FIRST” FOR NEAR-ZERO COST
+-------------------------------------------------------------------------------
+Goal: make object creation and field access cheap by default.
+
+Three object modes (one semantic class system, multiple runtime reps):
+  (O1) Value Object (inlined / unboxed)
+      - stored directly in arrays/stack when it doesn’t escape.
+      - best for data-oriented and numeric-heavy code.
+  (O2) Handle Object (stable id/handle, movable storage)
+      - good locality; compaction possible; 1 indirection.
+  (O3) Open Object (dict/shape-changing)
+      - maximum flexibility; slow path.
+
+Shape system (borrow from V8 “Maps”):
+  - Each object carries a ShapeID.
+  - Field accesses compile to: guard(shape==X) then load at known offset.
+  - If megamorphic site: fallback to dictionary lookup or polymorphic inline cache.
+
+Key optimization gates:
+  - Escape analysis decides Value vs Handle vs Open.
+  - “Perf tier” restricts frequent shape changes; encourages sealed/slot-like objects.
+
+-------------------------------------------------------------------------------
+7) MEMORY MANAGEMENT: “HYBRID REGIONS + GENERATIONAL + ARENAS”
+-------------------------------------------------------------------------------
+You must differentiate on memory; the user demanded innovation.
+
+Recommended hybrid strategy:
+  - Fast arenas / bump allocators for short-lived allocations (expression temps, pipeline intermediates).
+  - Region inference or effect-based regions for large scopes (Tofte/Talpin lineage; Cyclone/Spegion ideas).
+  - Generational GC OR deferred refcounting ONLY for objects that truly need tracing.
+  - Pool allocators for uniform small objects.
+  - Copy/move compaction for handle objects to improve locality (optional; advanced).
+
+How this supports performance:
+  - Pipeline fusion reduces allocations; remaining allocations go to bump/region -> near-zero cost.
+  - Escape analysis + regionization means most temps never hit general heap.
+  - Hetero containers can normalize into packed buffers allocated in arenas.
+
+Correctness gates:
+  - Debug builds run sanitizers (ASan/UBSan/TSan where applicable).
+  - Perf tier forbids undefined behaviors; unsafe ops are isolated in T2 kernel tier.
+
+-------------------------------------------------------------------------------
+8) PARALLEL + ASYNC + EVENT-DRIVEN: “STRUCTURED + WORK-STEALING”
+-------------------------------------------------------------------------------
+Requirements: built-in parallelism and async that doesn’t kill performance.
+
+Model:
+  - Structured concurrency for async tasks (Swift/Kotlin style):
+      * tasks live inside scopes
+      * cancellation propagates
+      * clear lifetimes
+  - Work-stealing scheduler for fine-grained parallel tasks (Cilk style).
+  - Async/await compiles to state machines; avoid allocations for state machines when possible.
+  - Event loop primitives (channels, streams, async iterators).
+
+Safety/perf tier:
+  - “Sendable”-like trait/effect: what can cross threads.
+  - Ownership/uniqueness/effect system to prevent data races in perf-tier code.
+  - Zero-cost when used sequentially (no forced runtime checks in hot loops).
+
+-------------------------------------------------------------------------------
+9) PORTABILITY WITHOUT BIG PERF LOSS
+-------------------------------------------------------------------------------
+Approach:
+  - Use LLVM/MLIR to generate native code for multiple architectures.
+  - Produce “fat binaries”:
+      * baseline (portable ISA subset)
+      * tuned variants (AVX2/AVX-512 on x86; NEON/SVE on arm; etc.)
+      * runtime dispatch based on CPUID/HWCAP.
+  - For “runs everywhere” fallback, optionally support WebAssembly as a *compat mode*,
+    but do NOT claim it matches native peak everywhere.
+
+-------------------------------------------------------------------------------
+10) PERFORMANCE TOOLCHAIN: USE BUILD-TIME HEAVY OPTIONS
+-------------------------------------------------------------------------------
+Because build time is free, use:
+  - LTO/ThinLTO
+  - PGO (instrumentation or sampling)
+  - Post-link optimization (BOLT)
+  - Profile-guided relinking (Propeller-like workflow)
+  - Sample-based FDO (AutoFDO concepts)
+This can yield single-digit % improvements on top of already-optimized builds (sometimes more).
+
+-------------------------------------------------------------------------------
+11) BENCHMARKS + METRICS (GATING FOR EVERY PHASE)
+-------------------------------------------------------------------------------
+You must maintain a benchmark suite that covers:
+  (B1) scalar loops (int/double)
+  (B2) packed list iteration, map/reduce
+  (B3) hetero list: iterate, map, normalize then compute
+  (B4) matrix: matmul (various sizes), transpose, slicing views, reductions
+  (B5) pipeline: map->filter->map->reduce with fusion expected
+  (B6) object ops: create/access/update/copy/delete in tight loops
+  (B7) async/event: spawn tasks, channel throughput, cancellation overhead
+  (B8) parallel map/reduce: scaling curve
+
+Metrics to record:
+  - wall time, ns/op
+  - cycles/element, instructions/element
+  - branch-misses, cache-misses (L1/L2/LLC), bandwidth (GB/s)
+  - allocations/op, bytes allocated/op, peak RSS
+Tools:
+  - hyperfine, perf stat, perf record + flamegraph, heaptrack, valgrind/callgrind (as needed)
+
+Baselines:
+  - C baseline compiled with clang -O3 (and -march=native for “best local” reference)
+  - Python baseline + NumPy for matrix/array ops (as a productivity reference)
+  - For matmul: compare to BLAS (OpenBLAS/BLIS/MKL if available) as “near-peak” yardstick.
+
+-------------------------------------------------------------------------------
+12) PROJECT PLAN — 10 PHASES WITH EXIT CRITERIA
+-------------------------------------------------------------------------------
+IMPORTANT: Do not proceed to the next phase without passing the exit criteria and obtaining user approval.
+
+PHASE 1 — Foundation: repo, toolchain, baselines, research notebook
+Goal:
+  - Create a reproducible environment and performance baseline.
+Tasks:
+  1) Create git repo with /compiler, /runtime, /stdlib, /tests, /bench, /docs.
+  2) Pick implementation language for compiler:
+       Option A (recommended): C++20 + MLIR/LLVM (best integration, best optimization ecosystem).
+       Option B: Rust front-end -> emit MLIR text; use LLVM/MLIR tools for lowering (harder plumbing).
+  3) Add build system (CMake + Ninja) and CI (GitHub Actions or local scripts).
+  4) Write benchmark harness with:
+       - C baselines
+       - Python baselines (optional)
+       - scaffolding for new language runs
+  5) Create “research notes” doc summarizing key papers (MLIR/Halide/Weld/Futhark/StreamFusion).
+Verification checklist:
+  - `bench/` runs and records baseline numbers in a versioned file (CSV/JSON).
+  - `perf stat` scripts run without manual tweaking.
+Exit criteria:
+  - Repo builds on Ubuntu; baseline results are reproducible (±3% variance across runs).
+
+PHASE 2 — Front-end v0: Python-like syntax parser + AST + minimal evaluator
+Goal:
+  - Parse and run a tiny subset (correctness first).
+Scope:
+  - functions, let/assign, if/while/for, int/double literals, list/matrix literals, indexing.
+Tasks:
+  1) Define grammar (document it).
+  2) Implement lexer/parser (handwritten or using a parser generator).
+  3) Implement AST + pretty-printer.
+  4) Minimal interpreter OR direct lowering to a very simple IR for testing.
+Verification checklist:
+  - 100+ unit tests for parsing and evaluation.
+  - Run sample programs resembling Python syntax.
+Exit criteria:
+  - Correctness tests pass; parser stable; no ambiguity in list/matrix literal syntax.
+
+PHASE 3 — Type/Shape system + Tier boundaries (T8->T4 lowering)
+Goal:
+  - Make “fast subset” explicit and machine-checkable.
+Tasks:
+  1) Implement type system:
+       - Int (i64), Double (f64), Float<N> family, Bool, String (optional),
+         List, Matrix, Class types, Any.
+       - Type inference where possible; explicit annotations allowed.
+  2) Implement “ShapeID” mechanism for classes (sealed vs open).
+  3) Implement tier annotations or compiler-driven hot-region marking.
+  4) Diagnostics: explain why code cannot be lowered to perf tier.
+Verification checklist:
+  - Type inference tests.
+  - Shape stabilization tests (same fields -> same shape).
+Exit criteria:
+  - Compiler can label regions as “Perf-tier eligible” or “needs fallback” with clear reasons.
+
+PHASE 4 — Codegen v0 (scalar): LLVM backend + runtime launcher
+Goal:
+  - Generate native code for scalar code paths.
+Tasks:
+  1) Choose IR strategy:
+       - Option A: Lower to MLIR first, then to LLVM dialect, then LLVM IR.
+       - Option B: Direct LLVM IR from your own IR (faster to start, less future-proof).
+     Recommendation: Option A if you commit to MLIR stack; Option B only for prototyping.
+  2) Implement codegen for ints/doubles, control flow, function calls.
+  3) Implement runtime launcher (JIT or AOT; AOT preferred for reproducibility).
+Verification checklist:
+  - Run scalar benchmarks and compare vs clang -O3.
+Exit criteria:
+  - On scalar loops, within 0.9×–1.2× of clang -O3 (same algorithm).
+
+PHASE 5 — Containers v1: Packed[T] list + Matrix[T] + bounds proof hooks
+Goal:
+  - “Homogeneous fast path” must be excellent.
+Tasks:
+  1) Implement Packed[T] list:
+       - contiguous, unboxed, aligned
+       - amortized append strategy
+  2) Implement Matrix[T]:
+       - contiguous storage
+       - views/slices as stride-based references
+  3) Add bounds-check elimination hooks:
+       - range analysis in loops
+       - hoist checks or prove safe
+Verification checklist:
+  - Bench B2/B4 on packed data.
+Exit criteria:
+  - Packed list iteration/map/reduce is within 0.85×–1.15× of equivalent C loops.
+  - Matrix elementwise ops within 0.85×–1.15× of C loops.
+
+PHASE 6 — Containers v2: heterogeneity without killing hot loops
+Goal:
+  - Hetero lists “work”, but hot loops pay almost nothing after normalization.
+Tasks:
+  1) Implement Boxed[Any] representation (tagged cells / handles).
+  2) Implement analyze+plan+materialize+cache for list ops.
+  3) Implement promotion for numeric heterogeneity (PackedNumeric[U]).
+  4) Implement ChunkedUnion for iter-heavy hetero patterns.
+  5) Implement GatherScatter views for order-preserving typed kernels.
+Verification checklist:
+  - Bench B3 and show:
+       * first run may pay normalize cost
+       * subsequent runs are fast (cached rep)
+Exit criteria:
+  - For repeated operations on the same hetero list, steady-state performance approaches packed case
+    (target: within 1.2×–1.8× depending on mix and required semantics).
+
+PHASE 7 — Functional pipelines: fusion IR + no-intermediate execution
+Goal:
+  - Functional style must be *fast by default*.
+Tasks:
+  1) Introduce Array/Pipeline IR (Weld/stream-fusion inspired):
+       - represent map/filter/reduce/zip/scan at a high level
+       - enable fusion and loop transformations
+  2) Implement fusion passes:
+       - remove intermediates
+       - push filters into producers
+       - deforest list pipelines where safe
+  3) Materialization rules:
+       - only materialize when user observes container identity or needs random access
+Verification checklist:
+  - Bench B5: pipeline should allocate ~0 intermediates (or bounded minimal).
+Exit criteria:
+  - Pipeline throughput beats non-fused baseline by 2×–10× on large data (when baseline allocates intermediates).
+  - Allocation count for pipeline is near-zero or strictly bounded.
+
+PHASE 8 — Matrix kernel engine: tiling + scheduling (+ optional auto-tuning)
+Goal:
+  - Matmul and core kernels are competitive.
+Tasks:
+  1) Implement schedule abstraction (Halide-style): algorithm separate from schedule.
+  2) Provide default schedules + auto-tuner (TVM-style search) — build-time is allowed to be heavy.
+  3) Implement matmul:
+       - blocking/tiling, packing, cache-aware layout
+       - support MatrixView lowering when needed (copy-on-write/pack)
+  4) (Optional) Call BLAS initially, then replace with generated kernels.
+Verification checklist:
+  - Bench B4 (matmul sizes).
+Exit criteria (choose one path):
+  Path A (own kernels): achieve within ~1.2×–2.0× of OpenBLAS on common sizes initially, improve over time.
+  Path B (hybrid): match BLAS for matmul by calling it, while your compiler still fuses surrounding ops to reduce overhead.
+
+PHASE 9 — Concurrency: structured async + work stealing + safety rules
+Goal:
+  - Async and parallelism are first-class, low overhead, safe in perf tier.
+Tasks:
+  1) Implement async/await lowering to state machines.
+  2) Implement structured concurrency scopes and cancellation.
+  3) Implement a work-stealing scheduler for parallel tasks.
+  4) Implement Send/Sync-like rules via effects/ownership for perf tier.
+Verification checklist:
+  - Bench B7/B8 for overhead and scaling.
+Exit criteria:
+  - Task spawn/join overhead is competitive (measure and record).
+  - Parallel map scales reasonably on multicore (document scaling curve).
+
+PHASE 10 — Portability + “final-mile” optimization + hardening
+Goal:
+  - Ship multi-arch builds and squeeze remaining performance.
+Tasks:
+  1) Multi-target builds (x86_64, aarch64, riscv64) + baseline ISA profile.
+  2) Multiversion dispatch for CPU features (build multiple variants).
+  3) PGO + LTO + post-link BOLT integration.
+  4) Fuzzing + sanitizers + differential testing vs reference implementations.
+  5) Documentation: language spec, tier rules, performance model, memory model.
+Verification checklist:
+  - Build and run on at least 2 architectures (local or CI).
+  - Show measured speedup from PGO/BOLT (even single-digit % is fine if consistent).
+Exit criteria:
+  - Release candidate with reproducible builds, test suite passing, and benchmark report.
+
+-------------------------------------------------------------------------------
+13) COMPARISON: WHAT TO “STEAL” FROM POPULAR LANGUAGES (ACTIONABLE)
+-------------------------------------------------------------------------------
+Rust:
+  - Ownership/borrowing to reduce aliasing and enable safe concurrency without GC.
+  - Takeaway: use compile-time rules/effects to unlock optimization (bounds/alias elimination).
+Zig:
+  - Explicit allocator passing + compile-time evaluation (“comptime”) for specialization.
+  - Takeaway: make allocation strategy explicit in perf tier; use compile-time specialization.
+Julia:
+  - Specialization to reconcile dynamism and performance; multiple dispatch as a performance tool.
+  - Takeaway: specialization is powerful, but hetero containers cause dynamic dispatch slowdowns; mitigate via normalization.
+Chapel:
+  - Parallelism as a first-class language feature for productivity at scale.
+  - Takeaway: provide high-level parallel constructs that lower to efficient runtimes.
+
+Swift/Kotlin:
+  - Structured concurrency; clear task lifetimes; cancellation semantics.
+  - Takeaway: integrate structured concurrency to keep async correct and predictable.
+
+-------------------------------------------------------------------------------
+14) “DO NOT FORGET” CHECKLIST (FROM CONVERSATION)
+-------------------------------------------------------------------------------
+Before declaring success, confirm:
+  - Python-like syntax is not an afterthought; it is the default.
+  - Lists/matrices are primitives with top-tier performance.
+  - Hetero lists have a fast steady state via caching normalized reps.
+  - Object ops can be near-zero cost via value/handle objects and arenas.
+  - Async + parallel are language features, not bolted-on libraries.
+  - Portability strategy does not collapse performance (use AOT multi-target + dispatch).
+  - Correctness gates exist for any aggressive optimization.
+
+-------------------------------------------------------------------------------
+15) NEXT STEP FOR YOU (CODEX) RIGHT NOW
+-------------------------------------------------------------------------------
+Start PHASE 1.
+Output:
+  - Proposed repo structure
+  - Toolchain choice (C++/MLIR vs alternatives) with rationale
+  - Benchmark plan and baseline measurement script
+  - Exact commands to build/run on Ubuntu
+Then implement it and provide the PHASE 1 REPORT.
+
+END OF PLAYBOOK
+
+-------------------------------------------------------------------------------
+14) PHASE 5 EXECUTION LOG (IMPLEMENTATION DIARY)
+-------------------------------------------------------------------------------
+- Added matrix elementwise operator typing in Phase 3 checker to align type diagnostics before codegen.
+- Added list mutator typing/call handling for append/pop/insert/remove.
+- Added container semantics tests for list mutation methods and matrix elementwise arithmetic.
+- Result: semantic coverage improved; remaining gaps are mostly optimization/perf-layer specific.
+
+Observed in tests:
+- append/pop/insert/remove run correctly in interpreter for standard list cases.
+- matrix transposition and matrix slicing paths remain stable.
+- matrix method-style API for high-level kernels still deferred.
+
+To remember:
+- Keep matrix slice/view decisions phase-6 scope.
+- When extending to performance core, prioritize canonical loop lowering before deeper container API.
+- Re-run this log entry after each benchmark-focused refactor.
+
+-------------------------------------------------------------------------------
+15) PHASE SNAPSHOT UPDATE (2026-02-16)
+-------------------------------------------------------------------------------
+Phase 1:
+- Done: benchmark harness + reproducibility gate + JSON/CSV outputs stabilized.
+- Tried: strict perf/hyperfine pairing; fallback path kept for missing tools.
+- Failed/lesson: ctest registration was incomplete; direct binary test execution is used.
+
+Phase 2:
+- Done: parser/AST/interpreter baseline stable for core subset.
+- Tried: dual matrix literal syntax normalization to one AST.
+- Failed/lesson: some syntax edge-cases surfaced only when codegen path was added.
+
+Phase 3:
+- Done: type/tier/shapes baseline and diagnostics path available.
+- Tried: conservative widening/normalization to avoid unsafe fast-path assumptions.
+- Failed/lesson: matrix `for` loop binding was initially scalar; fixed to row-list semantics.
+
+Phase 4:
+- Done: native IR->C->clang path works for scalar and selected container operations.
+- Tried: codegen canonicalization + runtime helper expansion for list/matrix operations.
+- Failed/lesson: runtime call kind inference had stale assumptions (`pop` return), fixed.
+
+Phase 5:
+- Done: typed list/matrix operations now connected end-to-end (parse/type/codegen/runtime).
+- Tried: matrix slice combinations (`rows/cols/block`) and row-iteration lowering.
+- Failed/lesson: method/runtime parity drifted temporarily (`pop/insert/remove` codegen vs runtime),
+  now synchronized with tests and compile/run checks.
+- New optimization pass:
+  - C canonicalization no longer inlines direct call temporaries (prevents loop condition call duplication).
+  - list append fast-path simplified (single capacity check branch).
+  - matrix row extraction copy switched to `memcpy` for contiguous rows.
+- Result: phase5 native/baseline geomean improved and current benchmark band gate (`0.85x-1.15x`) passes.
+- Additional optimization pass (research-backed):
+  - Codegen now detects canonical `while i < N` + `list.append(...)` loops and emits pre-loop reserve (`__spark_list_ensure_*`).
+  - list shift-heavy ops (`pop/insert/remove`) switched from manual loops to `memmove`.
+  - matrix row-slice copy path (`slice_rows`) switched to `memcpy`.
+  - Added regression test for reserve lowering (`phase4 codegen tests`) to prevent silent rollback.
+  - Stable benchmark run keeps baseline-band gate `2/2` with native/baseline geomean around `0.955x`.
+- Tried and reverted in this window:
+  - broad branch-hint/always-inline macro layering in runtime helpers reduced geomean (regression), reverted.
+  - aggressive initial list growth (very high first capacity) increased overhead on mixed workloads, reverted.
+- Additional optimization pass (toward >1.0x gate):
+  - Added unchecked append lowering in reserve-proved loops (`__spark_list_append_unchecked_*`).
+  - Added typed matrix constructors (`matrix_i64`, `matrix_f64`) in interpreter/typechecker/codegen.
+  - Fixed `m[r,c]` index-chain order mismatch in both codegen and interpreter helpers.
+  - Added focused forced-inline on list/matrix accessor helpers (not broad runtime macros).
+  - Updated phase5 benchmark default native profile to `aggressive` and fixed `max` profile flags for clang compatibility.
+- Result snapshot:
+  - phase5 benchmark band gate: `2/2`
+  - native vs baseline geomean: `1.035x` (latest stable gt1 artifact)
+  - artifacts: `bench/results/phase5_benchmarks_gt1.json`, `bench/results/phase5_benchmarks_gt1.csv`
+- Additional optimization/research pass (pass 4):
+  - Investigated Clang/LLVM docs for alignment hints, PGO workflow, and vectorizer behavior.
+  - Fixed PGO `use` compile breakage caused by accidental `-fcoverage-mapping` in use-mode flags.
+  - Tried `native-profile=max` on phase5: regressed to ~`0.93x` geomean vs baseline (rejected).
+  - Added benchmark-integrated auto-PGO pipeline (`instrument -> run -> merge -> use`) as optional mode.
+  - Applied matrix-side fast-path improvements:
+    - benchmark fill loops merged into single nested pass (`mat_a` + `mat_b`),
+    - matrix contiguous data allocation moved to 64-byte aligned path,
+    - matrix get/set helpers switched to aligned+restrict-friendly accesses.
+  - Intermediate outcome: stable run reached
+    - `list_iteration=1.019x`
+    - `matrix_elemwise=1.052x`
+    - geomean=`1.035x`
+- Final stability trial (last run set before locking profile):
+  - Compared `aggressive` vs `auto-native-pgo` with 3 runs each (same stable harness).
+  - Aggregate results:
+    - aggressive mean/stdev geomean: `0.980x` / `0.031`
+    - auto-native-pgo mean/stdev geomean: `1.001x` / `0.015`
+  - Decision:
+    - lock Phase 5 benchmark default to auto-native-pgo path.
+    - `bench/scripts/run_phase5_benchmarks.sh` now injects:
+      - `--auto-native-pgo`
+      - `--auto-native-pgo-runs 2`
+  - Best confirmation run with locked default:
+    - `list_iteration=1.0299x`
+    - `matrix_elemwise=1.0495x`
+    - geomean=`1.040x`
+  - Follow-up stable run (same locked default):
+    - `list_iteration=1.0067x`
+    - `matrix_elemwise=0.9900x`
+    - geomean=`0.998x`
+  - Note:
+    - single runs still fluctuate; profile lock is based on multi-run mean+variance, not one snapshot.
+
+-------------------------------------------------------------------------------
+16) OLUMLU / NEGATIF CALISMA KURALLARI (LOCKED)
+-------------------------------------------------------------------------------
+Olumlu (yapilacaklar):
+- Karari tek run ile degil coklu run (mean + stdev + min) ile ver.
+- Her optimizasyon adiminda once correctness gate (expected/test) gec.
+- Benchmark algoritmasini C baseline ile birebir ayni tut.
+- Degisiklikleri kucuk, izlenebilir ve geri alinabilir adimlarla yap.
+- Her deneme sonunda sonuclari docs/txt loglarina yaz.
+- Regresyon gorulurse hizla rollback et ve nedeni kaydet.
+- Varsayilan profili sadece kararlilik kaniti varsa kilitle.
+
+Negatif (yapilmayacaklar):
+- Tek iyi sonuca bakip profile lock verme.
+- Arastirma yapmadan agresif flagleri default acma.
+- Ayni anda cok fazla degisken degistirip kok nedeni kaybetme.
+- Baseline ile farkli algoritma/aksiyon kullanip haksiz kiyas yapma.
+- Olcum gurultusunu (jitter) yok sayma.
+- Dokumantasyon ve phase loglarini guncellemeden ilerleme.
+- Buyuk monolitik script birikimine geri donme.
+
+-------------------------------------------------------------------------------
+17) PHASE 6 EXECUTION LOG (2026-02-17)
+-------------------------------------------------------------------------------
+Phase 6 target:
+- Heterojen list/matrix calissin; hot-loop tarafinda analyze-plan-materialize-cache ile steady-state hiz artsin.
+
+Yapilanlar:
+- Value modeline LayoutTag + ListCache/MatrixCache eklendi:
+  - PackedInt, PackedDouble, PromotedPackedDouble, ChunkedUnion, GatherScatter, BoxedAny.
+- Runtime operasyonlari:
+  - reduce_sum(), map_add(), plan_id(), cache_stats(), cache_bytes().
+- Mutasyon invalidation:
+  - append/pop/insert/remove + indexed set list/matrix.
+- Phase6 benchmark hatti eklendi:
+  - bench/scripts/run_phase6_benchmarks.py
+  - bench/scripts/phase6/{definitions.py,utils.py}
+  - bench/programs/phase6/*.k
+
+Denenenler:
+- Ilk denemede benchmark jitter yuksekti (kisa samplelar).
+- sample_repeat eklendi (sample basina tekrar kosum + per-op normalize).
+- Sonraki kosumlarda drift daha stabil hale geldi.
+
+Basarili olanlar:
+- Promote/Chunk/Gather planlari benchmarkta dogrulandi (plan ids: 3/4/5).
+- First-run vs steady-state farki net goruldu (70x+ seviyesinde, normalize maliyeti bir kez odeniyor).
+- Steady-state hetero/paked oranlari hedef bandda kaldi (<=1.8x).
+
+Basarisiz/eksik kalanlar:
+- perf stat Linux odakli; macOS ortaminda dogrudan yok.
+- Matrix hetero tarafinda Chunk/Gather kernelleri hen uz phase kapsaminda degil (literal normalize + boxed fallback var).
+
+Kayitli artefaktlar:
+- bench/results/phase6_benchmarks.json
+- bench/results/phase6_benchmarks.csv
+- bench/results/phase6_benchmarks_comparisons.csv
+- docs/phase6/containers_v2_semantics.md
+- docs/phase6/phase6_report.md
+
+-------------------------------------------------------------------------------
+18) PHASE 6 RESEARCH + OPTIMIZATION LOG (2026-02-17, INTERNET PASS)
+-------------------------------------------------------------------------------
+Arastirma kaynaklari (primary):
+- LLVM LangRef + Vectorizers
+- V8 hidden-classes
+- PyPy optimization notes
+- Julia isbits union arrays
+- Apache Arrow columnar format
+- DuckDB vector internals
+- CPython listobject.c (growth semantics)
+- Weld paper (fusion + data movement)
+
+Uygulanan teknik denemeler:
+- live_plan fast-path:
+  - Cache aktif degilken invalidate kisa devre.
+  - Amaç: append agirlikli list insa asamasinda gereksiz invalidate maliyetini kesmek.
+- ChunkedUnion numeric side-cache:
+  - Materialize asamasinda numeric index/deger cache olustur.
+  - reduce_sum/map_add tekrarinda per-element tag donusumunu azalt.
+
+Denenip geri alinan:
+- PackedInt/PackedDouble icin ek packed buffer'lari dogrudan ListCache icinde tutma:
+  - Value boyutu buyudugu icin genel list elemani maliyeti artti.
+  - Sonuc: bu yaklasim geri alindi; out-of-line tasarim olmadan tekrar uygulanmayacak.
+
+Son olcum snapshot (phase6, runs=7, sample_repeat=3):
+- packed steady: ~759546.30 ns/op
+- promote steady: ~849283.09 ns/op (steady/packed ~1.118x)
+- chunk steady: ~935912.89 ns/op (steady/packed ~1.232x)
+- gather steady: ~1003318.07 ns/op (steady/packed ~1.321x)
+- first->steady hizlanma tum hetero gruplarda ~74x-79x bandinda
+
+Bu pass'ten cikan kurallar:
+Olumlu:
+- Hot loop'ta tek dispatch: analyze-plan kararini loop disinda kilitle.
+- Hetero numeric icin bir kez normalize/promote et, steady-state'te unboxed calistir.
+- Plan secimini erisim desenine gore yap (iter-heavy=chunk, order-kritik numeric=gather).
+- Kararlilik karari icin tek run degil coklu-run istatistiklerini kullan.
+
+Negatif:
+- Value gibi her elemana tasinan yapilari metadata ile sisirme.
+- Semantik degistiren agresif numerik bayraklari default acma.
+- Single-run sonucuna gore profil/plan lock etme.
+
+Ilgili dokuman:
+- docs/phase6/phase6_speedup_rules.md
+
+-------------------------------------------------------------------------------
+19) PHASE 7 EXECUTION LOG (2026-02-17)
+-------------------------------------------------------------------------------
+Phase 7 target:
+- map/filter/zip/reduce/scan pipeline zincirlerini fused calistirip intermediate allocation'i azaltmak.
+
+Yapilanlar:
+- Yeni runtime modulleri eklendi:
+  - compiler/src/phase7/runtime/01_pipeline_types.cpp
+  - compiler/src/phase7/runtime/02_pipeline_parse.cpp
+  - compiler/src/phase7/runtime/03_pipeline_exec_list.cpp
+  - compiler/src/phase7/runtime/04_pipeline_exec_matrix.cpp
+  - compiler/src/phase7/runtime/05_pipeline_entry.cpp
+- evaluator call path pipeline chain'i direkt yakalayip:
+  - fused path (SPARK_PIPELINE_FUSION=1)
+  - non-fused fallback (SPARK_PIPELINE_FUSION=0) seklinde calisiyor.
+- Runtime gozlemlenebilirlik:
+  - pipeline_stats()
+  - pipeline_plan_id()
+- Analyze diagnostics:
+  - --dump-pipeline-ir
+  - --dump-fusion-plan
+  - --why-not-fused
+
+Testler:
+- sparkc_smoke_test
+- sparkc_parser_tests
+- sparkc_eval_tests
+- sparkc_typecheck_tests
+- sparkc_codegen_tests
+- sparkc_phase5_tests
+- sparkc_phase6_tests
+- sparkc_phase7_tests
+
+Phase7 benchmark hatti:
+- bench/scripts/phase7/definitions.py
+- bench/scripts/phase7/utils.py
+- bench/scripts/run_phase7_benchmarks.py
+- bench/scripts/run_phase7_benchmarks.sh
+- bench/programs/phase7/*.k
+
+Son olcum snapshot (runs=5, warmup=1):
+- list_pipeline_reduce: 2.664x (fused vs non-fused)
+- hetero_pipeline_reduce: 2.017x
+- matrix_pipeline_reduce: 3.576x
+
+Kayitli artefaktlar:
+- bench/results/phase7_benchmarks.json
+- bench/results/phase7_benchmarks.csv
+- docs/phase7/pipeline_semantics.md
+- docs/phase7/phase7_report.md
+
+Denenen ve duzeltilen:
+- Matrix non-fused pipeline path'te stage tekrar uygulama hatasi vardi (checksum kayiyordu).
+  - Duzeltme: non-fused matrix stage uygulamasi adim-bazli hale getirildi.
+- Type inference tarafinda [int, int, float] literalin List[Any]'e dusmesi goruldu.
+  - Duzeltme: numeric widen durumunda Any'e dusme kaldirildi.
+
+-------------------------------------------------------------------------------
+20) PHASE 7 RESEARCH NOTES (SHORT)
+-------------------------------------------------------------------------------
+Internet arastirmasindan alinip uygulanan prensipler:
+- Deforestation/loop fusion: ara container'lari kaldir.
+- Materialization policy explicit olsun: her zincir fuse edilmez, nedenini raporla.
+- Steady-state odakli olcum: first-run ve tekrar kosum farkini ayri izle.
+- Chunk/gather gibi hetero path'lerde hot loop'u temiz tut, tag/dispatch'i loop disina tasit.
+
+Olumlu (yap):
+- Pipeline kararini analyze->plan->execute seklinde tek yerde tut.
+- Fused ve non-fused yollari ayni checksum ile dogrula.
+- Runtime sayaçlarini benchmark formatina dogrudan bagla (alloc, plan, fused/fallback).
+
+Negatif (yapma):
+- Zincirde mutasyon/rastgele erisim varken zorla fusion.
+- Tek bir benchmark sonucuna bakip optimizasyonu kilitleme.
+- Diagnose edilemeyen implicit materialization'a izin verme.
+
+-------------------------------------------------------------------------------
+21) PHASE 7 OPTIMIZATION PASS LOG (2026-02-17, LATE PASS)
+-------------------------------------------------------------------------------
+Problem:
+- Fused path'te receiver list/matrix degeri kopyalaniyordu; buyuk veride gereksiz maliyet olusturuyordu.
+
+Uygulanan degisiklikler:
+- execute_list_pipeline / execute_matrix_pipeline:
+  - receiver kopyasi kaldirildi, const-reference ile okunuyor.
+- PackedInt reduce_sum icin dogrudan integer fast path eklendi.
+- Kisa transform zincirleri icin inner-loop dispatch sadeleştirildi.
+
+Son olcum (phase7 benchmark, runs=5):
+- list_pipeline_reduce: 3.216x
+- hetero_pipeline_reduce: 2.405x
+- matrix_pipeline_reduce: 3.627x
+
+Not:
+- Onceki snapshot'a gore tum phase7 karsilastirmalari iyilesti.
+
+-------------------------------------------------------------------------------
+22) PHASE 8 EXECUTION LOG (2026-02-17)
+-------------------------------------------------------------------------------
+Phase 8 target:
+- Matmul kernel/schedule/pack-cache + epilogue fusion + minimal autotuning.
+
+Yapilanlar:
+- Runtime modulleri:
+  - compiler/src/phase8/runtime/01_schedule.cpp
+  - compiler/src/phase8/runtime/02_pack_cache.cpp
+  - compiler/src/phase8/runtime/03_matmul_kernel.cpp
+  - compiler/src/phase8/runtime/04_matmul_entry.cpp
+- Language/API:
+  - matmul, matmul_f32, matmul_f64
+  - matmul_add, matmul_axpby
+  - matmul_stats, matmul_schedule
+- Hybrid backend:
+  - own tiled kernel + BLAS (cblas_dgemm/sgemm) secimi
+- Pack/cache:
+  - A/B packed cache + probe tabanli stale kontrol
+- Tuning:
+  - tune/matmul_tuner.py
+  - output: bench/results/matmul_tuned_schedule.json
+
+Test:
+- sparkc_phase8_tests eklendi ve PASS.
+
+Benchmark:
+- bench/scripts/run_phase8_benchmarks.py
+- output:
+  - bench/results/phase8_benchmarks.json
+  - bench/results/phase8_benchmarks.csv
+- latest comparison:
+  - matmul_core_f64: own/blas ~0.973x, auto/best ~1.085x
+  - matmul_epilogue_f64: own/blas ~0.924x, auto/best ~1.150x
+  - matmul_core_f64_256: own/blas ~1.190x, auto/best ~0.984x
+
+-------------------------------------------------------------------------------
+24) PHASE 8 SPEEDUP PASS LOG (2026-02-17, FOLLOW-UP)
+-------------------------------------------------------------------------------
+Problem:
+- Phase8 benchmarkte wall-time'in buyuk kismi matmul kernelden degil, interpreted setup
+  (matrix doldurma + expected checksum loop'lari) tarafindan harcaniyordu.
+
+Uygulanan degisiklikler:
+- Schedule path:
+  - tuned schedule dosya parse islemi call-basi yerine cache'lendi (config degisirse reload).
+  - auto backend BLAS gecis esigi 128^3 problem boyutuna cekildi.
+- Matrix plan/cache:
+  - matrix plan cache tekrar kullanimi operation string'e bagli olmaktan cikarildi.
+  - matmul sonucu matrix'lerde Packed plan metadata dogrudan set edilerek reduce_sum analiz maliyeti kesildi.
+- Runtime utility builtins:
+  - matrix_fill_affine(...)
+  - matmul_expected_sum(lhs, rhs)
+- Phase8 benchmark programlari bu builtins'lere tasindi.
+
+Etki (son run):
+- matmul_core_f64 own median wall-time: ~0.105s -> ~0.015s (yaklasik 6.9x iyilesme)
+- phase8 benchmark gate: records 12/12 PASS, comparisons 3/3 PASS
+
+Ders:
+- Kernel odakli olcum icin orchestration maliyetini runtime utility katmanina tasimak gerekiyor.
+- Auto backend secimi latency/throughput dengesinde buyuk fark yaratiyor.
+
+-------------------------------------------------------------------------------
+23) PHASE 8 OLUMLU / NEGATIF KURALLAR (LOCKED)
+-------------------------------------------------------------------------------
+Olumlu (yap):
+- Schedule'i semantikten ayir; yalniz performans karari tasisin.
+- BLAS varsa hybrid path ile hizli kazanimi acik tut.
+- Pack/cache hit oranlarini runtime'da gorunur tut (stats API).
+- Epilogue islemlerini tek planda calistirarak extra pass'i azalt.
+- Tuning sonucunu JSON cache ile tekrar kullan.
+
+Negatif (yapma):
+- Fast-math'i default acip dogrulugu riske atma.
+- Cache key'ini probe/versiyon olmadan kurup stale pack kullanma.
+- Tek backend'e kilitlenip fallback'i kaybetme.
+- Benchmarkta interpreter orchestration maliyetini kernel speed ile karistirip yanlis karar verme.

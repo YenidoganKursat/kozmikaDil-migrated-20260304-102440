@@ -1,0 +1,8 @@
+name,group,mode,pass,status_ok,total_ok,plan_ok,materialize_ok,bytes_ok,reproducible,median_time_sec,unit_time_ns,effective_ops_per_sample,expected_total,actual_total,expected_plan,actual_plan,materialize_count,cache_hit_count,cache_bytes
+packed_reduce_sum_steady,packed,steady,PASS,1,1,1,1,1,0,0.18456975001026876,759546.2963385546,243,583195140000.0,583195140000.0,1,1,0,80,0
+hetero_promote_reduce_first,promote,first,PASS,1,1,1,1,1,1,0.18858295799873304,62860985.99957768,3,7199970000.0,7199970000.0,3,3,1,0,960000
+hetero_promote_reduce_steady,promote,steady,PASS,1,1,1,1,1,1,0.20637579199683387,849283.0946371764,243,583197570000.0,583197570000.0,3,3,1,80,960000
+hetero_chunk_reduce_first,chunk,first,PASS,1,1,1,1,1,1,0.22229466700810008,74098222.33603336,3,2879916000.0,2879916000.0,4,4,1,0,2496000
+hetero_chunk_reduce_steady,chunk,steady,PASS,1,1,1,1,1,1,0.22742683299293276,935912.892975032,243,233273196000.0,233273196000.0,4,4,1,80,2496000
+hetero_gather_reduce_first,gather,first,PASS,1,1,1,1,1,1,0.22893691599892918,76312305.3329764,3,5759928000.0,5759928000.0,5,5,1,0,1536000
+hetero_gather_reduce_steady,gather,steady,PASS,1,1,1,1,1,1,0.2438062919973163,1003318.0740630301,243,466554168000.0,466554168000.0,5,5,1,80,1536000

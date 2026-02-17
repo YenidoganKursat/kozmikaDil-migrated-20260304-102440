@@ -1,0 +1,105 @@
+cmake_minimum_required(VERSION 3.24)
+
+add_library(spark_compiler
+  src/common/ast.cpp
+  src/phase2/parser.cpp
+  src/phase2/lexer.cpp
+  src/phase4/codegen.cpp
+  src/phase3/evaluator.cpp
+  src/phase3/semantic.cpp
+)
+
+target_include_directories(spark_compiler
+  PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+add_executable(sparkc src/phase1/sparkc_main.cpp)
+target_include_directories(sparkc
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/frontend
+)
+target_link_libraries(sparkc PRIVATE spark_compiler spark_runtime spark_stdlib)
+
+if(SPARK_BUILD_TESTS)
+  set(SPARK_TEST_SOURCE_DIR ${CMAKE_SOURCE_DIR}/tests)
+  function(spark_enable_test_assertions TARGET_NAME)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+      target_compile_options(${TARGET_NAME} PRIVATE -UNDEBUG)
+    endif()
+  endfunction()
+
+  add_executable(sparkc_smoke_test ${SPARK_TEST_SOURCE_DIR}/phase1/smoke_test.cpp)
+  target_link_libraries(sparkc_smoke_test PRIVATE spark_compiler)
+  spark_enable_test_assertions(sparkc_smoke_test)
+
+  add_executable(sparkc_parser_tests ${SPARK_TEST_SOURCE_DIR}/phase2/parser_tests.cpp)
+  target_link_libraries(sparkc_parser_tests PRIVATE spark_compiler)
+  spark_enable_test_assertions(sparkc_parser_tests)
+
+  add_executable(sparkc_eval_tests ${SPARK_TEST_SOURCE_DIR}/phase3/eval_tests.cpp)
+  target_link_libraries(sparkc_eval_tests PRIVATE spark_compiler)
+  spark_enable_test_assertions(sparkc_eval_tests)
+
+  add_executable(sparkc_typecheck_tests
+    ${SPARK_TEST_SOURCE_DIR}/phase3/typecheck_main.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase3/typecheck_support.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase3/typecheck_core_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase3/typecheck_tier_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase3/typecheck_inference_shape_tests.cpp
+  )
+  target_include_directories(sparkc_typecheck_tests PRIVATE ${SPARK_TEST_SOURCE_DIR})
+  target_link_libraries(sparkc_typecheck_tests PRIVATE spark_compiler)
+  spark_enable_test_assertions(sparkc_typecheck_tests)
+
+  add_executable(sparkc_codegen_tests ${SPARK_TEST_SOURCE_DIR}/phase4/codegen_tests.cpp)
+  target_link_libraries(sparkc_codegen_tests PRIVATE spark_compiler)
+  spark_enable_test_assertions(sparkc_codegen_tests)
+
+  add_executable(sparkc_phase5_tests
+    ${SPARK_TEST_SOURCE_DIR}/phase5/list/list_container_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase5/matrix/matrix_container_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase5/phase5_main.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase5/phase5_support.cpp
+  )
+  target_include_directories(sparkc_phase5_tests PRIVATE ${SPARK_TEST_SOURCE_DIR}
+                                                   ${SPARK_TEST_SOURCE_DIR}/phase5)
+  target_link_libraries(sparkc_phase5_tests PRIVATE spark_compiler)
+  spark_enable_test_assertions(sparkc_phase5_tests)
+
+  add_executable(sparkc_phase6_tests
+    ${SPARK_TEST_SOURCE_DIR}/phase6/list/phase6_list_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase6/matrix/phase6_matrix_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase6/phase6_main.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase6/phase6_support.cpp
+  )
+  target_include_directories(sparkc_phase6_tests PRIVATE ${SPARK_TEST_SOURCE_DIR}
+                                                   ${SPARK_TEST_SOURCE_DIR}/phase6)
+  target_link_libraries(sparkc_phase6_tests PRIVATE spark_compiler)
+  spark_enable_test_assertions(sparkc_phase6_tests)
+
+  add_executable(sparkc_phase7_tests
+    ${SPARK_TEST_SOURCE_DIR}/phase7/list/pipeline_list_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase7/matrix/pipeline_matrix_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase7/analyze/pipeline_analyze_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase7/phase7_main.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase7/phase7_support.cpp
+  )
+  target_include_directories(sparkc_phase7_tests PRIVATE ${SPARK_TEST_SOURCE_DIR}
+                                                   ${SPARK_TEST_SOURCE_DIR}/phase7)
+  target_link_libraries(sparkc_phase7_tests PRIVATE spark_compiler)
+  spark_enable_test_assertions(sparkc_phase7_tests)
+
+  add_executable(sparkc_phase8_tests
+    ${SPARK_TEST_SOURCE_DIR}/phase8/matmul/matmul_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase8/analyze/matmul_analyze_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase8/phase8_main.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase8/phase8_support.cpp
+  )
+  target_include_directories(sparkc_phase8_tests PRIVATE ${SPARK_TEST_SOURCE_DIR}
+                                                   ${SPARK_TEST_SOURCE_DIR}/phase8)
+  target_link_libraries(sparkc_phase8_tests PRIVATE spark_compiler)
+  spark_enable_test_assertions(sparkc_phase8_tests)
+endif()
