@@ -1,0 +1,37 @@
+{
+  "results": [
+    {
+      "case": "matrix_generic_ops",
+      "baseline_median_sec": 0.8965903339849319,
+      "optimized_median_sec": 0.053068999986862764,
+      "speedup_x": 16.894803636904463,
+      "checksum_baseline": 637602.1983454443,
+      "checksum_optimized": 637602.1983454443,
+      "checksum_abs_diff": 0.0,
+      "runs": 5,
+      "warmup": 1
+    },
+    {
+      "case": "list_operator_ops",
+      "baseline_median_sec": 10.572651499998756,
+      "optimized_median_sec": 1.246622207982,
+      "speedup_x": 8.48103894853076,
+      "checksum_baseline": 12999965.00000001,
+      "checksum_optimized": 12999965.00000001,
+      "checksum_abs_diff": 0.0,
+      "runs": 5,
+      "warmup": 1
+    },
+    {
+      "case": "matmul4_sum_ops",
+      "baseline_median_sec": 1.2763624590006657,
+      "optimized_median_sec": 0.06731366598978639,
+      "speedup_x": 18.961416530104454,
+      "checksum_baseline": 1193175841454152.2,
+      "checksum_optimized": 1193175841454209.5,
+      "checksum_abs_diff": 57.25,
+      "runs": 5,
+      "warmup": 1
+    }
+  ]
+}

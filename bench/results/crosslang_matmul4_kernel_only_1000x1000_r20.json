@@ -1,0 +1,95 @@
+{
+  "config": {
+    "n": 1000,
+    "repeats": 20,
+    "runs": 3,
+    "warmup": 1,
+    "spark_threads": 1,
+    "mode": "kernel-only",
+    "spark_compute_mode": "fused_sum",
+    "case_set": "core",
+    "baseline": "C (clang -O3 blocked)",
+    "single_thread": true
+  },
+  "results": [
+    {
+      "name": "Spark interpret (own)",
+      "median_sec": 0.022193249984411523,
+      "min_sec": 0.0,
+      "max_sec": 0.04804820899153128,
+      "runs": 3,
+      "checksum_raw": "1193175841454209.5",
+      "checksum": 1193175841454209.5,
+      "vs_c": 395.16699925130445,
+      "mode": "kernel-only",
+      "compute_median_sec": 0.34230224997736514,
+      "init_median_sec": 0.30633337498875335
+    },
+    {
+      "name": "Spark interpret (blas)",
+      "median_sec": 0.0006026240007486194,
+      "min_sec": 0.0,
+      "max_sec": 0.006120250036474317,
+      "runs": 3,
+      "checksum_raw": "1193175841454209.5",
+      "checksum": 1193175841454209.5,
+      "vs_c": 14553.087811104828,
+      "mode": "kernel-only",
+      "compute_median_sec": 0.31692529100109823,
+      "init_median_sec": 0.34637037498760037
+    },
+    {
+      "name": "Spark interpret (auto)",
+      "median_sec": 0.030233209021389484,
+      "min_sec": 0.0,
+      "max_sec": 0.08401858300203457,
+      "runs": 3,
+      "checksum_raw": "1193175841454209.5",
+      "checksum": 1193175841454209.5,
+      "vs_c": 290.0796932859262,
+      "mode": "kernel-only",
+      "compute_median_sec": 0.34111033400404267,
+      "init_median_sec": 0.3108771249826532
+    },
+    {
+      "name": "C (clang -O3 blocked)",
+      "median_sec": 8.77003999997396,
+      "min_sec": 8.693127249978716,
+      "max_sec": 8.774918207986047,
+      "runs": 3,
+      "checksum_raw": "1193175841453034.00000000000000000",
+      "checksum": 1193175841453034.0,
+      "vs_c": 1.0,
+      "mode": "kernel-only",
+      "compute_median_sec": 8.773999499971978,
+      "init_median_sec": 0.0039594999980181456
+    },
+    {
+      "name": "C (BLAS dgemm chain)",
+      "median_sec": 0.3353727500070818,
+      "min_sec": 0.32215566700324416,
+      "max_sec": 0.3421142500010319,
+      "runs": 3,
+      "checksum_raw": "1193175841453034.00000000000000000",
+      "checksum": 1193175841453034.0,
+      "vs_c": 26.150126984940698,
+      "mode": "kernel-only",
+      "compute_median_sec": 0.3395678329980001,
+      "init_median_sec": 0.0041950829909183085
+    },
+    {
+      "name": "Python+NumPy multi_dot",
+      "median_sec": 0.37808479098021053,
+      "min_sec": 0.36040800099726766,
+      "max_sec": 0.4453370819974225,
+      "runs": 3,
+      "checksum_raw": "1193175841454205.25000000000000000",
+      "checksum": 1193175841454205.2,
+      "vs_c": 23.19596082465268,
+      "mode": "kernel-only",
+      "compute_median_sec": 0.4757571659865789,
+      "init_median_sec": 0.09767237500636838
+    }
+  ],
+  "checksum_reference": 1193175841453034.0
+}

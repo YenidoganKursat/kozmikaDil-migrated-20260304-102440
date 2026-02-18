@@ -45,6 +45,9 @@ void invalidate_list_cache(Value& value) {
   cache.gather_values_f64.clear();
   cache.gather_indices.clear();
   cache.chunks.clear();
+  cache.reduced_sum_version = std::numeric_limits<std::uint64_t>::max();
+  cache.reduced_sum_value = 0.0;
+  cache.reduced_sum_is_int = false;
   cache.invalidation_count += 1;
 }
 
@@ -64,12 +67,21 @@ void invalidate_matrix_cache(Value& value) {
   cache.live_plan = false;
   cache.operation.clear();
   cache.promoted_f64.clear();
+  cache.reduced_sum_version = std::numeric_limits<std::uint64_t>::max();
+  cache.reduced_sum_value = 0.0;
+  cache.reduced_sum_is_int = false;
   cache.invalidation_count += 1;
 }
 
 Value::LayoutTag choose_list_plan(const Value& value, const std::string& operation) {
   if (value.kind != Value::Kind::List) {
     return Value::LayoutTag::Unknown;
+  }
+
+  if (value.list_value.empty() &&
+      value.list_cache.materialized_version == value.list_cache.version &&
+      !value.list_cache.promoted_f64.empty()) {
+    return Value::LayoutTag::PackedDouble;
   }
 
   std::size_t ints = 0;

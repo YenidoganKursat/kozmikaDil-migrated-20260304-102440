@@ -67,6 +67,10 @@ Value pipeline_plan_id_value(const std::shared_ptr<Environment>& env, const std:
 Value matrix_matmul_value(Value& lhs, const Value& rhs);
 Value matrix_matmul_f32_value(Value& lhs, const Value& rhs);
 Value matrix_matmul_f64_value(Value& lhs, const Value& rhs);
+Value matrix_matmul_sum_value(Value& lhs, const Value& rhs);
+Value matrix_matmul_sum_f32_value(Value& lhs, const Value& rhs);
+Value matrix_matmul4_sum_value(Value& a, const Value& b, const Value& c, const Value& d);
+Value matrix_matmul4_sum_f32_value(Value& a, const Value& b, const Value& c, const Value& d);
 Value matrix_matmul_add_value(Value& lhs, const Value& rhs, const Value& bias);
 Value matrix_matmul_axpby_value(Value& lhs, const Value& rhs, const Value& alpha,
                                const Value& beta, const Value& accum);

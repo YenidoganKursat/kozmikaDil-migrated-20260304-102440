@@ -58,6 +58,9 @@ struct Value {
     std::vector<double> gather_values_f64;
     std::vector<std::size_t> gather_indices;
     std::vector<ChunkRun> chunks;
+    std::uint64_t reduced_sum_version = std::numeric_limits<std::uint64_t>::max();
+    double reduced_sum_value = 0.0;
+    bool reduced_sum_is_int = false;
     std::size_t analyze_count = 0;
     std::size_t materialize_count = 0;
     std::size_t cache_hit_count = 0;
@@ -72,6 +75,9 @@ struct Value {
     bool live_plan = false;
     std::string operation;
     std::vector<double> promoted_f64;
+    std::uint64_t reduced_sum_version = std::numeric_limits<std::uint64_t>::max();
+    double reduced_sum_value = 0.0;
+    bool reduced_sum_is_int = false;
     std::size_t analyze_count = 0;
     std::size_t materialize_count = 0;
     std::size_t cache_hit_count = 0;

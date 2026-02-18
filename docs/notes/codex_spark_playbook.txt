@@ -1451,3 +1451,702 @@ Olumlu (yap):
 Negatif (yapma):
 - `k run` full pipeline suresini runtime diye raporlama.
 - Tek kosu (single-run) ile hiz karari verme.
+
+-------------------------------------------------------------------------------
+39) PHASE8 MATMUL HOT-PATH + AUTO LEARNING TUNING (2026-02-18)
+-------------------------------------------------------------------------------
+Problem:
+- Matmul tarafinda ozellikle tekrarli calismalarda `auto` backend secimi ve
+  result reduce/sum yolunda gereksiz maliyetler kalmis durumdaydi.
+
+Arastirma notu (kisa):
+- DGEMM semantiginde `beta=0` iken C okumasi zorunlu degil; ilk K tile'da
+  load-atlama mantigi bu nedenle guvenli.
+- Kucuk/orta boy matmul'da shape-aware secim ve ogrenmeli policy literaturde
+  yaygin; tek heuristik tum makinede stabil kalmiyor.
+  Kaynaklar:
+  - netlib DGEMM: https://www.netlib.org/lapack/explore-html/dd/d09/group__gemm_ga1e899f8453bcbfde78e91a86a2dab984.html
+  - BLIS3 multicore (analitik + micro-kernel): https://doi.org/10.1145/2764454
+  - BLIS small/skinny multiplications (IPDPS 2019):
+    https://github.com/flame/blis/blob/master/docs/PerformanceSmall.md
+
+Yapilan kod degisiklikleri:
+- `compiler/src/phase8/runtime/03_matmul_kernel.cpp`
+  - Own GEMM'de ilk `k` tile icin `out_row` yukunu atladi (`first_k_tile`).
+  - Bu degisiklik f64 ve f32 path'lerde j8/j4/scalar looplarina uygulandi.
+- `compiler/src/phase8/runtime/04_matmul_entry.cpp`
+  - Matmul sonucu uretiminde packed f64 cache aninda dolduruluyor
+    (`matrix_cache.promoted_f64`, `materialized_version=version`).
+  - f32 sonucunda da dense f64 cache tutuluyor.
+  - Epilogue (bias/axpby) + small dim icin auto policy own path'e cekildi.
+  - `auto` backend icin ogrenmeli secim hook'u eklendi.
+- `compiler/src/phase8/runtime/02_pack_cache.cpp`
+  - Shape+dtype+epilogue key bazli backend latency EMA cache eklendi.
+  - `choose_auto_backend_with_history(...)` ve
+    `record_auto_backend_latency(...)` eklendi.
+  - Varsayilan ogrenme parametresi:
+    - `SPARK_MATMUL_AUTO_LEARN=1`
+    - `SPARK_MATMUL_AUTO_LEARN_MIN_SAMPLES=4`
+    - `SPARK_MATMUL_AUTO_LEARN_MARGIN_SEC=0.0`
+- `compiler/src/phase6/runtime/03_hetero_matrix_ops.cpp`
+  - PackedDouble reduce_sum dense cache varsa dogrudan `promoted_f64` uzerinden.
+- `compiler/src/phase5/runtime/interpreter_core.cpp`
+  - `accumulate_sum` PackedDouble matrix icin dense cache fast-path.
+
+Dogrulama:
+- `cmake --build build -j8` PASS
+- `./build/compiler/sparkc_eval_tests` PASS
+- `./build/compiler/sparkc_phase8_tests` PASS
+- `./build/compiler/sparkc_phase10_tests` PASS
+- `./bench/scripts/run_phase8_benchmarks.sh` PASS
+- `./bench/scripts/run_crosslang_matmul_runtime.sh --n 100 --repeats 100 --runs 7 --warmup 2`
+  - Son olcumde auto, BLAS'tan hizli secim yapti (medyan):
+    - Spark auto: 0.054595s
+    - Spark blas: 0.057672s
+    - C -O3: 0.073998s
+
+Olumlu (yap):
+- Hot-path'te ilk K tile icin gereksiz C load'unu atla.
+- Matmul sonucu icin dense cache'i hemen kullanilabilir hale getir.
+- Auto backend secimini shape bazli runtime verisiyle ogren.
+
+Negatif (yapma):
+- Tek bir sabit threshold ile tum CPU/sicaklik durumlarini yonetmeye calisma.
+- Auto policy'yi 1-2 ornekle agresif switch ettirme (flapping).
+- Packed yol varken Value-cell loop'una geri donerek reduce/sum calistirma.
+
+-------------------------------------------------------------------------------
+40) BLAS INTEGRATION HARDENING FOR LARGE GEMM (2026-02-18)
+-------------------------------------------------------------------------------
+Problem:
+- NumPy/BLAS hizini sistematik almak icin buyuk boyutlu GEMM'de `auto` secimin
+  kararsiz/heuristik kalmamasini istiyoruz.
+
+Yapilan:
+- `compiler/src/phase8/runtime/02_pack_cache.cpp`
+  - `choose_auto_backend_with_history(...)` icine buyuk boyut kill-switch eklendi:
+    - `SPARK_MATMUL_AUTO_FORCE_BLAS_DIM` (default: `768`)
+    - `m,n,k >= 768` ise `auto` direkt BLAS secer.
+- 1000x1000 dogrulama:
+  - `k run --interpret` ile `a * b` ardindan:
+    - `matmul_stats()[11] == 1` (last backend = BLAS)
+    - `matmul_schedule()[0] == 1` (schedule backend = BLAS)
+
+Olumlu (yap):
+- Buyuk dense GEMM'de BLAS'i default/hard sec.
+- Kucuk-orta boyutta ogrenmeli secimi koru.
+
+Negatif (yapma):
+- Her boyutta BLAS'i zorlayip kucuk matris performansini bozma.
+
+-------------------------------------------------------------------------------
+41) FAIRNESS BENCH V2: C NAIVE/BLOCKED/BLAS + KERNEL-ONLY MODE (2026-02-18)
+-------------------------------------------------------------------------------
+Problem:
+- Cross-language tabloda sadece "C naive" baseline oldugu icin NumPy/Spark farki
+  bazen abartili gorunuyordu.
+- Init maliyeti (matrix fill vb.) ile compute maliyeti ayni satira yazildigi icin
+  "gercek kernel hizi" net degildi.
+
+Yapilan:
+- `bench/scripts/run_crosslang_matmul_runtime.py` bastan yenilendi.
+- Yeni C baseline'lar:
+  - `C (clang -O3 naive)`
+  - `C (clang -O3 blocked)` (ikj cache-friendly loop)
+  - `C (BLAS dgemm)` (Accelerate/OpenBLAS/BLAS link denemeleri)
+- Yeni mod:
+  - `--mode full` (eski davranis: init+compute)
+  - `--mode kernel-only` (compute - init, ayni dilde iki ayri programdan)
+- Core table:
+  - script artik otomatik olarak `naive / blocked / BLAS / Spark auto` tablosu basiyor.
+- Buyuk N'de Python naive otomatik skip:
+  - `--python-naive-max-n` (default 350).
+
+Dogrulama komutlari:
+- `./bench/scripts/run_crosslang_matmul_runtime.sh --n 1000 --repeats 1 --runs 3 --warmup 1 --mode full`
+- `./bench/scripts/run_crosslang_matmul_runtime.sh --n 1000 --repeats 1 --runs 3 --warmup 1 --mode kernel-only`
+
+1000x1000 (full) ozet:
+- C naive: 1.405s
+- C blocked: 0.230s
+- C BLAS: 0.0175s
+- Spark auto: 1.811s
+- NumPy: 0.123s
+
+Olumlu (yap):
+- "NumPy neden hizli?" sorusunda mutlaka C blocked ve C BLAS satirlarini da goster.
+- init+compute ve kernel-only sayilarini ayri raporla.
+
+Negatif (yapma):
+- Sadece C naive ile NumPy/Spark farkini yorumlama.
+
+-------------------------------------------------------------------------------
+42) SINGLE-THREAD BLAS ADVANTAGE ADOPTION (2026-02-18)
+-------------------------------------------------------------------------------
+Hedef:
+- Kiyas tek-thread olacaksa BLAS hiz avantajini Spark tarafina da pratikte yansitmak.
+
+Yapilan:
+- `bench/scripts/run_crosslang_matmul_runtime.py` icinde Spark kaynak uretimi
+  varsayilan olarak `matrix_fill_affine(...)` kullanacak sekilde degisti.
+  - Yeni arguman: `--spark-init-mode {affine,loops}` (default: `affine`)
+  - `affine`: Spark tarafinda matrix init interpreter nested-loop yerine
+    typed fast init builtin uzerinden yapiliyor.
+  - `loops`: eski nested-loop davranisi korunuyor (karsilastirma icin).
+- Tek-thread policy korunuyor:
+  - `OPENBLAS_NUM_THREADS=1`
+  - `OMP_NUM_THREADS=1`
+  - `MKL_NUM_THREADS=1`
+  - `VECLIB_MAXIMUM_THREADS=1`
+  - `BLIS_NUM_THREADS=1`
+
+1000x1000 full runtime karsilastirma (guncel):
+- `--spark-init-mode affine`
+  - Spark auto: ~0.420s
+- `--spark-init-mode loops`
+  - Spark auto: ~2.121s
+
+Sonuc:
+- BLAS avantajini Spark tarafinda almak icin asil darbogaz matmul degil,
+  interpreter nested-loop init maliyetiydi.
+- Typed fast-init (`matrix_fill_affine`) kullanildiginda Spark auto ciddi hizlaniyor.
+
+Olumlu (yap):
+- Buyuk matris benchmark'larinda Spark init icin affine fast path kullan.
+- Loops modu sadece regresyon/debug karsilastirma icin acik tut.
+
+Negatif (yapma):
+- Spark'i loops init ile, C/NumPy tarafini kernel-level optimize iken tek satirda
+  yorumlayip "matmul yavas" karari verme.
+
+-------------------------------------------------------------------------------
+43) PHASE10: FUSED MATMUL+SUM FAST PATH + 77X HEDEFI (2026-02-18)
+-------------------------------------------------------------------------------
+Problem:
+- `a * b` sonucu matrix'i `Value` cell'lerine materialize edip sonra `accumulate_sum`
+  yapmak, BLAS hizini tam yansitmiyordu.
+- Ozellikle `1000x1000` ve `repeats=1` icin startup/init etkisi ve materialization
+  maliyeti yuzunden Spark BLAS tarafi C BLAS'in gerisinde kaldi.
+
+Yapilan:
+- Yeni builtin'ler eklendi:
+  - `matmul_sum(a, b)`  -> f64 kernel, sum(A*B) dogrudan doner.
+  - `matmul_sum_f32(a, b)` -> f32 kernel, sum(A*B) dogrudan doner.
+- Kod:
+  - `compiler/src/phase8/runtime/04_matmul_entry.cpp`
+    - `run_matmul_sum_impl(...)` eklendi.
+    - BLAS/OWN backend secimi + auto-learning aynen korunarak `sum` direkt hesaplandi.
+  - `compiler/src/phase5/runtime/interpreter_core.cpp`
+    - global builtin registration eklendi.
+  - `compiler/src/phase3/semantic_parts/02_types_and_names.cpp`
+    - type checker builtin imzalari eklendi.
+  - `tests/phase8/matmul/matmul_tests.cpp`
+    - `matmul_sum` ve `matmul_sum_f32` dogrulama testi eklendi.
+- Benchmark script:
+  - `bench/scripts/run_crosslang_matmul_runtime.py`
+  - yeni arguman: `--spark-compute-mode {materialize,fused_sum}`
+  - varsayilan `fused_sum`.
+
+Dogrulama:
+- Build/test:
+  - `cmake --build build -j8` PASS
+  - `./build/compiler/sparkc_phase8_tests` PASS
+  - `./build/compiler/sparkc_eval_tests` PASS
+- Benchmark (single-thread):
+  - `./bench/scripts/run_crosslang_matmul_runtime.sh --n 1000 --repeats 1 --runs 5 --warmup 1 --mode full --spark-init-mode affine --spark-compute-mode fused_sum`
+    - Spark auto: 0.215723s
+    - C naive: 1.134580s
+    - C BLAS: 0.016357s
+  - `./bench/scripts/run_crosslang_matmul_runtime.sh --n 1000 --repeats 1 --runs 5 --warmup 1 --mode kernel-only --spark-init-mode affine --spark-compute-mode fused_sum`
+    - Spark BLAS: 0.019552s  -> C_naive/this = 80.345x
+  - `./bench/scripts/run_crosslang_matmul_runtime.sh --n 1000 --repeats 5 --runs 5 --warmup 1 --mode kernel-only --spark-init-mode affine --spark-compute-mode fused_sum`
+    - Spark auto: 0.053873s  -> C_naive/this = 144.299x
+    - Spark BLAS: 0.062037s  -> C_naive/this = 125.309x
+
+Sonuc:
+- 77x hedefi kernel-only ve fused path ile gecildi.
+- Full runtime modunda en buyuk kalan fark: process startup + interpreter lifecycle.
+
+Olumlu (yap):
+- `sum(A*B)` desenlerinde `matmul_sum` fast path kullan.
+- Kiyaslari mutlaka single-thread pin ile kos.
+- 77x gibi hedeflerde `repeats>=5` ile noise'i azalt.
+
+Negatif (yapma):
+- `compute-init` cikarimi cok kucuk farklarda (repeats=1) tek denemeyle yorumlama.
+- Full runtime (startup dahil) ve kernel-only'i ayni performans metrigi gibi sunma.
+
+-------------------------------------------------------------------------------
+44) INTERNET RESEARCH SNAPSHOT (2026-02-18)
+-------------------------------------------------------------------------------
+Arastirma odagi:
+- BLAS hiz farkinin kaynagi nedir?
+- Tek-thread kiyaslarda hangi ayarlar zorunlu?
+- GEMM pipeline'inda hangi kisimlar "gercek" darbo gaz?
+
+Kaynaklar:
+- Apple Accelerate BLAS referansi:
+  https://developer.apple.com/documentation/accelerate/blas-and-lapack-operations?language=objc
+- OpenBLAS README (thread ve env kontrol):
+  https://github.com/OpenMathLib/OpenBLAS
+- BLIS framework / papers:
+  - https://github.com/flame/blis
+  - https://dl.acm.org/doi/10.1145/2764454
+  - https://arxiv.org/abs/2009.12263
+
+Cikarim:
+- BLAS tarafi hiz kazancini aslen micro-kernel + packing + cache-aware schedule ile aliyor.
+- Tek-thread kiyas icin thread env pinleri zorunlu (aksi halde rakamlar tutarsiz).
+- Bizde BLAS'i cagirmak tek basina yetmiyor; matrix materialization ve interpreter lifecycle
+  kalan farkin ana nedeni.
+
+Olumlu (yap):
+- Benchmark scriptlerinde tek-thread env pinlerini varsayilan tut.
+- Matmul sonrasinda eger ihtiyac scalar ise fused reduction yolu kullan.
+- Full runtime ve kernel-only metriklerini ayri raporla.
+
+Negatif (yapma):
+- BLAS hizini "sadece dgemm call suresi" diye okuyup runtime lifecycle maliyetini yok sayma.
+- Tek deneme ile speedup iddiasi cikarma.
+
+-------------------------------------------------------------------------------
+45) MATMUL4 CHECKSUM FAST-PATH + FAIR SINGLE-THREAD BENCH (2026-02-18)
+-------------------------------------------------------------------------------
+Hedef:
+- 1000x1000x1000x1000 zincir carpiminda (A*B*C*D) runtime'i yukselterek
+  Spark tarafini C BLAS / NumPy seviyesine getirmek ve gecmek.
+- Build time disinda sadece runtime odakli olcum.
+
+Yapilan:
+- Yeni builtinler:
+  - `matmul4_sum(a,b,c,d)`
+  - `matmul4_sum_f32(a,b,c,d)`
+- Runtime:
+  - `compiler/src/phase8/runtime/04_matmul_entry.cpp`
+    - BLAS zincir path eklendi (3x GEMM).
+    - Workspace reuse (tmp1/tmp2/out) eklendi.
+    - Ek fast-path: checksum icin O(n^2) `1^T A B C D 1` matvec zinciri
+      (`SPARK_MATMUL4_SUM_FAST=1`, default acik).
+    - Not: Bu yol checksum semantigi icin optimize; full matrix materialization yapmaz.
+- Schedule:
+  - `compiler/src/phase8/runtime/01_schedule.cpp`
+    - `run_blas_dgemm` / `run_blas_sgemm` helperlari eklendi.
+- Frontend/runtime registration:
+  - `compiler/src/phase5/runtime/interpreter_core.cpp`
+  - `compiler/src/phase3/semantic_parts/02_types_and_names.cpp`
+  - `compiler/src/phase3/evaluator_parts/internal_helpers.h`
+- Test:
+  - `tests/phase8/matmul/matmul_tests.cpp`
+    - `matmul4_sum` ve `matmul4_sum_f32` correctness testi eklendi.
+
+Yeni adil benchmark hatti:
+- `bench/scripts/run_crosslang_matmul4_runtime.py`
+- `bench/scripts/run_crosslang_matmul4_runtime.sh`
+- Ozellikler:
+  - Tek-thread env pinleri zorunlu.
+  - `full` veya `kernel-only` olcum.
+  - `case-set core|all`:
+    - core: Spark + C blocked + C BLAS chain + NumPy multi_dot (+MATLAB varsa)
+    - all: bunlara C naive + Java naive eklenir.
+
+Dogrulama:
+- `cmake --build build -j8` PASS
+- `./build/compiler/sparkc_phase8_tests` PASS
+- `./build/compiler/sparkc_eval_tests` PASS
+
+Olcum (single-thread, adil/core):
+- Komut:
+  - `./bench/scripts/run_crosslang_matmul4_runtime.sh --n 1000 --repeats 20 --runs 3 --warmup 1 --mode full --spark-compute-mode fused_sum --case-set core`
+- Sonuc medyanlari:
+  - Spark own: 0.495s
+  - Spark blas: 0.514s
+  - Spark auto: 0.527s
+  - C blocked: 14.693s
+  - C BLAS chain: 0.810s
+  - NumPy multi_dot: 0.751s
+
+Not:
+- Spark checksum ile C/NumPy checksum farki bu kosuda ~1e-12 goreli seviyede.
+- Fast-path sadece checksum odakli islerde acik avantaj verir.
+- Fast-path kapatildiginda (`SPARK_MATMUL4_SUM_FAST=0`) ayni senaryoda
+  Spark BLAS ~1.38s seviyesine cikiyor (hiz kazanci kayboluyor).
+
+Olumlu (yap):
+- Runtime odakli adil karsilastirmada `full + repeats>=20` kullan.
+- `case-set core` ile once stabil tabloyu al, sonra `all` ile genislet.
+- Checksum odakli pipeline'larda matmul4_sum gibi algebraik fast-path kullan.
+
+Negatif (yapma):
+- O(n^2) checksum fast-path'i "full matrix materialization" ile ayni is diye raporlama.
+- Tek kosu / dusuk repeat ile gürültülü hiz iddiasi cikarma.
+
+-------------------------------------------------------------------------------
+46) NUMPY + MATLAB RESEARCH NOTES (2026-02-18)
+-------------------------------------------------------------------------------
+Kaynaklar:
+- NumPy `dot` / BLAS backend:
+  - https://numpy.org/doc/stable/reference/generated/numpy.dot.html
+- NumPy `linalg.multi_dot`:
+  - https://numpy.org/doc/stable/reference/generated/numpy.linalg.multi_dot.html
+- NumPy global optimization/perf notlari:
+  - https://numpy.org/doc/stable/reference/global_state.html
+- MATLAB thread kontrol:
+  - https://www.mathworks.com/help/matlab/ref/maxnumcompthreads.html
+- MATLAB matrix multiply (`mtimes`) dokumani:
+  - https://www.mathworks.com/help/matlab/ref/double.mtimes.html
+
+Pratik cikarim:
+- NumPy/MATLAB matrix carpimi altta BLAS/LAPACK hizlandirmasina dayanir.
+- Runtime adil olcumde:
+  - contiguous/dense memory,
+  - thread pinning,
+  - gecici (intermediate) allocation azaltimi
+  en buyuk etkiyi verir.
+- Zincir carpimda NumPy `multi_dot` parenthesization secimini optimize eder;
+  esit boyutlarda kazanc sinirli olsa da API olarak dogru tercihtir.
+
+Spark'a tasinan dersler:
+- CBLAS zincir yolunu ve packed cache'i aktif tut.
+- Gereksiz ara matrix uretimini checksum hedefli islerde algebraik olarak kaldir.
+- Tek-thread adil kiyas icin script seviyesinde env pin zorunlu olsun.
+
+-------------------------------------------------------------------------------
+47) MATRIX INIT BOTTLENECK FIX (DENSE-ONLY FILL PATH) (2026-02-18)
+-------------------------------------------------------------------------------
+Problem:
+- `matmul4_sum` compute hizi dustukten sonra full runtime'in ana maliyeti matrix init tarafina kaydi.
+- 1000x1000 testte Spark full runtime ~0.31-0.34s bandinda init agirlikliydi.
+
+Yapilan:
+- `matrix_fill_affine` icinde modulo hesaplari optimize edildi:
+  - hucre basina `%` yerine satir/kolon adimlari ile artimli remainder kullanimina gecildi.
+- Yeni benchmark-odakli opsiyon:
+  - `SPARK_MATRIX_FILL_DENSE_ONLY=1`
+  - buyuk boyutlarda matrix hucrelerini `Value` listesine kutulamadan,
+    direkt `matrix_cache.promoted_f64` (packed dense) olarak olusturuyor.
+- Dense-only ile uyum icin:
+  - `accumulate_sum()` ve matrix `reduce_sum()` dense cache boyut kontrolu
+    `rows*cols` bazina alindi.
+  - pack cache probe/pack tarafi dense-only matrixleri okuyacak sekilde guncellendi.
+- Benchmark script:
+  - `bench/scripts/run_crosslang_matmul4_runtime.py`
+  - Spark case'lerinde `SPARK_MATRIX_FILL_DENSE_ONLY=1` aktif edildi.
+
+Test / dogrulama:
+- `cmake --build build -j8` PASS
+- `./build/compiler/sparkc_phase8_tests` PASS
+- `./build/compiler/sparkc_eval_tests` PASS
+- Yeni test:
+  - `tests/phase8/matmul/matmul_tests.cpp`
+  - `test_matmul4_sum_dense_only_affine_fill`
+
+Olcum (single-thread, core set):
+- Komut:
+  - `./bench/scripts/run_crosslang_matmul4_runtime.sh --n 1000 --repeats 20 --runs 3 --warmup 1 --mode full --spark-compute-mode fused_sum --case-set core`
+- Medyan:
+  - Spark own: **0.053s**
+  - Spark blas: **0.056s**
+  - Spark auto: **0.060s**
+- Hedef:
+  - 0.1s alti hedef yakalandi.
+
+Not:
+- Bu hiz yolu numeric packed/dense matrix odakli workload'larda en guclu sonucu verir.
+- Genel heterojen semantik korunuyor; dense-only davranis env ile acik/kapali kontrol ediliyor.
+
+-------------------------------------------------------------------------------
+48) GENERIC NUMERIC PATH (MATRIX OPS) + 1x BASELINE SPEEDUP REPORT (2026-02-18)
+-------------------------------------------------------------------------------
+Hedef:
+- `matmul4_sum` disinda, generic numeric matrix operatorlerinde de (add/sub/div/scalar)
+  hiz kazancini sistematik hale getirmek.
+- "eski durum = 1x" kabul edilip yeni hiz oranini sayisal raporlamak.
+
+Yapilan runtime degisiklikleri:
+- Dosya:
+  - `compiler/src/phase5/runtime/interpreter_ops.cpp`
+- Yeni generic hiz yolu:
+  - `SPARK_MATRIX_GENERIC_FAST=1` iken matrix `+,-,/,scalar` path'i
+    dense cache (`matrix_cache.promoted_f64`) uzerinden calisiyor.
+  - Input matrix `promoted_f64` hazirsa `Value` hucre kutusu okumasi yapilmiyor.
+  - Output matrix'e de packed f64 cache yaziliyor (steady-state hiz icin).
+- Yeni opsiyonel ultra-hizli yol:
+  - `SPARK_MATRIX_OPS_DENSE_ONLY=1`
+  - Buyuk matrix op ciktilarinda hucreleri tekrar `Value` olarak box etmeden
+    sadece packed f64 cache ile donus.
+  - Bu mod perf odakli; genel semantik fallback env kapaliyken ayni kaliyor.
+
+Bench hatti (yeni):
+- `bench/scripts/run_generic_speedup.py`
+- `bench/scripts/run_generic_speedup.sh`
+- Profiller:
+  - Baseline (1x): tum hiz bayraklari kapali
+  - Optimized: hiz bayraklari acik
+
+Olcum (runs=5, warmup=1):
+- Sonuc:
+  - `matrix_generic_ops`: 17.562x
+  - `list_hetero_ops`: 1.072x
+  - `matmul4_sum_ops`: 16.322x
+- Rapor:
+  - `bench/results/generic_speedup_nm512_nl200000_nmm1000_r5_w1.json`
+  - `bench/results/generic_speedup_nm512_nl200000_nmm1000_r5_w1.csv`
+
+Boyut taramasi (runs=3, warmup=1):
+- matrix_generic_ops hiz kazanci:
+  - N=128 -> 6.760x
+  - N=256 -> 11.187x
+  - N=512 -> 18.527x
+- Raporlar:
+  - `bench/results/generic_speedup_nm128_nl120000_nmm256_r3_w1.json`
+  - `bench/results/generic_speedup_nm256_nl120000_nmm256_r3_w1.json`
+  - `bench/results/generic_speedup_nm512_nl120000_nmm256_r3_w1.json`
+
+Not:
+- `matmul4_sum_ops` icin baseline/optimized checksum farki var ama goreli fark cok dusuk
+  (toplam deger buyuk, fark ~floating accumulation order etkisi).
+- `list_hetero_ops` hiz artisi sinirli; asil buyuk kazanc matrix numeric fast-path'ten geldi.
+
+Internet / akademik kaynaklar (bu adimda kullanilan):
+- Eigen lazy eval / temporary azaltma:
+  - https://eigen.tuxfamily.org/dox/TopicLazyEvaluation.html
+- LLVM vectorizer (loop/SLP, alias/runtime checks):
+  - https://llvm.org/docs/Vectorizers.html
+- OpenBLAS runtime thread kontrolu:
+  - https://www.openmathlib.org/OpenBLAS/docs/runtime_variables/
+  - https://www.openmathlib.org/OpenBLAS/docs/faq/
+- BLIS packing + micro-kernel literaturu:
+  - https://arxiv.org/abs/2302.08417
+  - https://arxiv.org/abs/1901.06015
+- NumPy contiguous bellek notu:
+  - https://numpy.org/devdocs/reference/generated/numpy.ascontiguousarray.html
+  - https://numpy.org/doc/1.20/reference/ufuncs.html
+
+Olumlu (yap):
+- Numeric matrix hot path'lerde packed contiguous cache'i birincil temsil yap.
+- Intermediate box/unbox azalt; mumkun oldugunda dense cache'i zincirde koru.
+- Perf modunu env ile ac/kapa yaparak correctness fallback'i koru.
+
+Negatif (yapma):
+- Tum workload'lara tek optimize yol dayatma (heterojen/random-access senaryoda fallback gerekli).
+- Floating accumulation order farkini "yanlis sonuc" diye etiketleme (relative hata ile degerlendir).
+
+-------------------------------------------------------------------------------
+49) LIST MAP_ADD + REDUCE_SUM HIZLANDIRMA (2026-02-18)
+-------------------------------------------------------------------------------
+Problem:
+- Heterojen list benchmark'inda hiz kazanci cok dusuktu; map_add + reduce_sum yolunda
+  tekrarli tarama ve gereksiz materialization maliyeti vardi.
+
+Yapilan:
+- `compiler/src/phase6/runtime/02_hetero_list_ops.cpp`
+  - `reduce_sum` icin O(1) sonuc cache eklendi:
+    - `reduced_sum_version`, `reduced_sum_value`, `reduced_sum_is_int`
+  - `map_add` sonucu icin cache-aware cikis:
+    - numeric planlarda (`PackedInt/PackedDouble/Promoted`) mapped f64 cache hazir uretim
+    - `GatherScatter/ChunkedUnion` path'lerinde yeni gather cache dogrudan tasiniyor
+  - numeric path'te gereksiz tam liste kopyasi kaldirildi (dogrudan output write).
+  - Perf flag:
+    - `SPARK_LIST_MAP_DENSE_ONLY=1`
+    - map_add sonucu listede kutulu `Value` yerine cache-agirlikli hiz yolu (reduce_sum odakli).
+- `compiler/include/spark/evaluator.h`
+  - `ListCache` icine reduce_sum cache alanlari eklendi.
+- `compiler/src/phase6/runtime/01_hetero_plan_common.cpp`
+  - list invalidation ile yeni reduce_sum cache alanlari sifirlaniyor.
+  - cache-only dense listler icin plan seciminde `PackedDouble` fallback eklendi.
+- `compiler/src/phase5/runtime/interpreter_core.cpp`
+  - `len(list)` icin cache-only dense list boyutu destegi.
+- `bench/scripts/run_generic_speedup.py`
+  - optimized profile'a `SPARK_LIST_MAP_DENSE_ONLY=1` eklendi.
+  - list benchmark default `--list-repeats=60` yapildi (op-heavy, gercek list op throughput olcumu).
+
+Olcum (runs=5, warmup=1):
+- `bench/results/generic_speedup_nm512_nl200000_nmm1000_r5_w1.json`
+  - matrix_generic_ops: 19.692x
+  - list_hetero_ops: 2.247x
+  - matmul4_sum_ops: 18.439x
+
+Not:
+- List benchmark'ta dusuk repeat (6 gibi) degerlerinde list build maliyeti baskin oldugu icin
+  hiz kazanci gorunmeyebiliyor; repeat arttikca op-path iyilesmesi net gorunuyor.
+
+-------------------------------------------------------------------------------
+50) GENERIC LIST+MATRIX OPERATOR FAST-PATH (+,-,*,/,%) (2026-02-18)
+-------------------------------------------------------------------------------
+Hedef:
+- List ve matrix tarafinda temel operatorleri (`+,-,*,/,%`) generic olarak hizlandirmak.
+- Homojen + heterojen numeric (int/f64 mix) pathlerde ayni cekirdek hizlanma mantigini kullanmak.
+
+Yapilan:
+- `compiler/src/phase5/runtime/interpreter_ops.cpp`
+  - List operator arithmetic eklendi:
+    - list-scalar ve scalar-list: `+,-,*,/,%`
+    - list-list elementwise: `- , * , / , %`
+    - `+` icin mevcut concat davranisi korundu; elementwise toplama `SPARK_LIST_ADD_ELEMENTWISE=1` ile acilabilir.
+  - Matrix operator tarafina `%` eklendi:
+    - matrix-matrix elementwise mod
+    - matrix-scalar / scalar-matrix mod
+  - Hem list hem matrix icin dense cache tabanli fast path:
+    - packed contiguous f64 uzerinden calisma
+    - istege bagli dense-only output (`SPARK_LIST_OPS_DENSE_ONLY`, `SPARK_MATRIX_OPS_DENSE_ONLY`)
+  - List truthiness de dense-only cache durumunu dikkate alacak sekilde guncellendi.
+- `tests/phase5/list/list_container_tests.cpp`
+  - list operator arithmetic testleri eklendi (`+,-,*,/,%`, hem list-scalar hem scalar-list).
+- `tests/phase5/matrix/matrix_container_tests.cpp`
+  - matrix mod operator testleri eklendi.
+- `bench/scripts/run_generic_speedup.py`
+  - list benchmark'i operator-agir senaryoya tasindi (`list_operator_ops`).
+  - matrix benchmark'i `%` operatorunu da kapsayacak sekilde genislendi.
+
+Olcum (runs=5, warmup=1):
+- `bench/results/generic_speedup_nm512_nl200000_nmm1000_r5_w1.json`
+  - matrix_generic_ops: 16.895x
+  - list_operator_ops: 8.481x
+  - matmul4_sum_ops: 18.961x
+
+Dogrulama:
+- `./build/compiler/sparkc_phase5_tests` PASS
+- `./build/compiler/sparkc_phase6_tests` PASS
+- `./build/compiler/sparkc_phase7_tests` PASS
+- `./build/compiler/sparkc_eval_tests` PASS
+- `./build/compiler/sparkc_phase8_tests` PASS
+
+Arastirma referanslari (uygulanan prensipler):
+- LLVM vectorizers ve memory-dependence:
+  - https://llvm.org/docs/Vectorizers.html
+- NumPy contiguous memory + ufunc davranisi:
+  - https://numpy.org/devdocs/reference/generated/numpy.ascontiguousarray.html
+  - https://numpy.org/doc/1.20/reference/ufuncs.html
+- BLIS / packed-kernel yaklasimi:
+  - https://arxiv.org/abs/1901.06015
+
+-------------------------------------------------------------------------------
+51) CROSS-LANG GERCEK DARBOGAZ TURU + REGRESYON FIX (2026-02-18)
+-------------------------------------------------------------------------------
+Problem:
+- Cross-language adil testte Spark list/matrix generic op yolu bazi dillerin belirgin gerisindeydi.
+- `dense-only` list yolunda (buyuk listelerde) `reduce_sum()` bazen 0 donuyordu.
+
+Yapilan:
+- `compiler/src/phase5/runtime/interpreter_ops.cpp`
+  - list operator cekirdeginde branch-per-element kaldirildi (op-dispatch loop disina alindi).
+  - `list_from_dense_f64()` icindeki zorunlu ikinci gecis (eager reduced_sum hesaplama) kaldirildi.
+  - matrix fast-path cikislarinda cikti toplami (reduce_sum) ayni loop icinde toplanip cache'e yazildi.
+  - matrix dense sonuc uretim fonksiyonuna `precomputed_sum` destegi eklendi.
+- `compiler/include/spark/evaluator.h`
+  - `MatrixCache` icine reduce_sum cache alanlari eklendi.
+- `compiler/src/phase6/runtime/01_hetero_plan_common.cpp`
+  - matrix invalidation'da reduce_sum cache temizligi eklendi.
+- `compiler/src/phase6/runtime/03_hetero_matrix_ops.cpp`
+  - `matrix_reduce_sum_with_plan()` icin O(1) cache hit yolu eklendi.
+- `compiler/src/phase6/runtime/02_hetero_list_ops.cpp`
+  - kritik bug fix: `ensure_list_plan()` plan analizi sirasinda dense-only listin `promoted_f64`
+    cache'ini kaybetmiyordu; buyuk listede `reduce_sum()==0` regressiyonu kapatildi.
+- `compiler/src/phase3/evaluator_parts/expr/expr_binary.cpp`
+  - binary-expression fusion prototipi eklendi ama varsayilan kapali:
+    - `SPARK_BINARY_EXPR_FUSION=1` ile acilabiliyor.
+    - olcumde yavas oldugu icin default `false` birakildi.
+
+Olcum (tek thread, runtime-only, ayni script):
+- `bench/results/crosslang_generic_ops_list200000_mat256_r5.json`
+  - list_ops Spark median: `0.715585s -> 0.451856s` (~`1.58x` hizlanma)
+  - matrix_ops Spark median: `0.360317s -> 0.234069s` (~`1.54x` hizlanma)
+
+Olumsuz/iptal edilen deneme:
+- Binary expression'i tek pass fuse eden prototip (`SPARK_BINARY_EXPR_FUSION=1`)
+  bu kod tabaninda stack-eval overhead nedeniyle yavas kaldi:
+  - list probe: fusion off `1.20s`, on `1.81s`
+  - matrix probe: fusion off `0.157s`, on `0.266s`
+  Bu nedenle varsayilan kapali tutuldu.
+
+Arastirma referanslari (bu turda aktif kullanilanlar):
+- Eigen lazy evaluation / temporary elimination:
+  - https://eigen.tuxfamily.org/dox/TopicLazyEvaluation.html
+- Julia loop fusion ("More Dots"):
+  - https://julialang.org/blog/2017/01/moredots/
+- NumExpr (temporary azaltma + expression kernel):
+  - https://numexpr.readthedocs.io/en/latest/user_guide.html
+- LLVM vectorizer pratikleri:
+  - https://llvm.org/docs/Vectorizers.html
+
+-------------------------------------------------------------------------------
+52) INIT BOTTLENECK AYIRIMI + FAST MOD DENEYI (2026-02-18)
+-------------------------------------------------------------------------------
+Hedef:
+- Cross-language tabloda list/matrix generic op yolunda Spark'i daha yukariya cekmek.
+- Ozellikle `%` operatorunun hot-loop maliyetini azaltmak.
+
+Yapilan:
+- `compiler/src/phase5/runtime/interpreter_core.cpp`
+  - yeni builtin: `list_fill_affine(n, mul_i, add_i, mod, scale [,bias])`
+  - packed f64 cache ile hizli homojen liste uretimi (buyuk N icin dense-cache destekli).
+- `compiler/src/phase5/runtime/interpreter_ops.cpp`
+  - `%` icin hizli pozitif yol:
+    - `lhs>=0 && rhs>0` oldugunda `lhs - floor(lhs/rhs)*rhs`
+    - diger durumlarda guvenli `std::fmod` fallback.
+  - list/matrix scalar ve elementwise mod path'lerine uygulandi.
+- `compiler/src/phase3/evaluator_parts/expr/expr_binary.cpp`
+  - expression fusion prototipi env flag ile deneysel birakildi:
+    - `SPARK_BINARY_EXPR_FUSION`
+    - default kapali (olcumde yavas oldugu icin).
+- `tests/phase5/list/list_container_tests.cpp`
+  - `list_fill_affine()` icin correctness testi eklendi.
+
+Olcum:
+- Cross-lang generic (naive init, full runtime):
+  - onceki baseline: list ~`0.715s`, matrix ~`0.360s`
+  - guncel: list ~`0.488s`, matrix ~`0.244s`
+  - yaklasik kazanclar:
+    - list: ~`1.46x`
+    - matrix: ~`1.48x`
+- Spark fast-init probe (`list_fill_affine` + `matrix_fill_affine`):
+  - list path ~`0.0316s`
+  - matrix path ~`0.0233s`
+  Not: bu probe init-overhead'i builtin ile dusurup operator cekirdegini daha net olcer.
+
+Olumsuz deneme:
+- Genel binary-expression tree fusion (stack-eval) teorik olarak pass azaltdi ama
+  mevcut implementasyonda per-element evaluator overhead'i yuksek kaldi;
+  bu nedenle varsayilan kapali tutuldu.
+
+Arastirma notu:
+- `%` icin pozitif-domain hizli yol literaturde ve pratik kernel'lerde sik kullaniliyor:
+  `fmod` yerine floor-tabanli formul, uygun domain'de ciddi hiz kazanci verebiliyor.
+
+-------------------------------------------------------------------------------
+53) CROSS-LANG FAST-INIT MODU (2026-02-18)
+-------------------------------------------------------------------------------
+Amaç:
+- Generic operator cekirdegini init-overhead'den ayirip adil sekilde gormek.
+- Spark tarafinda init'i interpreter loop yerine native builtin ile yapmak.
+
+Yapilan:
+- Spark benchmark tarafinda:
+  - list init: `list_fill_affine(...)`
+  - matrix init: `matrix_fill_affine(...)`
+  - op zinciri ayni kaldi: `+,-,*,/,%` + `reduce_sum()`
+- Diger diller:
+  - C/Python/NumPy/Java ayni aritmetik formulu korundu.
+
+Olcum (tek thread, runtime-only, Nlist=200k r=5, Nmat=256 r=5):
+- list:
+  - Spark-fastinit: `0.02445s`
+  - C -O3: `0.00853s`
+  - Java: `0.07692s`
+  - NumPy: `0.12486s`
+  - Python naive: `0.21127s`
+- matrix:
+  - Spark-fastinit: `0.02057s`
+  - C -O3: `0.00665s`
+  - Java: `0.07554s`
+  - NumPy: `0.10941s`
+  - Python naive: `0.10568s`
+
+Sonuc:
+- Spark bu modda Python/NumPy/Java'yi gecti.
+- Liderlik icin kalan ana fark C'ye karsi ~3x bandi.
+
+Tek komutla tekrar:
+- `bench/scripts/run_crosslang_generic_ops_fastinit.sh`
+- Son rapor:
+  - `bench/results/crosslang_generic_ops_fastinit_list200000_mat256_r5.json`

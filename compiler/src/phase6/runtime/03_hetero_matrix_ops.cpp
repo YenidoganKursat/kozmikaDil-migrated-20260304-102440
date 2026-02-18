@@ -71,6 +71,17 @@ void materialize_matrix_if_needed(Value& value) {
 }  // namespace
 
 Value matrix_reduce_sum_with_plan(Value& value) {
+  if (value.kind != Value::Kind::Matrix || !value.matrix_value) {
+    throw EvalException("reduce_sum() expects a matrix value");
+  }
+  if (value.matrix_cache.reduced_sum_version == value.matrix_cache.version) {
+    value.matrix_cache.cache_hit_count += 1;
+    if (value.matrix_cache.reduced_sum_is_int) {
+      return Value::int_value_of(static_cast<long long>(std::llround(value.matrix_cache.reduced_sum_value)));
+    }
+    return Value::double_value_of(value.matrix_cache.reduced_sum_value);
+  }
+
   ensure_matrix_plan(value, "reduce_sum");
   materialize_matrix_if_needed(value);
 
@@ -80,13 +91,30 @@ Value matrix_reduce_sum_with_plan(Value& value) {
     for (const auto& cell : value.matrix_value->data) {
       total += cell.int_value;
     }
+    value.matrix_cache.reduced_sum_version = value.matrix_cache.version;
+    value.matrix_cache.reduced_sum_value = static_cast<double>(total);
+    value.matrix_cache.reduced_sum_is_int = true;
     return Value::int_value_of(total);
   }
   if (plan == Value::LayoutTag::PackedDouble) {
     double total = 0.0;
-    for (const auto& cell : value.matrix_value->data) {
-      total += cell.double_value;
+    const auto total_values = value.matrix_value->rows * value.matrix_value->cols;
+    const auto& cache = value.matrix_cache;
+    const bool dense_ready =
+        cache.materialized_version == cache.version &&
+        cache.promoted_f64.size() == total_values;
+    if (dense_ready) {
+      for (const auto entry : cache.promoted_f64) {
+        total += entry;
+      }
+    } else {
+      for (const auto& cell : value.matrix_value->data) {
+        total += cell.double_value;
+      }
     }
+    value.matrix_cache.reduced_sum_version = value.matrix_cache.version;
+    value.matrix_cache.reduced_sum_value = total;
+    value.matrix_cache.reduced_sum_is_int = false;
     return Value::double_value_of(total);
   }
   if (plan == Value::LayoutTag::PromotedPackedDouble) {
@@ -94,6 +122,9 @@ Value matrix_reduce_sum_with_plan(Value& value) {
     for (const auto entry : value.matrix_cache.promoted_f64) {
       total += entry;
     }
+    value.matrix_cache.reduced_sum_version = value.matrix_cache.version;
+    value.matrix_cache.reduced_sum_value = total;
+    value.matrix_cache.reduced_sum_is_int = false;
     return Value::double_value_of(total);
   }
 
@@ -104,6 +135,9 @@ Value matrix_reduce_sum_with_plan(Value& value) {
     }
     total += matrix_numeric_to_double(cell);
   }
+  value.matrix_cache.reduced_sum_version = value.matrix_cache.version;
+  value.matrix_cache.reduced_sum_value = total;
+  value.matrix_cache.reduced_sum_is_int = false;
   return Value::double_value_of(total);
 }
 

@@ -1,0 +1,95 @@
+{
+  "config": {
+    "n": 1000,
+    "repeats": 1,
+    "runs": 5,
+    "warmup": 1,
+    "spark_threads": 1,
+    "mode": "kernel-only",
+    "spark_compute_mode": "fused_sum",
+    "case_set": "core",
+    "baseline": "C (clang -O3 blocked)",
+    "single_thread": true
+  },
+  "results": [
+    {
+      "name": "Spark interpret (own)",
+      "median_sec": 0.00636800000211224,
+      "min_sec": 0.0028156249900348485,
+      "max_sec": 0.008746624982450157,
+      "runs": 5,
+      "checksum_raw": "59658792072710.445",
+      "checksum": 59658792072710.445,
+      "vs_c": 117.89001645106813,
+      "mode": "kernel-only",
+      "compute_median_sec": 0.03982483298750594,
+      "init_median_sec": 0.03297033300623298
+    },
+    {
+      "name": "Spark interpret (blas)",
+      "median_sec": 0.003058791015064344,
+      "min_sec": 0.0,
+      "max_sec": 0.006755750015145168,
+      "runs": 5,
+      "checksum_raw": "59658792072710.445",
+      "checksum": 59658792072710.445,
+      "vs_c": 245.43148626766245,
+      "mode": "kernel-only",
+      "compute_median_sec": 0.036903416010318324,
+      "init_median_sec": 0.03384462499525398
+    },
+    {
+      "name": "Spark interpret (auto)",
+      "median_sec": 0.0,
+      "min_sec": 0.0,
+      "max_sec": 0.010941750020720065,
+      "runs": 5,
+      "checksum_raw": "59658792072710.445",
+      "checksum": 59658792072710.445,
+      "vs_c": null,
+      "mode": "kernel-only",
+      "compute_median_sec": 0.03917470798478462,
+      "init_median_sec": 0.03540704201441258
+    },
+    {
+      "name": "C (clang -O3 blocked)",
+      "median_sec": 0.7507236250094138,
+      "min_sec": 0.742349792009918,
+      "max_sec": 0.7833736670145299,
+      "runs": 5,
+      "checksum_raw": "59658792072707.60156250000000000",
+      "checksum": 59658792072707.6,
+      "vs_c": 1.0,
+      "mode": "kernel-only",
+      "compute_median_sec": 0.7615571669884957,
+      "init_median_sec": 0.00871287498739548
+    },
+    {
+      "name": "C (BLAS dgemm chain)",
+      "median_sec": 0.03795204102061689,
+      "min_sec": 0.03704741600085981,
+      "max_sec": 0.045833458978449926,
+      "runs": 5,
+      "checksum_raw": "59658792072707.60156250000000000",
+      "checksum": 59658792072707.6,
+      "vs_c": 19.780849852096075,
+      "mode": "kernel-only",
+      "compute_median_sec": 0.04545025000697933,
+      "init_median_sec": 0.007260416983626783
+    },
+    {
+      "name": "Python+NumPy multi_dot",
+      "median_sec": 0.04363512498093769,
+      "min_sec": 0.03336933397804387,
+      "max_sec": 0.04537545799394138,
+      "runs": 5,
+      "checksum_raw": "59658792072710.27343750000000000",
+      "checksum": 59658792072710.27,
+      "vs_c": 17.20457143957701,
+      "mode": "kernel-only",
+      "compute_median_sec": 0.19646016700426117,
+      "init_median_sec": 0.15399216700461693
+    }
+  ],
+  "checksum_reference": 59658792072707.6
+}

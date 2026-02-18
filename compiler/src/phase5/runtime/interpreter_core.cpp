@@ -1,6 +1,8 @@
 #include <memory>
 #include <iostream>
+#include <cstdlib>
 #include <limits>
+#include <string>
 #include <unordered_map>
 
 #include "../../phase3/evaluator_parts/internal_helpers.h"
@@ -66,6 +68,12 @@ void Interpreter::reset() {
       throw EvalException("len() expects exactly one argument");
     }
     if (args[0].kind == Value::Kind::List) {
+      const auto& list = args[0];
+      if (list.list_value.empty() &&
+          list.list_cache.materialized_version == list.list_cache.version &&
+          !list.list_cache.promoted_f64.empty()) {
+        return Value::int_value_of(static_cast<long long>(list.list_cache.promoted_f64.size()));
+      }
       return Value::int_value_of(static_cast<long long>(args[0].list_value.size()));
     }
     if (args[0].kind == Value::Kind::Matrix && args[0].matrix_value) {
@@ -116,6 +124,108 @@ void Interpreter::reset() {
     return Value::matrix_value_of(rows, cols, std::move(data));
   });
 
+  auto list_fill_affine_fn = Value::builtin("list_fill_affine", [](const std::vector<Value>& args) -> Value {
+    if (args.size() < 5 || args.size() > 6) {
+      throw EvalException("list_fill_affine() expects 5 or 6 arguments");
+    }
+    const auto n_raw = value_to_int(args[0]);
+    const auto mul_i = value_to_int(args[1]);
+    const auto add_i = value_to_int(args[2]);
+    const auto mod = value_to_int(args[3]);
+    if (n_raw < 0 || mod <= 0) {
+      throw EvalException("list_fill_affine() invalid size or modulus");
+    }
+    if (args[4].kind != Value::Kind::Int && args[4].kind != Value::Kind::Double) {
+      throw EvalException("list_fill_affine() scale must be numeric");
+    }
+    const auto scale = (args[4].kind == Value::Kind::Int) ? static_cast<double>(args[4].int_value)
+                                                           : args[4].double_value;
+    double bias = 0.0;
+    if (args.size() == 6) {
+      if (args[5].kind != Value::Kind::Int && args[5].kind != Value::Kind::Double) {
+        throw EvalException("list_fill_affine() bias must be numeric");
+      }
+      bias = (args[5].kind == Value::Kind::Int) ? static_cast<double>(args[5].int_value)
+                                                 : args[5].double_value;
+    }
+
+    const auto n = static_cast<std::size_t>(n_raw);
+    const bool eager_dense_cache = n >= (128u * 1024u);
+
+    const auto env_bool_enabled = [](const char* name, bool fallback) {
+      const auto* value = std::getenv(name);
+      if (!value || *value == '\0') {
+        return fallback;
+      }
+      const std::string text = value;
+      if (text == "0" || text == "false" || text == "False" || text == "off" || text == "OFF" ||
+          text == "no" || text == "NO") {
+        return false;
+      }
+      return true;
+    };
+    const bool dense_only =
+        env_bool_enabled("SPARK_LIST_FILL_DENSE_ONLY", false) && eager_dense_cache;
+
+    std::vector<Value> data;
+    if (!dense_only) {
+      data.resize(n);
+    }
+
+    std::vector<double> dense_f64;
+    if (eager_dense_cache) {
+      dense_f64.resize(n);
+    }
+
+    const auto normalize_mod = [mod](long long value) {
+      auto rem = value % mod;
+      if (rem < 0) {
+        rem += mod;
+      }
+      return rem;
+    };
+    const auto step = normalize_mod(mul_i);
+    long long rem = normalize_mod(add_i);
+    double reduce_sum = 0.0;
+
+    for (std::size_t i = 0; i < n; ++i) {
+      const auto value = static_cast<double>(rem) * scale + bias;
+      if (!dense_only) {
+        auto& cell = data[i];
+        cell.kind = Value::Kind::Double;
+        cell.double_value = value;
+      }
+      if (eager_dense_cache) {
+        dense_f64[i] = value;
+      }
+      reduce_sum += value;
+      rem += step;
+      if (rem >= mod) {
+        rem -= mod;
+      }
+    }
+
+    auto result = Value::list_value_of(std::move(data));
+    result.list_cache.live_plan = true;
+    result.list_cache.plan = Value::LayoutTag::PackedDouble;
+    result.list_cache.operation = "list_fill_affine";
+    result.list_cache.analyzed_version = result.list_cache.version;
+    if (eager_dense_cache) {
+      result.list_cache.materialized_version = result.list_cache.version;
+      result.list_cache.promoted_f64 = std::move(dense_f64);
+      result.list_cache.reduced_sum_version = result.list_cache.version;
+      result.list_cache.reduced_sum_value = reduce_sum;
+      result.list_cache.reduced_sum_is_int = false;
+    } else {
+      result.list_cache.materialized_version = std::numeric_limits<std::uint64_t>::max();
+      result.list_cache.promoted_f64.clear();
+      result.list_cache.reduced_sum_version = std::numeric_limits<std::uint64_t>::max();
+      result.list_cache.reduced_sum_value = 0.0;
+      result.list_cache.reduced_sum_is_int = false;
+    }
+    return result;
+  });
+
   auto matrix_fill_affine_fn = Value::builtin("matrix_fill_affine", [](const std::vector<Value>& args) -> Value {
     if (args.size() < 6 || args.size() > 7) {
       throw EvalException("matrix_fill_affine() expects 6 or 7 arguments");
@@ -144,30 +254,69 @@ void Interpreter::reset() {
 
     const auto rows = static_cast<std::size_t>(rows_raw);
     const auto cols = static_cast<std::size_t>(cols_raw);
-    std::vector<Value> data(rows * cols);
     const auto total = rows * cols;
     const bool eager_dense_cache = total >= (128u * 128u);
+
+    const auto env_bool_enabled = [](const char* name, bool fallback) {
+      const auto* value = std::getenv(name);
+      if (!value || *value == '\0') {
+        return fallback;
+      }
+      const std::string text = value;
+      if (text == "0" || text == "false" || text == "False" || text == "off" || text == "OFF" ||
+          text == "no" || text == "NO") {
+        return false;
+      }
+      return true;
+    };
+    const bool dense_only =
+        env_bool_enabled("SPARK_MATRIX_FILL_DENSE_ONLY", false) && eager_dense_cache;
+
+    std::vector<Value> data;
+    if (!dense_only) {
+      data.resize(total);
+    }
+
     std::vector<double> dense_f64;
     if (eager_dense_cache) {
       dense_f64.resize(total);
     }
+
+    const auto normalize_mod = [mod](long long value) {
+      auto rem = value % mod;
+      if (rem < 0) {
+        rem += mod;
+      }
+      return rem;
+    };
+    const auto step_i = normalize_mod(mul_i);
+    const auto step_j = normalize_mod(mul_j);
+    long long row_rem = 0;
+    std::size_t index = 0;
     for (std::size_t i = 0; i < rows; ++i) {
+      long long rem = row_rem;
       for (std::size_t j = 0; j < cols; ++j) {
-        auto raw = static_cast<long long>(i) * mul_i + static_cast<long long>(j) * mul_j;
-        auto rem = raw % mod;
-        if (rem < 0) {
-          rem += mod;
-        }
         const auto value = static_cast<double>(rem) * scale + bias;
-        const auto index = i * cols + j;
-        auto& cell = data[index];
-        cell.kind = Value::Kind::Double;
-        cell.double_value = value;
+        if (!dense_only) {
+          auto& cell = data[index];
+          cell.kind = Value::Kind::Double;
+          cell.double_value = value;
+        }
         if (eager_dense_cache) {
           dense_f64[index] = value;
         }
+        ++index;
+        rem += step_j;
+        if (rem >= mod) {
+          rem -= mod;
+        }
+      }
+      row_rem += step_i;
+      if (row_rem >= mod) {
+        row_rem -= mod;
       }
     }
+
     auto result = Value::matrix_value_of(rows, cols, std::move(data));
     result.matrix_cache.plan = Value::LayoutTag::PackedDouble;
     result.matrix_cache.live_plan = true;
@@ -264,6 +413,57 @@ void Interpreter::reset() {
     return Value::double_value_of(expected);
   });
 
+  // Fused hot path: computes sum(A*B) directly without materializing matrix cells.
+  auto matmul_sum_fn = Value::builtin("matmul_sum", [](const std::vector<Value>& args) -> Value {
+    if (args.size() != 2) {
+      throw EvalException("matmul_sum() expects exactly two matrix arguments");
+    }
+    if (args[0].kind != Value::Kind::Matrix || !args[0].matrix_value ||
+        args[1].kind != Value::Kind::Matrix || !args[1].matrix_value) {
+      throw EvalException("matmul_sum() expects matrix arguments");
+    }
+    Value lhs = args[0];
+    return matrix_matmul_sum_value(lhs, args[1]);
+  });
+
+  auto matmul_sum_f32_fn = Value::builtin("matmul_sum_f32", [](const std::vector<Value>& args) -> Value {
+    if (args.size() != 2) {
+      throw EvalException("matmul_sum_f32() expects exactly two matrix arguments");
+    }
+    if (args[0].kind != Value::Kind::Matrix || !args[0].matrix_value ||
+        args[1].kind != Value::Kind::Matrix || !args[1].matrix_value) {
+      throw EvalException("matmul_sum_f32() expects matrix arguments");
+    }
+    Value lhs = args[0];
+    return matrix_matmul_sum_f32_value(lhs, args[1]);
+  });
+
+  auto matmul4_sum_fn = Value::builtin("matmul4_sum", [](const std::vector<Value>& args) -> Value {
+    if (args.size() != 4) {
+      throw EvalException("matmul4_sum() expects exactly four matrix arguments");
+    }
+    for (const auto& arg : args) {
+      if (arg.kind != Value::Kind::Matrix || !arg.matrix_value) {
+        throw EvalException("matmul4_sum() expects matrix arguments");
+      }
+    }
+    Value a = args[0];
+    return matrix_matmul4_sum_value(a, args[1], args[2], args[3]);
+  });
+
+  auto matmul4_sum_f32_fn = Value::builtin("matmul4_sum_f32", [](const std::vector<Value>& args) -> Value {
+    if (args.size() != 4) {
+      throw EvalException("matmul4_sum_f32() expects exactly four matrix arguments");
+    }
+    for (const auto& arg : args) {
+      if (arg.kind != Value::Kind::Matrix || !arg.matrix_value) {
+        throw EvalException("matmul4_sum_f32() expects matrix arguments");
+      }
+    }
+    Value a = args[0];
+    return matrix_matmul4_sum_f32_value(a, args[1], args[2], args[3]);
+  });
+
   auto accumulate_sum_fn = Value::builtin("accumulate_sum", [](const std::vector<Value>& args) -> Value {
     if (args.size() != 2) {
       throw EvalException("accumulate_sum() expects exactly two arguments: total and list/matrix");
@@ -283,6 +483,28 @@ void Interpreter::reset() {
       return Value::double_value_of(total);
     }
     if (container.kind == Value::Kind::Matrix && container.matrix_value) {
+      if (container.matrix_cache.plan == Value::LayoutTag::PackedDouble) {
+        const auto total_values = container.matrix_value->rows * container.matrix_value->cols;
+        const bool dense_ready =
+            container.matrix_cache.materialized_version == container.matrix_cache.version &&
+            container.matrix_cache.promoted_f64.size() == total_values;
+        if (dense_ready) {
+          for (const auto entry : container.matrix_cache.promoted_f64) {
+            total += entry;
+          }
+        } else {
+          for (const auto& cell : container.matrix_value->data) {
+            total += cell.double_value;
+          }
+        }
+        return Value::double_value_of(total);
+      }
+      if (container.matrix_cache.plan == Value::LayoutTag::PackedInt) {
+        for (const auto& cell : container.matrix_value->data) {
+          total += static_cast<double>(cell.int_value);
+        }
+        return Value::double_value_of(total);
+      }
       for (const auto& cell : container.matrix_value->data) {
         if (!is_numeric_kind(cell)) {
           throw EvalException("accumulate_sum() matrix elements must be numeric");
@@ -450,8 +672,13 @@ void Interpreter::reset() {
   globals->define("cols", cols_fn);
   globals->define("matrix_i64", matrix_i64_fn);
   globals->define("matrix_f64", matrix_f64_fn);
+  globals->define("list_fill_affine", list_fill_affine_fn);
   globals->define("matrix_fill_affine", matrix_fill_affine_fn);
   globals->define("matmul_expected_sum", matmul_expected_sum_fn);
+  globals->define("matmul_sum", matmul_sum_fn);
+  globals->define("matmul_sum_f32", matmul_sum_f32_fn);
+  globals->define("matmul4_sum", matmul4_sum_fn);
+  globals->define("matmul4_sum_f32", matmul4_sum_f32_fn);
   globals->define("accumulate_sum", accumulate_sum_fn);
   globals->define("spawn", spawn_fn);
   globals->define("join", join_fn);

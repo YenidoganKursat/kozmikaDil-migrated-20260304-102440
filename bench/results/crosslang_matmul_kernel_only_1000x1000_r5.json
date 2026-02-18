@@ -1,0 +1,122 @@
+{
+  "config": {
+    "n": 1000,
+    "repeats": 5,
+    "runs": 3,
+    "warmup": 1,
+    "spark_threads": 1,
+    "mode": "kernel-only",
+    "runtime_only": false,
+    "kernel_only_via_subtract_init": true,
+    "python_naive_max_n": 350,
+    "spark_init_mode": "affine",
+    "spark_compute_mode": "fused_sum"
+  },
+  "results": [
+    {
+      "name": "Spark interpret (own)",
+      "median_sec": 1.5425477920216508,
+      "min_sec": 1.538143834011862,
+      "max_sec": 1.6057513749983627,
+      "runs": 3,
+      "checksum_raw": "1223217231.9342008",
+      "checksum": 1223217231.9342008,
+      "vs_c": 6.956518849209405,
+      "mode": "kernel-only",
+      "compute_median_sec": 1.8065185000014026,
+      "init_median_sec": 0.26397070797975175
+    },
+    {
+      "name": "Spark interpret (blas)",
+      "median_sec": 0.09065025002928451,
+      "min_sec": 0.08491962499101646,
+      "max_sec": 0.09375266698771156,
+      "runs": 3,
+      "checksum_raw": "1223217231.9342008",
+      "checksum": 1223217231.9342008,
+      "vs_c": 118.3754351205694,
+      "mode": "kernel-only",
+      "compute_median_sec": 0.34581475000595674,
+      "init_median_sec": 0.2608951250149403
+    },
+    {
+      "name": "Spark interpret (auto)",
+      "median_sec": 0.07302516596973874,
+      "min_sec": 0.05991654100944288,
+      "max_sec": 0.10754258299130015,
+      "runs": 3,
+      "checksum_raw": "1223217231.9342008",
+      "checksum": 1223217231.9342008,
+      "vs_c": 146.94609246696868,
+      "mode": "kernel-only",
+      "compute_median_sec": 0.33137529098894447,
+      "init_median_sec": 0.26569045800715685
+    },
+    {
+      "name": "C (clang -O3 naive)",
+      "median_sec": 10.730762791004963,
+      "min_sec": 9.652848874975462,
+      "max_sec": 13.980140084022423,
+      "runs": 3,
+      "checksum_raw": "1223217231.93447375297546387",
+      "checksum": 1223217231.9344738,
+      "vs_c": 1.0,
+      "mode": "kernel-only",
+      "compute_median_sec": 10.763230665994342,
+      "init_median_sec": 0.02159054100047797
+    },
+    {
+      "name": "C (clang -O3 blocked)",
+      "median_sec": 2.887667958973907,
+      "min_sec": 2.5259747089876328,
+      "max_sec": 3.140529499971308,
+      "runs": 3,
+      "checksum_raw": "1223217231.93378305435180664",
+      "checksum": 1223217231.933783,
+      "vs_c": 3.716065331423351,
+      "mode": "kernel-only",
+      "compute_median_sec": 2.9036748749786057,
+      "init_median_sec": 0.016006916004698724
+    },
+    {
+      "name": "C (BLAS dgemm)",
+      "median_sec": 0.15552816598210484,
+      "min_sec": 0.12772108300123364,
+      "max_sec": 0.1581347500323318,
+      "runs": 3,
+      "checksum_raw": "1223217231.93447375297546387",
+      "checksum": 1223217231.9344738,
+      "vs_c": 68.99562354666776,
+      "mode": "kernel-only",
+      "compute_median_sec": 0.16846858299686573,
+      "init_median_sec": 0.012637957988772541
+    },
+    {
+      "name": "Python+NumPy",
+      "median_sec": 0.039561624987982213,
+      "min_sec": 0.0,
+      "max_sec": 0.09354404199984856,
+      "runs": 3,
+      "checksum_raw": "1223217231.93385863304138184",
+      "checksum": 1223217231.9338586,
+      "vs_c": 271.2417094662994,
+      "mode": "kernel-only",
+      "compute_median_sec": 0.27231649999157526,
+      "init_median_sec": 0.23275487500359304
+    },
+    {
+      "name": "Java (naive loops)",
+      "median_sec": 14.081038790987805,
+      "min_sec": 13.012057750020176,
+      "max_sec": 14.27794895801344,
+      "runs": 3,
+      "checksum_raw": "1223217231.93447380000000000",
+      "checksum": 1223217231.9344738,
+      "vs_c": 0.7620718151755184,
+      "mode": "kernel-only",
+      "compute_median_sec": 14.190716457989765,
+      "init_median_sec": 0.11808658298105001
+    }
+  ],
+  "checksum_reference": 1223217231.9344738
+}

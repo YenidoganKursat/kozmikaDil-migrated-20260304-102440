@@ -73,6 +73,28 @@ c = a + b
   phase5_test::expect_global_list(source, "c", {1, 2, 3, 4});
 }
 
+void test_list_numeric_operator_arithmetic() {
+  const char* source = R"(
+values = [1, 2, 3.5, 4]
+add = values + 1
+sub = values - 1
+mul = values * 2
+div = values / 2
+mod = values % 2
+rsub = 10 - values
+rdiv = 10 / values
+rmod = 10 % values
+)";
+  phase5_test::expect_global_list_double(source, "add", {2.0, 3.0, 4.5, 5.0});
+  phase5_test::expect_global_list_double(source, "sub", {0.0, 1.0, 2.5, 3.0});
+  phase5_test::expect_global_list_double(source, "mul", {2.0, 4.0, 7.0, 8.0});
+  phase5_test::expect_global_list_double(source, "div", {0.5, 1.0, 1.75, 2.0});
+  phase5_test::expect_global_list_double(source, "mod", {1.0, 0.0, 1.5, 0.0});
+  phase5_test::expect_global_list_double(source, "rsub", {9.0, 8.0, 6.5, 6.0});
+  phase5_test::expect_global_list_double(source, "rdiv", {10.0, 5.0, 2.857142857142857, 2.5});
+  phase5_test::expect_global_list_double(source, "rmod", {0.0, 0.0, 3.0, 2.0});
+}
+
 void test_list_type_checks() {
   const char* source = R"(
 values = [1, 2, 3.0]
@@ -96,6 +118,15 @@ out = values[1]
   phase5_test::expect_global_int(source, "out", 2);
 }
 
+void test_list_fill_affine_builtin() {
+  const char* source = R"(
+values = list_fill_affine(6, 3, 1, 7, 0.5)
+sum = values.reduce_sum()
+)";
+  phase5_test::expect_global_list_double(source, "values", {0.5, 2.0, 0.0, 1.5, 3.0, 1.0});
+  phase5_test::expect_global_double(source, "sum", 8.0);
+}
+
 }  // namespace
 
 namespace phase5_test {
@@ -108,9 +139,11 @@ void run_list_container_tests() {
   test_list_for_loop_sum();
   test_list_slice_and_assign();
   test_list_concat();
+  test_list_numeric_operator_arithmetic();
   test_list_type_checks();
   test_list_row_style_matrix_fallback();
   test_list_edge_bounds();
+  test_list_fill_affine_builtin();
 }
 
 }  // namespace phase5_test

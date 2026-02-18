@@ -37,6 +37,15 @@ def run_k_mode(defn, mode, args):
 
     env = dict(os.environ)
     env["SPARK_MATMUL_BACKEND"] = mode
+    # Keep benchmark runs reproducible by pinning math backends to single-thread.
+    env.setdefault("OPENBLAS_NUM_THREADS", "1")
+    env.setdefault("OMP_NUM_THREADS", "1")
+    env.setdefault("MKL_NUM_THREADS", "1")
+    env.setdefault("VECLIB_MAXIMUM_THREADS", "1")
+    env.setdefault("BLIS_NUM_THREADS", "1")
+    # For phase benchmarking we disable auto-learning by default to avoid
+    # within-run backend flips from skewing mode-to-mode comparisons.
+    env.setdefault("SPARK_MATMUL_AUTO_LEARN", "0")
     command = [str(K_BIN), "run", "--interpret", str(source_path)]
     statuses, first_output, samples = collect_timing_samples_repeated(
         command,
@@ -99,10 +108,17 @@ def run_c_baseline(defn, args):
             "error": f"baseline compile failed: {err}",
         }
 
+    env = dict(os.environ)
+    env.setdefault("OPENBLAS_NUM_THREADS", "1")
+    env.setdefault("OMP_NUM_THREADS", "1")
+    env.setdefault("MKL_NUM_THREADS", "1")
+    env.setdefault("VECLIB_MAXIMUM_THREADS", "1")
+    env.setdefault("BLIS_NUM_THREADS", "1")
+
     command = [str(out_bin)]
     statuses, first_output, samples = collect_timing_samples_repeated(
         command,
-        env=None,
+        env=env,
         runs=args.runs,
         warmup_runs=args.warmup_runs,
         sample_repeat=args.sample_repeat,

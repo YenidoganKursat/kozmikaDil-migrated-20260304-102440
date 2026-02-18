@@ -1,8 +1,8 @@
 {
   "config": {
-    "runs": 5,
-    "warmup_runs": 1,
-    "sample_repeat": 3,
+    "runs": 9,
+    "warmup_runs": 2,
+    "sample_repeat": 2,
     "drift_limit": 3.0,
     "c_compiler": "clang",
     "c_flags": "-O3",
@@ -33,6 +33,9 @@
         0,
         0,
         0,
+        0,
+        0,
+        0,
         0
       ],
       "parse_error": "",
@@ -54,13 +57,13 @@
         "backend_id": 0.0
       },
       "timing": {
-        "sample_count": 5,
-        "trimmed_count": 3,
-        "median_time_sec": 0.08290083400788717,
-        "mean_time_sec": 0.0825255556749956,
-        "stdev_time_sec": 0.0006228421904596624,
-        "max_drift_percent": 1.5114962658228548,
-        "reproducible": true
+        "sample_count": 9,
+        "trimmed_count": 7,
+        "median_time_sec": 0.042671250004787,
+        "mean_time_sec": 0.042483827294615494,
+        "stdev_time_sec": 0.0016581722238950829,
+        "max_drift_percent": 6.0080475388052195,
+        "reproducible": false
       }
     },
     {
@@ -87,6 +90,9 @@
         0,
         0,
         0,
+        0,
+        0,
+        0,
         0
       ],
       "parse_error": "",
@@ -108,13 +114,13 @@
         "backend_id": 0.0
       },
       "timing": {
-        "sample_count": 5,
-        "trimmed_count": 3,
-        "median_time_sec": 0.09003479100647382,
-        "mean_time_sec": 0.0899507776775863,
-        "stdev_time_sec": 0.0013740025888958976,
-        "max_drift_percent": 2.007278503618844,
-        "reproducible": true
+        "sample_count": 9,
+        "trimmed_count": 7,
+        "median_time_sec": 0.04034599999431521,
+        "mean_time_sec": 0.04036378543241881,
+        "stdev_time_sec": 0.0009102389207846802,
+        "max_drift_percent": 4.472150883236549,
+        "reproducible": false
       }
     },
     {
@@ -127,6 +133,9 @@
       "pass_flag_ok": true,
       "reproducible_ok": true,
       "statuses": [
+        0,
+        0,
+        0,
         0,
         0,
         0,
@@ -162,13 +171,13 @@
         "backend_id": 1.0
       },
       "timing": {
-        "sample_count": 5,
-        "trimmed_count": 3,
-        "median_time_sec": 0.09554175002267584,
-        "mean_time_sec": 0.09627725001579772,
-        "stdev_time_sec": 0.0010939454882051163,
-        "max_drift_percent": 2.3884416953304446,
-        "reproducible": true
+        "sample_count": 9,
+        "trimmed_count": 7,
+        "median_time_sec": 0.053084124985616654,
+        "mean_time_sec": 0.0554516845731996,
+        "stdev_time_sec": 0.0054679247413457425,
+        "max_drift_percent": 21.247250522642084,
+        "reproducible": false
       }
     },
     {
@@ -195,6 +204,9 @@
         0,
         0,
         0,
+        0,
+        0,
+        0,
         0
       ],
       "parse_error": "",
@@ -206,12 +218,12 @@
         "pass": 1.0
       },
       "timing": {
-        "sample_count": 5,
-        "trimmed_count": 3,
-        "median_time_sec": 0.020024999976158142,
-        "mean_time_sec": 0.020029694326998044,
-        "stdev_time_sec": 0.0005703321116357113,
-        "max_drift_percent": 3.5233009990382147,
+        "sample_count": 9,
+        "trimmed_count": 7,
+        "median_time_sec": 0.010288207995472476,
+        "mean_time_sec": 0.010137231858347409,
+        "stdev_time_sec": 0.0005528524399073444,
+        "max_drift_percent": 7.592429915196497,
         "reproducible": false
       }
     },
@@ -225,6 +237,9 @@
       "pass_flag_ok": true,
       "reproducible_ok": true,
       "statuses": [
+        0,
+        0,
+        0,
         0,
         0,
         0,
@@ -260,13 +275,13 @@
         "backend_id": 0.0
       },
       "timing": {
-        "sample_count": 5,
-        "trimmed_count": 3,
-        "median_time_sec": 0.08738604100653902,
-        "mean_time_sec": 0.08666483333217911,
-        "stdev_time_sec": 0.0012845705251055307,
-        "max_drift_percent": 2.890382689133163,
-        "reproducible": true
+        "sample_count": 9,
+        "trimmed_count": 7,
+        "median_time_sec": 0.04276241600746289,
+        "mean_time_sec": 0.04232315471745096,
+        "stdev_time_sec": 0.0014004399044303783,
+        "max_drift_percent": 5.735466398529451,
+        "reproducible": false
       }
     },
     {
@@ -293,34 +308,37 @@
         0,
         0,
         0,
+        0,
+        0,
+        0,
         0
       ],
       "parse_error": "",
-      "output": "1877719.0399999958\n1877719.0399999998\n3.9581209421157837e-09\nTrue\n4\n0\n4\n3\n3\n4\n96\n96\n96\n1\n",
+      "output": "1877719.0399999958\n1877719.0399999998\n3.9581209421157837e-09\nTrue\n4\n4\n0\n3\n3\n4\n96\n96\n96\n0\n",
       "parsed": {
         "total": 1877719.0399999958,
         "expected": 1877719.0399999998,
         "diff": 3.958120942115784e-09,
         "pass": 1.0,
         "calls": 4.0,
-        "own_calls": 0.0,
-        "blas_calls": 4.0,
+        "own_calls": 4.0,
+        "blas_calls": 0.0,
         "cache_hit_a": 3.0,
         "cache_hit_b": 3.0,
         "epilogue_fused": 4.0,
         "tile_m": 96.0,
         "tile_n": 96.0,
         "tile_k": 96.0,
-        "backend_id": 1.0
+        "backend_id": 0.0
       },
       "timing": {
-        "sample_count": 5,
-        "trimmed_count": 3,
-        "median_time_sec": 0.08751666700118221,
-        "mean_time_sec": 0.0874913613370154,
-        "stdev_time_sec": 0.0013154981116118936,
-        "max_drift_percent": 1.8841656815258425,
-        "reproducible": true
+        "sample_count": 9,
+        "trimmed_count": 7,
+        "median_time_sec": 0.049525125010404736,
+        "mean_time_sec": 0.04972288671498453,
+        "stdev_time_sec": 0.001366761091450762,
+        "max_drift_percent": 5.026404238821492,
+        "reproducible": false
       }
     },
     {
@@ -347,6 +365,9 @@
         0,
         0,
         0,
+        0,
+        0,
+        0,
         0
       ],
       "parse_error": "",
@@ -368,13 +389,13 @@
         "backend_id": 1.0
       },
       "timing": {
-        "sample_count": 5,
-        "trimmed_count": 3,
-        "median_time_sec": 0.08599733299342915,
-        "mean_time_sec": 0.085740347004806,
-        "stdev_time_sec": 0.0007425413354882202,
-        "max_drift_percent": 1.473592195111259,
-        "reproducible": true
+        "sample_count": 9,
+        "trimmed_count": 7,
+        "median_time_sec": 0.04930991699802689,
+        "mean_time_sec": 0.04962301185670575,
+        "stdev_time_sec": 0.0016935127988954206,
+        "max_drift_percent": 5.520692758833857,
+        "reproducible": false
       }
     },
     {
@@ -401,6 +422,9 @@
         0,
         0,
         0,
+        0,
+        0,
+        0,
         0
       ],
       "parse_error": "",
@@ -412,13 +436,13 @@
         "pass": 1.0
       },
       "timing": {
-        "sample_count": 5,
-        "trimmed_count": 3,
-        "median_time_sec": 0.01620000001275912,
-        "mean_time_sec": 0.016274513996904716,
-        "stdev_time_sec": 0.00029037290417882394,
-        "max_drift_percent": 2.848765383714368,
-        "reproducible": true
+        "sample_count": 9,
+        "trimmed_count": 7,
+        "median_time_sec": 0.008823957992717624,
+        "mean_time_sec": 0.009048648993484676,
+        "stdev_time_sec": 0.0008273785085862614,
+        "max_drift_percent": 20.993515764997298,
+        "reproducible": false
       }
     },
     {
@@ -431,6 +455,9 @@
       "pass_flag_ok": true,
       "reproducible_ok": true,
       "statuses": [
+        0,
+        0,
+        0,
         0,
         0,
         0,
@@ -466,12 +493,12 @@
         "backend_id": 0.0
       },
       "timing": {
-        "sample_count": 5,
-        "trimmed_count": 3,
-        "median_time_sec": 0.1546142089937348,
-        "mean_time_sec": 0.15303654200397432,
-        "stdev_time_sec": 0.0034447557853480647,
-        "max_drift_percent": 4.112224884898712,
+        "sample_count": 9,
+        "trimmed_count": 7,
+        "median_time_sec": 0.09016608301317319,
+        "mean_time_sec": 0.08991111300253708,
+        "stdev_time_sec": 0.0018025496422498846,
+        "max_drift_percent": 3.7467891652904837,
         "reproducible": false
       }
     },
@@ -499,6 +526,9 @@
         0,
         0,
         0,
+        0,
+        0,
+        0,
         0
       ],
       "parse_error": "",
@@ -520,13 +550,13 @@
         "backend_id": 1.0
       },
       "timing": {
-        "sample_count": 5,
-        "trimmed_count": 3,
-        "median_time_sec": 0.161811707977904,
-        "mean_time_sec": 0.16139890232201046,
-        "stdev_time_sec": 0.0018502175994637036,
-        "max_drift_percent": 1.7655551750190301,
-        "reproducible": true
+        "sample_count": 9,
+        "trimmed_count": 7,
+        "median_time_sec": 0.08989062497857958,
+        "mean_time_sec": 0.08928260128595866,
+        "stdev_time_sec": 0.0035478005132893163,
+        "max_drift_percent": 6.261312525852255,
+        "reproducible": false
       }
     },
     {
@@ -553,6 +583,9 @@
         0,
         0,
         0,
+        0,
+        0,
+        0,
         0
       ],
       "parse_error": "",
@@ -574,13 +607,13 @@
         "backend_id": 1.0
       },
       "timing": {
-        "sample_count": 5,
-        "trimmed_count": 3,
-        "median_time_sec": 0.1677704579778947,
-        "mean_time_sec": 0.16886884699730823,
-        "stdev_time_sec": 0.0026496046936245036,
-        "max_drift_percent": 2.831323869583622,
-        "reproducible": true
+        "sample_count": 9,
+        "trimmed_count": 7,
+        "median_time_sec": 0.08633687498513609,
+        "mean_time_sec": 0.08576744043135218,
+        "stdev_time_sec": 0.0015726939150204422,
+        "max_drift_percent": 4.353054193634939,
+        "reproducible": false
       }
     },
     {
@@ -607,6 +640,9 @@
         0,
         0,
         0,
+        0,
+        0,
+        0,
         0
       ],
       "parse_error": "",
@@ -618,12 +654,12 @@
         "pass": 1.0
       },
       "timing": {
-        "sample_count": 5,
-        "trimmed_count": 3,
-        "median_time_sec": 0.04799875000026077,
-        "mean_time_sec": 0.047173166676657274,
-        "stdev_time_sec": 0.0019329900206567214,
-        "max_drift_percent": 7.281960435499038,
+        "sample_count": 9,
+        "trimmed_count": 7,
+        "median_time_sec": 0.023178333998657763,
+        "mean_time_sec": 0.023610160715179518,
+        "stdev_time_sec": 0.0009837143426646047,
+        "max_drift_percent": 11.141150147418358,
         "reproducible": false
       }
     },
@@ -637,6 +673,9 @@
       "pass_flag_ok": true,
       "reproducible_ok": true,
       "statuses": [
+        0,
+        0,
+        0,
         0,
         0,
         0,
@@ -672,12 +711,12 @@
         "backend_id": 0.0
       },
       "timing": {
-        "sample_count": 5,
-        "trimmed_count": 3,
-        "median_time_sec": 0.435347874998115,
-        "mean_time_sec": 0.4528119443372513,
-        "stdev_time_sec": 0.051107163383960104,
-        "max_drift_percent": 19.969001807113955,
+        "sample_count": 9,
+        "trimmed_count": 7,
+        "median_time_sec": 0.19017862499458715,
+        "mean_time_sec": 0.19067010114252167,
+        "stdev_time_sec": 0.003927801386277091,
+        "max_drift_percent": 4.78631182226289,
         "reproducible": false
       }
     },
@@ -705,6 +744,9 @@
         0,
         0,
         0,
+        0,
+        0,
+        0,
         0
       ],
       "parse_error": "",
@@ -726,12 +768,12 @@
         "backend_id": 1.0
       },
       "timing": {
-        "sample_count": 5,
-        "trimmed_count": 3,
-        "median_time_sec": 0.35262229200452566,
-        "mean_time_sec": 0.35642145833116956,
-        "stdev_time_sec": 0.010618730684328578,
-        "max_drift_percent": 5.184276884553593,
+        "sample_count": 9,
+        "trimmed_count": 7,
+        "median_time_sec": 0.17799558301339857,
+        "mean_time_sec": 0.18029925585973874,
+        "stdev_time_sec": 0.006358711310556746,
+        "max_drift_percent": 9.819017242158827,
         "reproducible": false
       }
     },
@@ -759,6 +801,9 @@
         0,
         0,
         0,
+        0,
+        0,
+        0,
         0
       ],
       "parse_error": "",
@@ -780,12 +825,12 @@
         "backend_id": 1.0
       },
       "timing": {
-        "sample_count": 5,
-        "trimmed_count": 3,
-        "median_time_sec": 0.36022949998732656,
-        "mean_time_sec": 0.35856795832902816,
-        "stdev_time_sec": 0.012094148261313078,
-        "max_drift_percent": 4.784311113726331,
+        "sample_count": 9,
+        "trimmed_count": 7,
+        "median_time_sec": 0.19178899997496046,
+        "mean_time_sec": 0.19262458928278647,
+        "stdev_time_sec": 0.002992208014857716,
+        "max_drift_percent": 3.300306603024455,
         "reproducible": false
       }
     },
@@ -813,6 +858,9 @@
         0,
         0,
         0,
+        0,
+        0,
+        0,
         0
       ],
       "parse_error": "",
@@ -824,13 +872,13 @@
         "pass": 1.0
       },
       "timing": {
-        "sample_count": 5,
-        "trimmed_count": 3,
-        "median_time_sec": 0.1398580000095535,
-        "mean_time_sec": 0.13955505534734888,
-        "stdev_time_sec": 0.0005487775095348835,
-        "max_drift_percent": 0.7673561660457237,
-        "reproducible": true
+        "sample_count": 9,
+        "trimmed_count": 7,
+        "median_time_sec": 0.07248729100683704,
+        "mean_time_sec": 0.07292616043040263,
+        "stdev_time_sec": 0.001455408407021239,
+        "max_drift_percent": 4.361799099318537,
+        "reproducible": false
       }
     }
   ],
@@ -839,11 +887,11 @@
       "name": "matmul_core_f64",
       "pass": true,
       "blas_available": true,
-      "own_vs_c": 0.24155366126054856,
+      "own_vs_c": 0.24110397502576822,
       "own_vs_c_ok": true,
-      "own_vs_blas": 0.867692228666646,
+      "own_vs_blas": 0.8038420152229868,
       "own_vs_blas_ok": true,
-      "auto_vs_best": 1.0860541040866722,
+      "auto_vs_best": 0.9455078065392756,
       "auto_vs_best_ok": true,
       "auto_selected_backend": "own",
       "min_own_vs_c": 0.005,
@@ -854,13 +902,13 @@
       "name": "matmul_epilogue_f64",
       "pass": true,
       "blas_available": true,
-      "own_vs_c": 0.18538429966803152,
+      "own_vs_c": 0.20634844371697025,
       "own_vs_c_ok": true,
-      "own_vs_blas": 1.0161482683796248,
+      "own_vs_blas": 0.8672173593229533,
       "own_vs_blas_ok": true,
-      "auto_vs_best": 1.0176672223994336,
+      "auto_vs_best": 1.1581460926286677,
       "auto_vs_best_ok": true,
-      "auto_selected_backend": "blas",
+      "auto_selected_backend": "own",
       "min_own_vs_c": 0.005,
       "max_own_vs_blas": 2.0,
       "max_auto_vs_best": 1.25
@@ -869,11 +917,11 @@
       "name": "matmul_core_f64_256",
       "pass": true,
       "blas_available": true,
-      "own_vs_c": 0.3104420370718047,
+      "own_vs_c": 0.257062669510346,
       "own_vs_c_ok": true,
-      "own_vs_blas": 0.9215818497324877,
+      "own_vs_blas": 1.0443519414930913,
       "own_vs_blas_ok": true,
-      "auto_vs_best": 0.9644827219773352,
+      "auto_vs_best": 1.0411614387717334,
       "auto_vs_best_ok": true,
       "auto_selected_backend": "blas",
       "min_own_vs_c": 0.005,
@@ -884,11 +932,11 @@
       "name": "matmul_core_f64_512",
       "pass": true,
       "blas_available": true,
-      "own_vs_c": 0.3212557314312355,
+      "own_vs_c": 0.3811537232898816,
       "own_vs_c_ok": true,
-      "own_vs_blas": 1.2085292154402436,
+      "own_vs_blas": 0.991603402798995,
       "own_vs_blas_ok": true,
-      "auto_vs_best": 0.9788823292288151,
+      "auto_vs_best": 0.9280802498403833,
       "auto_vs_best_ok": true,
       "auto_selected_backend": "blas",
       "min_own_vs_c": 0.005,

@@ -33,6 +33,20 @@ void TypeChecker::check(const Program& program) {
   define_name("matmul_expected_sum",
               builtin_type({matrix_type(any_type(), 0, 0), matrix_type(any_type(), 0, 0)},
                            float_type(Type::FloatKind::F64), 2));
+  define_name("matmul_sum",
+              builtin_type({matrix_type(any_type(), 0, 0), matrix_type(any_type(), 0, 0)},
+                           float_type(Type::FloatKind::F64), 2));
+  define_name("matmul_sum_f32",
+              builtin_type({matrix_type(any_type(), 0, 0), matrix_type(any_type(), 0, 0)},
+                           float_type(Type::FloatKind::F64), 2));
+  define_name("matmul4_sum",
+              builtin_type({matrix_type(any_type(), 0, 0), matrix_type(any_type(), 0, 0),
+                            matrix_type(any_type(), 0, 0), matrix_type(any_type(), 0, 0)},
+                           float_type(Type::FloatKind::F64), 4));
+  define_name("matmul4_sum_f32",
+              builtin_type({matrix_type(any_type(), 0, 0), matrix_type(any_type(), 0, 0),
+                            matrix_type(any_type(), 0, 0), matrix_type(any_type(), 0, 0)},
+                           float_type(Type::FloatKind::F64), 4));
   define_name("accumulate_sum",
               builtin_type({float_type(Type::FloatKind::F64), any_type()},
                            float_type(Type::FloatKind::F64), 2));

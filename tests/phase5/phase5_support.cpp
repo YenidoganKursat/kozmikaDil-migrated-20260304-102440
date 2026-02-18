@@ -37,6 +37,21 @@ void expect_global_list(std::string_view source, std::string_view name,
   }
 }
 
+void expect_global_list_double(std::string_view source, std::string_view name,
+                              const std::vector<double>& expected) {
+  const auto actual = run_and_get(source, name);
+  assert(actual.kind == spark::Value::Kind::List);
+  assert(actual.list_value.size() == expected.size());
+  for (std::size_t i = 0; i < expected.size(); ++i) {
+    assert(actual.list_value[i].kind == spark::Value::Kind::Double ||
+           actual.list_value[i].kind == spark::Value::Kind::Int);
+    const double value = (actual.list_value[i].kind == spark::Value::Kind::Int)
+                           ? static_cast<double>(actual.list_value[i].int_value)
+                           : actual.list_value[i].double_value;
+    assert(std::fabs(value - expected[i]) < 1e-12);
+  }
+}
+
 void expect_global_matrix(std::string_view source, std::string_view name,
                          std::size_t rows, std::size_t cols,
                          const std::vector<long long>& flat_values) {

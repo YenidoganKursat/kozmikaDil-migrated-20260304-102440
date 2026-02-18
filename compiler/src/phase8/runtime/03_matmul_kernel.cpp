@@ -89,8 +89,10 @@ KernelDispatchConfig resolve_kernel_dispatch_config(bool use_f32) {
     cfg.default_thread_cap = 6;
     cfg.min_parallel_volume = 3ull * 1024ull * 1024ull;
   } else if (tag == "arm_neon") {
-    cfg.j8_threshold = std::numeric_limits<std::size_t>::max();
-    cfg.j4_threshold = 128;
+    // ARM NEON: enable wider inner-loop strips earlier; this improves
+    // 100/256/512-size steady-state on current Apple Silicon hosts.
+    cfg.j8_threshold = 160;
+    cfg.j4_threshold = 96;
     cfg.default_thread_cap = 12;
     cfg.min_parallel_volume = 3ull * 1024ull * 1024ull;
   } else if (tag == "riscv_rvv") {
@@ -300,6 +302,7 @@ void run_own_gemm_f64(const PackedMatrixView& a, const PackedMatrixView& b, bool
         const auto j1 = std::min(j0 + tn, n);
         for (std::size_t k0 = 0; k0 < k; k0 += tk) {
           const auto k1 = std::min(k0 + tk, k);
+          const bool first_k_tile = (k0 == 0);
           if (b_transposed) {
             for (std::size_t i = i0; i < i1; ++i) {
               const auto* a_row = a_data + i * k;
@@ -307,14 +310,14 @@ void run_own_gemm_f64(const PackedMatrixView& a, const PackedMatrixView& b, bool
               std::size_t j = j0;
               if (n >= j8_threshold) {
                 for (; j + 7 < j1; j += 8) {
-                  auto s0 = out_row[j + 0];
-                  auto s1 = out_row[j + 1];
-                  auto s2 = out_row[j + 2];
-                  auto s3 = out_row[j + 3];
-                  auto s4 = out_row[j + 4];
-                  auto s5 = out_row[j + 5];
-                  auto s6 = out_row[j + 6];
-                  auto s7 = out_row[j + 7];
+                  auto s0 = first_k_tile ? 0.0 : out_row[j + 0];
+                  auto s1 = first_k_tile ? 0.0 : out_row[j + 1];
+                  auto s2 = first_k_tile ? 0.0 : out_row[j + 2];
+                  auto s3 = first_k_tile ? 0.0 : out_row[j + 3];
+                  auto s4 = first_k_tile ? 0.0 : out_row[j + 4];
+                  auto s5 = first_k_tile ? 0.0 : out_row[j + 5];
+                  auto s6 = first_k_tile ? 0.0 : out_row[j + 6];
+                  auto s7 = first_k_tile ? 0.0 : out_row[j + 7];
                   const auto* b0 = b_data + (j + 0) * k;
                   const auto* b1 = b_data + (j + 1) * k;
                   const auto* b2 = b_data + (j + 2) * k;
@@ -361,10 +364,10 @@ void run_own_gemm_f64(const PackedMatrixView& a, const PackedMatrixView& b, bool
               }
               if (n >= j4_threshold) {
                 for (; j + 3 < j1; j += 4) {
-                  auto s0 = out_row[j + 0];
-                  auto s1 = out_row[j + 1];
-                  auto s2 = out_row[j + 2];
-                  auto s3 = out_row[j + 3];
+                  auto s0 = first_k_tile ? 0.0 : out_row[j + 0];
+                  auto s1 = first_k_tile ? 0.0 : out_row[j + 1];
+                  auto s2 = first_k_tile ? 0.0 : out_row[j + 2];
+                  auto s3 = first_k_tile ? 0.0 : out_row[j + 3];
                   const auto* b0 = b_data + (j + 0) * k;
                   const auto* b1 = b_data + (j + 1) * k;
                   const auto* b2 = b_data + (j + 2) * k;
@@ -394,7 +397,7 @@ void run_own_gemm_f64(const PackedMatrixView& a, const PackedMatrixView& b, bool
                 }
               }
               for (; j < j1; ++j) {
-                auto sum = out_row[j];
+                auto sum = first_k_tile ? 0.0 : out_row[j];
                 const auto* b_row = b_data + j * k;
                 std::size_t p = k0;
                 for (; p + 3 < k1; p += 4) {
@@ -414,7 +417,7 @@ void run_own_gemm_f64(const PackedMatrixView& a, const PackedMatrixView& b, bool
               const auto* a_row = a_data + i * k;
               auto* out_row = out_data + i * n;
               for (std::size_t j = j0; j < j1; ++j) {
-                auto sum = out_row[j];
+                auto sum = first_k_tile ? 0.0 : out_row[j];
                 for (std::size_t p = k0; p < k1; ++p) {
                   sum += a_row[p] * b_data[p * n + j];
                 }
@@ -460,6 +463,7 @@ void run_own_gemm_f32(const PackedMatrixView& a, const PackedMatrixView& b, bool
         const auto j1 = std::min(j0 + tn, n);
         for (std::size_t k0 = 0; k0 < k; k0 += tk) {
           const auto k1 = std::min(k0 + tk, k);
+          const bool first_k_tile = (k0 == 0);
           if (b_transposed) {
             for (std::size_t i = i0; i < i1; ++i) {
               const auto* a_row = a_data + i * k;
@@ -467,14 +471,14 @@ void run_own_gemm_f32(const PackedMatrixView& a, const PackedMatrixView& b, bool
               std::size_t j = j0;
               if (n >= j8_threshold) {
                 for (; j + 7 < j1; j += 8) {
-                  auto s0 = out_row[j + 0];
-                  auto s1 = out_row[j + 1];
-                  auto s2 = out_row[j + 2];
-                  auto s3 = out_row[j + 3];
-                  auto s4 = out_row[j + 4];
-                  auto s5 = out_row[j + 5];
-                  auto s6 = out_row[j + 6];
-                  auto s7 = out_row[j + 7];
+                  auto s0 = first_k_tile ? 0.0f : out_row[j + 0];
+                  auto s1 = first_k_tile ? 0.0f : out_row[j + 1];
+                  auto s2 = first_k_tile ? 0.0f : out_row[j + 2];
+                  auto s3 = first_k_tile ? 0.0f : out_row[j + 3];
+                  auto s4 = first_k_tile ? 0.0f : out_row[j + 4];
+                  auto s5 = first_k_tile ? 0.0f : out_row[j + 5];
+                  auto s6 = first_k_tile ? 0.0f : out_row[j + 6];
+                  auto s7 = first_k_tile ? 0.0f : out_row[j + 7];
                   const auto* b0 = b_data + (j + 0) * k;
                   const auto* b1 = b_data + (j + 1) * k;
                   const auto* b2 = b_data + (j + 2) * k;
@@ -521,10 +525,10 @@ void run_own_gemm_f32(const PackedMatrixView& a, const PackedMatrixView& b, bool
               }
               if (n >= j4_threshold) {
                 for (; j + 3 < j1; j += 4) {
-                  auto s0 = out_row[j + 0];
-                  auto s1 = out_row[j + 1];
-                  auto s2 = out_row[j + 2];
-                  auto s3 = out_row[j + 3];
+                  auto s0 = first_k_tile ? 0.0f : out_row[j + 0];
+                  auto s1 = first_k_tile ? 0.0f : out_row[j + 1];
+                  auto s2 = first_k_tile ? 0.0f : out_row[j + 2];
+                  auto s3 = first_k_tile ? 0.0f : out_row[j + 3];
                   const auto* b0 = b_data + (j + 0) * k;
                   const auto* b1 = b_data + (j + 1) * k;
                   const auto* b2 = b_data + (j + 2) * k;
@@ -554,7 +558,7 @@ void run_own_gemm_f32(const PackedMatrixView& a, const PackedMatrixView& b, bool
                 }
               }
               for (; j < j1; ++j) {
-                auto sum = out_row[j];
+                auto sum = first_k_tile ? 0.0f : out_row[j];
                 const auto* b_row = b_data + j * k;
                 std::size_t p = k0;
                 for (; p + 3 < k1; p += 4) {
@@ -574,7 +578,7 @@ void run_own_gemm_f32(const PackedMatrixView& a, const PackedMatrixView& b, bool
               const auto* a_row = a_data + i * k;
               auto* out_row = out_data + i * n;
               for (std::size_t j = j0; j < j1; ++j) {
-                auto sum = out_row[j];
+                auto sum = first_k_tile ? 0.0f : out_row[j];
                 for (std::size_t p = k0; p < k1; ++p) {
                   sum += a_row[p] * b_data[p * n + j];
                 }

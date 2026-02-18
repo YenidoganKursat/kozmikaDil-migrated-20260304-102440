@@ -135,6 +135,38 @@ BlasSymbols& blas_symbols() {
 
 bool has_blas_backend() { return blas_symbols().ready; }
 
+bool run_blas_dgemm(std::size_t m, std::size_t n, std::size_t k,
+                    const double* a, const double* b, double* c) {
+  const auto& symbols = blas_symbols();
+  if (!symbols.ready || !symbols.dgemm || !a || !b || !c) {
+    return false;
+  }
+  constexpr int kCblasRowMajor = 101;
+  constexpr int kCblasNoTrans = 111;
+  symbols.dgemm(kCblasRowMajor, kCblasNoTrans, kCblasNoTrans,
+                static_cast<int>(m), static_cast<int>(n), static_cast<int>(k),
+                1.0, a, static_cast<int>(k),
+                b, static_cast<int>(n),
+                0.0, c, static_cast<int>(n));
+  return true;
+}
+
+bool run_blas_sgemm(std::size_t m, std::size_t n, std::size_t k,
+                    const float* a, const float* b, float* c) {
+  const auto& symbols = blas_symbols();
+  if (!symbols.ready || !symbols.sgemm || !a || !b || !c) {
+    return false;
+  }
+  constexpr int kCblasRowMajor = 101;
+  constexpr int kCblasNoTrans = 111;
+  symbols.sgemm(kCblasRowMajor, kCblasNoTrans, kCblasNoTrans,
+                static_cast<int>(m), static_cast<int>(n), static_cast<int>(k),
+                1.0f, a, static_cast<int>(k),
+                b, static_cast<int>(n),
+                0.0f, c, static_cast<int>(n));
+  return true;
+}
+
 bool parse_tuned_file(const std::string& path, MatmulSchedule& schedule) {
   std::ifstream file(path);
   if (!file) {

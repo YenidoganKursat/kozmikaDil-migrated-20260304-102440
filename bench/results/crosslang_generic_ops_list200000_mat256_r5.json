@@ -1,0 +1,105 @@
+{
+  "config": {
+    "list_n": 200000,
+    "list_repeats": 5,
+    "matrix_n": 256,
+    "matrix_repeats": 5,
+    "runs": 5,
+    "warmup": 1,
+    "single_thread": true,
+    "runtime_only": true,
+    "build_excluded": true
+  },
+  "results": [
+    {
+      "case": "list_ops",
+      "name": "Spark interpret",
+      "median_sec": 0.4879564580041915,
+      "min_sec": 0.47556283298763447,
+      "max_sec": 0.5075079999805894,
+      "runs": 5,
+      "checksum": 533503.9837998112
+    },
+    {
+      "case": "list_ops",
+      "name": "C (clang -O3)",
+      "median_sec": 0.010637416009558365,
+      "min_sec": 0.008372749987756833,
+      "max_sec": 0.01118437500554137,
+      "runs": 5,
+      "checksum": 533503.9837992706
+    },
+    {
+      "case": "list_ops",
+      "name": "Python (naive)",
+      "median_sec": 0.2748466670163907,
+      "min_sec": 0.2640225829964038,
+      "max_sec": 0.287762499996461,
+      "runs": 5,
+      "checksum": 533503.9837992706
+    },
+    {
+      "case": "list_ops",
+      "name": "Python+NumPy",
+      "median_sec": 0.12745520798489451,
+      "min_sec": 0.11985124999773689,
+      "max_sec": 0.12838808301603422,
+      "runs": 5,
+      "checksum": 533503.9837997055
+    },
+    {
+      "case": "list_ops",
+      "name": "Java (loops)",
+      "median_sec": 0.0870873749954626,
+      "min_sec": 0.08000345801701769,
+      "max_sec": 0.08839787499164231,
+      "runs": 5,
+      "checksum": 533503.9837992706
+    },
+    {
+      "case": "matrix_ops",
+      "name": "Spark interpret",
+      "median_sec": 0.24358916701748967,
+      "min_sec": 0.23972437501652166,
+      "max_sec": 0.2557025420246646,
+      "runs": 5,
+      "checksum": 513281.1771795165
+    },
+    {
+      "case": "matrix_ops",
+      "name": "C (clang -O3)",
+      "median_sec": 0.006319957989035174,
+      "min_sec": 0.005737541010603309,
+      "max_sec": 0.006389750022208318,
+      "runs": 5,
+      "checksum": 513281.17717951466
+    },
+    {
+      "case": "matrix_ops",
+      "name": "Python (naive)",
+      "median_sec": 0.1327862920006737,
+      "min_sec": 0.12310529200476594,
+      "max_sec": 0.1390991660009604,
+      "runs": 5,
+      "checksum": 513281.17717951466
+    },
+    {
+      "case": "matrix_ops",
+      "name": "Python+NumPy",
+      "median_sec": 0.12428537500090897,
+      "min_sec": 0.10888933300157078,
+      "max_sec": 0.12981883299653418,
+      "runs": 5,
+      "checksum": 513281.1771795157
+    },
+    {
+      "case": "matrix_ops",
+      "name": "Java (loops)",
+      "median_sec": 0.08965595901827328,
+      "min_sec": 0.08476091700140387,
+      "max_sec": 0.09499191600480117,
+      "runs": 5,
+      "checksum": 513281.17717951466
+    }
+  ]
+}

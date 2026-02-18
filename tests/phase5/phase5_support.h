@@ -15,6 +15,7 @@ spark::Value run_and_get(std::string_view source, std::string_view name);
 void expect_global_int(std::string_view source, std::string_view name, long long expected);
 void expect_global_double(std::string_view source, std::string_view name, double expected);
 void expect_global_list(std::string_view source, std::string_view name, const std::vector<long long>& expected);
+void expect_global_list_double(std::string_view source, std::string_view name, const std::vector<double>& expected);
 void expect_global_matrix(std::string_view source, std::string_view name,
                          std::size_t rows, std::size_t cols,
                          const std::vector<long long>& flat_values);
