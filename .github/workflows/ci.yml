@@ -39,11 +39,6 @@ jobs:
           ./build/compiler/sparkc_phase10_tests
 
       - name: Runtime benchmark smoke (no build-time measurement)
-        run: |
-          ./bench/scripts/primitives/benchmark_mixed_signed_ops_100m.py \
-            --backend builtin \
-            --loops 10000 \
-            --runs 1 \
-            --warmup 0 \
-            --primitives f32,f64 \
-            --ops add,mul,div
+        env:
+          SPARK_PRIMITIVE_FUZZ_SAMPLES: 50000
+        run: ./build/compiler/sparkc_phase5_tests
