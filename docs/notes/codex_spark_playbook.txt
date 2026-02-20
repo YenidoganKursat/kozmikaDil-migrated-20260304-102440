@@ -3743,3 +3743,29 @@ Yapilan:
 Not:
 - `builtin` benchmark modu hala micro-kernel modudur; strict "normal operator"
   performans iddiasi icin `interpret/native` backend raporlanmalidir.
+
+-------------------------------------------------------------------------------
+103) CI PRIMITIVE REFERENCE GATES (2026-02-20)
+-------------------------------------------------------------------------------
+Amac:
+- Unit testlere ek olarak, primitive dogrulama scriptlerini de CI akisinda
+  gate olarak calistirmak.
+
+Yapilan:
+- `bench/scripts/primitives/validate_int_ops_python.py`
+  - Yeni flag: `--fail-on-mismatch`
+  - En az bir satir `pass=False` ise non-zero exit.
+- `bench/scripts/primitives/check_float_ops_stepwise_bigdecimal.py`
+  - Yeni flagler:
+    - `--fail-on-nonfinite`
+    - `--fail-on-checksum-mismatch`
+  - Seçilen kosulda hata varsa non-zero exit.
+- `.github/workflows/ci.yml`
+  - Toolchain kurulumuna `default-jdk` eklendi.
+  - Unit test adimlarindan sonra primitive reference smoke adimlari eklendi:
+    - int: Python referans
+    - float: Java BigDecimal + MPFR stepwise smoke
+
+Sonuc:
+- CI yalnizca compile+unit degil, primitive reference dogrulamasini da
+  kapsayacak sekilde genisletildi.

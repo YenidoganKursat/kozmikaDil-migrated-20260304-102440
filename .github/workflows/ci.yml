@@ -16,7 +16,7 @@ jobs:
       - name: Install toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build clang g++ make python3 python3-pip libmpfr-dev libgmp-dev
+          sudo apt-get install -y cmake ninja-build clang g++ make python3 python3-pip libmpfr-dev libgmp-dev default-jdk
 
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSPARK_BUILD_TESTS=ON
@@ -42,3 +42,14 @@ jobs:
         env:
           SPARK_PRIMITIVE_FUZZ_SAMPLES: 50000
         run: ./build/compiler/sparkc_phase5_tests
+
+      - name: Primitive int correctness (Python reference)
+        run: python3 ./bench/scripts/primitives/validate_int_ops_python.py --loops 2000 --fail-on-mismatch
+
+      - name: Primitive float reference smoke (Java BigDecimal + MPFR)
+        run: |
+          python3 ./bench/scripts/primitives/check_float_ops_stepwise_bigdecimal.py \
+            --loops 300 \
+            --python-crosscheck \
+            --python-loops 300 \
+            --fail-on-nonfinite
