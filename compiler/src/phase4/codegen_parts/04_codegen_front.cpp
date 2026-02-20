@@ -48,6 +48,395 @@ bool CodeGenerator::infer_top_level(const Program& program) {
     }
   }
 
+  auto signature_by_name = [&](const std::string& name) -> FunctionSignature* {
+    for (auto& fn : functions_) {
+      if (fn.name == name) {
+        return &fn;
+      }
+    }
+    return nullptr;
+  };
+
+  std::unordered_map<std::string, const FunctionDefStmt*> function_defs;
+  for (const auto& stmt : program.body) {
+    if (stmt->kind == Stmt::Kind::FunctionDef) {
+      const auto& fn = static_cast<const FunctionDefStmt&>(*stmt);
+      function_defs[fn.name] = &fn;
+    }
+  }
+
+  auto infer_numeric_ctor_kind = [](const std::string& name) -> ValueKind {
+    if (name == "i8" || name == "i16" || name == "i32" || name == "i64" || name == "i128" || name == "i256" ||
+        name == "i512") {
+      return ValueKind::Int;
+    }
+    if (name == "f8" || name == "f16" || name == "bf16" || name == "f32" || name == "f64" || name == "f128" ||
+        name == "f256" || name == "f512") {
+      return ValueKind::Float;
+    }
+    return ValueKind::Unknown;
+  };
+
+  std::function<ValueKind(const Expr&, const std::unordered_map<std::string, ValueKind>&)> infer_expr_kind;
+  infer_expr_kind = [&](const Expr& expr, const std::unordered_map<std::string, ValueKind>& env) -> ValueKind {
+    switch (expr.kind) {
+      case Expr::Kind::Number: {
+        const auto& number = static_cast<const NumberExpr&>(expr);
+        return number.is_int ? ValueKind::Int : ValueKind::Float;
+      }
+      case Expr::Kind::String:
+        return ValueKind::String;
+      case Expr::Kind::Bool:
+        return ValueKind::Bool;
+      case Expr::Kind::Variable: {
+        const auto& variable = static_cast<const VariableExpr&>(expr);
+        const auto it = env.find(variable.name);
+        return it == env.end() ? ValueKind::Unknown : it->second;
+      }
+      case Expr::Kind::Unary: {
+        const auto& unary = static_cast<const UnaryExpr&>(expr);
+        if (unary.op == UnaryOp::Not) {
+          return ValueKind::Bool;
+        }
+        return infer_expr_kind(*unary.operand, env);
+      }
+      case Expr::Kind::Binary: {
+        const auto& binary = static_cast<const BinaryExpr&>(expr);
+        const auto left = infer_expr_kind(*binary.left, env);
+        const auto right = infer_expr_kind(*binary.right, env);
+        switch (binary.op) {
+          case BinaryOp::Eq:
+          case BinaryOp::Ne:
+          case BinaryOp::Lt:
+          case BinaryOp::Lte:
+          case BinaryOp::Gt:
+          case BinaryOp::Gte:
+          case BinaryOp::And:
+          case BinaryOp::Or:
+            return ValueKind::Bool;
+          case BinaryOp::Add:
+            if (left == ValueKind::String && right == ValueKind::String) {
+              return ValueKind::String;
+            }
+            if (left == ValueKind::Float || right == ValueKind::Float) {
+              return ValueKind::Float;
+            }
+            if ((left == ValueKind::Int || left == ValueKind::Bool) && (right == ValueKind::Int || right == ValueKind::Bool)) {
+              return ValueKind::Int;
+            }
+            return ValueKind::Unknown;
+          case BinaryOp::Sub:
+          case BinaryOp::Mul:
+          case BinaryOp::Mod:
+            if (left == ValueKind::Float || right == ValueKind::Float) {
+              return ValueKind::Float;
+            }
+            if ((left == ValueKind::Int || left == ValueKind::Bool) && (right == ValueKind::Int || right == ValueKind::Bool)) {
+              return ValueKind::Int;
+            }
+            return ValueKind::Unknown;
+          case BinaryOp::Div:
+          case BinaryOp::Pow:
+            return ValueKind::Float;
+        }
+        return ValueKind::Unknown;
+      }
+      case Expr::Kind::Call: {
+        const auto& call = static_cast<const CallExpr&>(expr);
+        if (call.callee->kind == Expr::Kind::Variable) {
+          const auto& name = static_cast<const VariableExpr&>(*call.callee).name;
+          if (name == "len" || name == "utf8_len" || name == "utf16_len" || name == "bench_tick") {
+            return ValueKind::Int;
+          }
+          if (name == "string") {
+            return ValueKind::String;
+          }
+          if (name == "range") {
+            return ValueKind::ListInt;
+          }
+          if (name == "matrix_i64") {
+            return ValueKind::MatrixInt;
+          }
+          if (name == "matrix_f64") {
+            return ValueKind::MatrixFloat;
+          }
+          const auto ctor_kind = infer_numeric_ctor_kind(name);
+          if (ctor_kind != ValueKind::Unknown) {
+            return ctor_kind;
+          }
+          if (auto* signature = signature_by_name(name)) {
+            return signature->return_kind;
+          }
+        }
+        return ValueKind::Unknown;
+      }
+      case Expr::Kind::List: {
+        const auto& list = static_cast<const ListExpr&>(expr);
+        bool has_float = false;
+        for (const auto& element : list.elements) {
+          const auto kind = infer_expr_kind(*element, env);
+          if (kind == ValueKind::Float) {
+            has_float = true;
+          }
+          if (kind == ValueKind::String || kind == ValueKind::ListAny || kind == ValueKind::MatrixAny) {
+            return ValueKind::ListAny;
+          }
+        }
+        return has_float ? ValueKind::ListFloat : ValueKind::ListInt;
+      }
+      case Expr::Kind::Index: {
+        const auto& index = static_cast<const IndexExpr&>(expr);
+        const auto target_kind = infer_expr_kind(*index.target, env);
+        if (target_kind == ValueKind::String) {
+          return ValueKind::String;
+        }
+        if (target_kind == ValueKind::ListFloat) {
+          return ValueKind::Float;
+        }
+        if (target_kind == ValueKind::ListInt) {
+          return ValueKind::Int;
+        }
+        return ValueKind::Unknown;
+      }
+      case Expr::Kind::Attribute: {
+        const auto& attr = static_cast<const AttributeExpr&>(expr);
+        if (attr.attribute == "T" || attr.attribute == "transpose") {
+          const auto target_kind = infer_expr_kind(*attr.target, env);
+          if (is_matrix_kind(target_kind)) {
+            return target_kind;
+          }
+        }
+        return ValueKind::Unknown;
+      }
+    }
+    return ValueKind::Unknown;
+  };
+
+  std::function<void(const Expr&, const std::unordered_map<std::string, ValueKind>&)> seed_call_param_types_expr;
+  std::function<void(const Stmt&, std::unordered_map<std::string, ValueKind>&)> seed_call_param_types_stmt;
+  seed_call_param_types_expr = [&](const Expr& expr, const std::unordered_map<std::string, ValueKind>& env) {
+    if (expr.kind == Expr::Kind::Call) {
+      const auto& call = static_cast<const CallExpr&>(expr);
+      if (call.callee->kind == Expr::Kind::Variable) {
+        const auto& name = static_cast<const VariableExpr&>(*call.callee).name;
+        if (auto* signature = signature_by_name(name)) {
+          for (std::size_t i = 0; i < call.args.size() && i < signature->param_kinds.size(); ++i) {
+            const auto kind = infer_expr_kind(*call.args[i], env);
+            if (kind == ValueKind::Unknown || is_container_kind(kind)) {
+              continue;
+            }
+            if (signature->param_kinds[i] == ValueKind::Unknown) {
+              signature->param_kinds[i] = kind;
+            } else {
+              signature->param_kinds[i] = merge_types(signature->param_kinds[i], kind);
+            }
+          }
+        }
+      }
+      seed_call_param_types_expr(*call.callee, env);
+      for (const auto& arg : call.args) {
+        seed_call_param_types_expr(*arg, env);
+      }
+      return;
+    }
+    if (expr.kind == Expr::Kind::Binary) {
+      const auto& binary = static_cast<const BinaryExpr&>(expr);
+      seed_call_param_types_expr(*binary.left, env);
+      seed_call_param_types_expr(*binary.right, env);
+      return;
+    }
+    if (expr.kind == Expr::Kind::Unary) {
+      const auto& unary = static_cast<const UnaryExpr&>(expr);
+      seed_call_param_types_expr(*unary.operand, env);
+      return;
+    }
+    if (expr.kind == Expr::Kind::List) {
+      const auto& list = static_cast<const ListExpr&>(expr);
+      for (const auto& element : list.elements) {
+        seed_call_param_types_expr(*element, env);
+      }
+      return;
+    }
+    if (expr.kind == Expr::Kind::Index) {
+      const auto& index = static_cast<const IndexExpr&>(expr);
+      seed_call_param_types_expr(*index.target, env);
+      for (const auto& item : index.indices) {
+        if (item.index) {
+          seed_call_param_types_expr(*item.index, env);
+        }
+        if (item.slice_start) {
+          seed_call_param_types_expr(*item.slice_start, env);
+        }
+        if (item.slice_stop) {
+          seed_call_param_types_expr(*item.slice_stop, env);
+        }
+        if (item.slice_step) {
+          seed_call_param_types_expr(*item.slice_step, env);
+        }
+      }
+      return;
+    }
+    if (expr.kind == Expr::Kind::Attribute) {
+      const auto& attr = static_cast<const AttributeExpr&>(expr);
+      seed_call_param_types_expr(*attr.target, env);
+    }
+  };
+
+  seed_call_param_types_stmt = [&](const Stmt& stmt, std::unordered_map<std::string, ValueKind>& env) {
+    switch (stmt.kind) {
+      case Stmt::Kind::Expression: {
+        const auto& expression_stmt = static_cast<const ExpressionStmt&>(stmt);
+        seed_call_param_types_expr(*expression_stmt.expression, env);
+        break;
+      }
+      case Stmt::Kind::Assign: {
+        const auto& assign = static_cast<const AssignStmt&>(stmt);
+        seed_call_param_types_expr(*assign.value, env);
+        if (assign.target->kind == Expr::Kind::Variable) {
+          const auto& name = static_cast<const VariableExpr&>(*assign.target).name;
+          env[name] = infer_expr_kind(*assign.value, env);
+        }
+        break;
+      }
+      case Stmt::Kind::Return: {
+        const auto& ret = static_cast<const ReturnStmt&>(stmt);
+        if (ret.value) {
+          seed_call_param_types_expr(*ret.value, env);
+        }
+        break;
+      }
+      case Stmt::Kind::If: {
+        const auto& if_stmt = static_cast<const IfStmt&>(stmt);
+        seed_call_param_types_expr(*if_stmt.condition, env);
+        auto then_env = env;
+        for (const auto& body_stmt : if_stmt.then_body) {
+          seed_call_param_types_stmt(*body_stmt, then_env);
+        }
+        auto else_env = env;
+        for (const auto& body_stmt : if_stmt.else_body) {
+          seed_call_param_types_stmt(*body_stmt, else_env);
+        }
+        break;
+      }
+      case Stmt::Kind::While: {
+        const auto& while_stmt = static_cast<const WhileStmt&>(stmt);
+        seed_call_param_types_expr(*while_stmt.condition, env);
+        auto body_env = env;
+        for (const auto& body_stmt : while_stmt.body) {
+          seed_call_param_types_stmt(*body_stmt, body_env);
+        }
+        break;
+      }
+      case Stmt::Kind::For: {
+        const auto& for_stmt = static_cast<const ForStmt&>(stmt);
+        seed_call_param_types_expr(*for_stmt.iterable, env);
+        auto body_env = env;
+        for (const auto& body_stmt : for_stmt.body) {
+          seed_call_param_types_stmt(*body_stmt, body_env);
+        }
+        break;
+      }
+      case Stmt::Kind::FunctionDef:
+      case Stmt::Kind::ClassDef:
+      case Stmt::Kind::WithTaskGroup:
+        break;
+    }
+  };
+
+  // Pass 1: seed function parameter kinds from observable callsites.
+  std::unordered_map<std::string, ValueKind> top_level_env;
+  for (const auto& stmt : program.body) {
+    if (stmt->kind == Stmt::Kind::FunctionDef) {
+      continue;
+    }
+    seed_call_param_types_stmt(*stmt, top_level_env);
+  }
+  for (const auto& [name, fn] : function_defs) {
+    auto* signature = signature_by_name(name);
+    if (!signature || !fn) {
+      continue;
+    }
+    std::unordered_map<std::string, ValueKind> env;
+    for (std::size_t i = 0; i < fn->params.size() && i < signature->param_kinds.size(); ++i) {
+      env[fn->params[i]] = signature->param_kinds[i];
+    }
+    for (const auto& stmt : fn->body) {
+      seed_call_param_types_stmt(*stmt, env);
+    }
+  }
+
+  // Pass 2: infer function return kinds with seeded parameter kinds.
+  for (const auto& [name, fn] : function_defs) {
+    auto* signature = signature_by_name(name);
+    if (!signature || !fn) {
+      continue;
+    }
+    std::unordered_map<std::string, ValueKind> env;
+    for (std::size_t i = 0; i < fn->params.size() && i < signature->param_kinds.size(); ++i) {
+      env[fn->params[i]] = signature->param_kinds[i];
+    }
+    ValueKind merged_return = ValueKind::Unknown;
+    std::function<void(const Stmt&, std::unordered_map<std::string, ValueKind>&)> visit_stmt;
+    visit_stmt = [&](const Stmt& stmt, std::unordered_map<std::string, ValueKind>& local_env) {
+      switch (stmt.kind) {
+        case Stmt::Kind::Assign: {
+          const auto& assign = static_cast<const AssignStmt&>(stmt);
+          if (assign.target->kind == Expr::Kind::Variable) {
+            const auto& var = static_cast<const VariableExpr&>(*assign.target).name;
+            local_env[var] = infer_expr_kind(*assign.value, local_env);
+          }
+          break;
+        }
+        case Stmt::Kind::Return: {
+          const auto& ret = static_cast<const ReturnStmt&>(stmt);
+          const auto ret_kind = ret.value ? infer_expr_kind(*ret.value, local_env) : ValueKind::Void;
+          merged_return = merge_types(merged_return, ret_kind);
+          break;
+        }
+        case Stmt::Kind::If: {
+          const auto& if_stmt = static_cast<const IfStmt&>(stmt);
+          auto then_env = local_env;
+          for (const auto& body_stmt : if_stmt.then_body) {
+            visit_stmt(*body_stmt, then_env);
+          }
+          auto else_env = local_env;
+          for (const auto& body_stmt : if_stmt.else_body) {
+            visit_stmt(*body_stmt, else_env);
+          }
+          break;
+        }
+        case Stmt::Kind::While: {
+          const auto& while_stmt = static_cast<const WhileStmt&>(stmt);
+          auto body_env = local_env;
+          for (const auto& body_stmt : while_stmt.body) {
+            visit_stmt(*body_stmt, body_env);
+          }
+          break;
+        }
+        case Stmt::Kind::For: {
+          const auto& for_stmt = static_cast<const ForStmt&>(stmt);
+          auto body_env = local_env;
+          for (const auto& body_stmt : for_stmt.body) {
+            visit_stmt(*body_stmt, body_env);
+          }
+          break;
+        }
+        case Stmt::Kind::Expression:
+        case Stmt::Kind::FunctionDef:
+        case Stmt::Kind::ClassDef:
+        case Stmt::Kind::WithTaskGroup:
+          break;
+      }
+    };
+    for (const auto& stmt : fn->body) {
+      visit_stmt(*stmt, env);
+    }
+    if (merged_return == ValueKind::Unknown) {
+      merged_return = ValueKind::Void;
+    }
+    signature->return_kind = merged_return;
+  }
+
   return true;
 }
 
@@ -188,6 +577,11 @@ bool CodeGenerator::compile_stmt(const Stmt& stmt, FunctionContext& ctx) {
           return false;
         }
         set_var_type(ctx, target_name, next == ScalarKind::Unknown ? ScalarKind::Int : next);
+        if (next == ScalarKind::Float) {
+          set_numeric_hint(ctx, target_name, value.numeric_hint);
+        } else {
+          clear_numeric_hint(ctx, target_name);
+        }
         emit_var_decl_if_needed(ctx, target_name, lookup_var_type(ctx, target_name));
         emit_line(target_name + " = " + value.value);
         return true;
@@ -425,6 +819,243 @@ bool CodeGenerator::emit_if_statement(const IfStmt& if_stmt, FunctionContext& ct
 }
 
 bool CodeGenerator::emit_while_statement(const WhileStmt& while_stmt, FunctionContext& ctx) {
+  // Canonical numeric recurrence fast path:
+  // while i < N:
+  //   acc = acc <op> rhs
+  //   i = i + 1
+  //
+  // Lower to repeat kernel call so hot-loop dispatch/branch overhead is removed.
+  // Strict behavior remains available in helper kernels; this pass only rewrites shape-stable loops.
+  const auto contains_variable = [](const Expr& expr, const std::string& name) {
+    std::function<bool(const Expr&)> visit = [&](const Expr& node) -> bool {
+      switch (node.kind) {
+        case Expr::Kind::Variable:
+          return static_cast<const VariableExpr&>(node).name == name;
+        case Expr::Kind::Unary:
+          return visit(*static_cast<const UnaryExpr&>(node).operand);
+        case Expr::Kind::Binary: {
+          const auto& binary = static_cast<const BinaryExpr&>(node);
+          return visit(*binary.left) || visit(*binary.right);
+        }
+        case Expr::Kind::Call: {
+          const auto& call = static_cast<const CallExpr&>(node);
+          if (visit(*call.callee)) {
+            return true;
+          }
+          for (const auto& arg : call.args) {
+            if (visit(*arg)) {
+              return true;
+            }
+          }
+          return false;
+        }
+        case Expr::Kind::List: {
+          const auto& list = static_cast<const ListExpr&>(node);
+          for (const auto& element : list.elements) {
+            if (visit(*element)) {
+              return true;
+            }
+          }
+          return false;
+        }
+        case Expr::Kind::Index: {
+          const auto& index = static_cast<const IndexExpr&>(node);
+          if (visit(*index.target)) {
+            return true;
+          }
+          for (const auto& idx_item : index.indices) {
+            if (idx_item.is_slice) {
+              if (idx_item.slice_start && visit(*idx_item.slice_start)) {
+                return true;
+              }
+              if (idx_item.slice_stop && visit(*idx_item.slice_stop)) {
+                return true;
+              }
+              if (idx_item.slice_step && visit(*idx_item.slice_step)) {
+                return true;
+              }
+              continue;
+            }
+            if (idx_item.index && visit(*idx_item.index)) {
+              return true;
+            }
+          }
+          return false;
+        }
+        case Expr::Kind::Attribute:
+          return visit(*static_cast<const AttributeExpr&>(node).target);
+        default:
+          return false;
+      }
+    };
+    return visit(expr);
+  };
+
+  struct NumericRepeatPattern {
+    std::string index_name;
+    const Expr* bound_expr = nullptr;
+    std::string target_name;
+    BinaryOp op = BinaryOp::Add;
+    const Expr* rhs_expr = nullptr;
+  };
+
+  const auto detect_numeric_repeat_pattern = [&](NumericRepeatPattern& out) -> bool {
+    if (!while_stmt.condition || while_stmt.condition->kind != Expr::Kind::Binary) {
+      return false;
+    }
+    const auto& cond = static_cast<const BinaryExpr&>(*while_stmt.condition);
+    if (cond.op != BinaryOp::Lt || cond.left->kind != Expr::Kind::Variable) {
+      return false;
+    }
+    if (cond.right->kind != Expr::Kind::Variable && cond.right->kind != Expr::Kind::Number) {
+      return false;
+    }
+
+    const auto& index_name = static_cast<const VariableExpr&>(*cond.left).name;
+    bool saw_step = false;
+    bool saw_update = false;
+    std::string update_target;
+    BinaryOp update_op = BinaryOp::Add;
+    const Expr* update_rhs = nullptr;
+
+    for (const auto& stmt : while_stmt.body) {
+      if (!stmt || stmt->kind != Stmt::Kind::Assign) {
+        return false;
+      }
+      const auto& assign = static_cast<const AssignStmt&>(*stmt);
+      if (!assign.target || assign.target->kind != Expr::Kind::Variable || !assign.value) {
+        return false;
+      }
+      const auto& assign_name = static_cast<const VariableExpr&>(*assign.target).name;
+      if (assign_name == index_name) {
+        if (saw_step || assign.value->kind != Expr::Kind::Binary) {
+          return false;
+        }
+        const auto& step_rhs = static_cast<const BinaryExpr&>(*assign.value);
+        if (step_rhs.op != BinaryOp::Add) {
+          return false;
+        }
+        long long cst = 0;
+        const bool left_match = step_rhs.left->kind == Expr::Kind::Variable &&
+                                static_cast<const VariableExpr&>(*step_rhs.left).name == index_name;
+        const bool right_match = step_rhs.right->kind == Expr::Kind::Variable &&
+                                 static_cast<const VariableExpr&>(*step_rhs.right).name == index_name;
+        const bool left_inc = is_integer_constant_expr(*step_rhs.left, cst) && cst == 1;
+        const bool right_inc = is_integer_constant_expr(*step_rhs.right, cst) && cst == 1;
+        if (!((left_match && right_inc) || (right_match && left_inc))) {
+          return false;
+        }
+        saw_step = true;
+        continue;
+      }
+
+      if (saw_update || assign.value->kind != Expr::Kind::Binary) {
+        return false;
+      }
+      const auto& update = static_cast<const BinaryExpr&>(*assign.value);
+      if (update.op != BinaryOp::Add && update.op != BinaryOp::Sub && update.op != BinaryOp::Mul &&
+          update.op != BinaryOp::Div && update.op != BinaryOp::Mod && update.op != BinaryOp::Pow) {
+        return false;
+      }
+
+      // Keep semantics predictable: require acc to be the left operand in recurrence.
+      if (update.left->kind != Expr::Kind::Variable ||
+          static_cast<const VariableExpr&>(*update.left).name != assign_name) {
+        return false;
+      }
+
+      if (update.right->kind != Expr::Kind::Variable && update.right->kind != Expr::Kind::Number) {
+        return false;
+      }
+      if (contains_variable(*update.right, index_name) || contains_variable(*update.right, assign_name)) {
+        return false;
+      }
+
+      saw_update = true;
+      update_target = assign_name;
+      update_op = update.op;
+      update_rhs = update.right.get();
+    }
+
+    if (!saw_step || !saw_update || update_target.empty() || update_rhs == nullptr) {
+      return false;
+    }
+    if (contains_variable(*cond.right, update_target)) {
+      return false;
+    }
+
+    out.index_name = index_name;
+    out.bound_expr = cond.right.get();
+    out.target_name = update_target;
+    out.op = update_op;
+    out.rhs_expr = update_rhs;
+    return true;
+  };
+
+  const auto try_emit_numeric_repeat_fastpath = [&]() -> bool {
+    NumericRepeatPattern pattern;
+    if (!detect_numeric_repeat_pattern(pattern)) {
+      return false;
+    }
+
+    const auto target_kind = lookup_var_type(ctx, pattern.target_name);
+    if (target_kind != ValueKind::Float) {
+      return false;
+    }
+    std::string kind_suffix;
+    const auto hint = lookup_numeric_hint(ctx, pattern.target_name);
+    if (hint == "f8" || hint == "f16" || hint == "bf16" || hint == "f32" || hint == "f64" || hint == "f128" ||
+        hint == "f256" || hint == "f512") {
+      kind_suffix = hint;
+    } else {
+      kind_suffix = "f64";
+    }
+
+    auto rhs_code = emit_expr(*pattern.rhs_expr, ctx, ExpectedExprContext::None);
+    if (!rhs_code.has_value || rhs_code.kind == ValueKind::Invalid) {
+      return false;
+    }
+    auto bound_code = emit_expr(*pattern.bound_expr, ctx, ExpectedExprContext::None);
+    if (!bound_code.has_value || bound_code.kind == ValueKind::Invalid) {
+      return false;
+    }
+
+    if (bound_code.kind == ValueKind::Float) {
+      const auto cast = next_temp();
+      emit_line(cast + " = cast.f64_to_i64 " + bound_code.value);
+      bound_code.value = cast;
+      bound_code.kind = ValueKind::Int;
+    }
+
+    const auto iterations = next_temp();
+    emit_line(iterations + " = sub.i64 " + bound_code.value + ", " + pattern.index_name);
+
+    const auto positive = next_temp();
+    emit_line(positive + " = cmp.gt.i64 " + iterations + ", 0");
+
+    const std::string fast_label = next_label();
+    const std::string end_label = next_label();
+    emit_line("br_if " + positive + ", " + fast_label + ", " + end_label);
+    emit_label(fast_label);
+
+    const auto op_name = (pattern.op == BinaryOp::Add   ? "add"
+                         : pattern.op == BinaryOp::Sub ? "sub"
+                         : pattern.op == BinaryOp::Mul ? "mul"
+                         : pattern.op == BinaryOp::Div ? "div"
+                         : pattern.op == BinaryOp::Mod ? "mod"
+                                                       : "pow");
+    emit_line(pattern.target_name + " = call @__spark_num_repeat_" + op_name + "_" + kind_suffix + "(" +
+              pattern.target_name + ", " + rhs_code.value + ", " + iterations + ")");
+    emit_line(pattern.index_name + " = " + bound_code.value);
+    emit_line("goto " + end_label);
+    emit_label(end_label);
+    return true;
+  };
+
+  if (try_emit_numeric_repeat_fastpath()) {
+    return true;
+  }
+
   // Reserve list capacity on canonical append loops:
   // while i < N: list.append(...)
   // This keeps append amortization costs out of hot loops without changing semantics.

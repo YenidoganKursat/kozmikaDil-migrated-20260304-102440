@@ -4,10 +4,12 @@ void print_usage() {
             << "  sparkc run <file.k>\n"
             << "  sparkc run [--interpret] [--allow-t5] [--explain-layout]\n"
             << "            [--target <triple>] [--sysroot <path>] [--lto <mode>]\n"
-            << "            [--pgo <instrument|use>] [--pgo-profile <path>] <file.k>\n"
+            << "            [--pgo <instrument|use>] [--pgo-profile <path>]\n"
+            << "            [--profile <balanced|max|layered-max>] [--auto-pgo-runs <n>] <file.k>\n"
             << "  sparkc build <file.k> [--allow-t5] [-o <out_binary>]\n"
             << "              [--target <triple>] [--sysroot <path>] [--lto <mode>]\n"
             << "              [--pgo <instrument|use>] [--pgo-profile <path>]\n"
+            << "              [--profile <balanced|max|layered-max>] [--auto-pgo-runs <n>]\n"
             << "  sparkc compile <file.k>\n"
             << "  sparkc compile <file.k> --emit-c [--emit-c-out <path>]\n"
             << "  sparkc compile <file.k> --emit-asm [--out <path>]  (C->assembly)\n"
@@ -292,6 +294,51 @@ int main(int argc, char** argv) {
           tuning.pgo_profile = arg.substr(std::string("--pgo-profile=").size());
           continue;
         }
+        if (arg == "--profile") {
+          if (i + 1 >= argc) {
+            std::cerr << "--profile requires value (balanced|max|layered-max)\n";
+            return 1;
+          }
+          tuning.optimization_profile = argv[i + 1];
+          ++i;
+          continue;
+        }
+        if (arg.rfind("--profile=", 0) == 0) {
+          tuning.optimization_profile = arg.substr(std::string("--profile=").size());
+          continue;
+        }
+        if (arg == "--auto-pgo-runs") {
+          if (i + 1 >= argc) {
+            std::cerr << "--auto-pgo-runs requires positive integer\n";
+            return 1;
+          }
+          try {
+            tuning.auto_pgo_runs = std::stoi(argv[i + 1]);
+          } catch (const std::exception&) {
+            std::cerr << "--auto-pgo-runs requires positive integer\n";
+            return 1;
+          }
+          if (tuning.auto_pgo_runs <= 0) {
+            std::cerr << "--auto-pgo-runs requires positive integer\n";
+            return 1;
+          }
+          ++i;
+          continue;
+        }
+        if (arg.rfind("--auto-pgo-runs=", 0) == 0) {
+          const auto raw = arg.substr(std::string("--auto-pgo-runs=").size());
+          try {
+            tuning.auto_pgo_runs = std::stoi(raw);
+          } catch (const std::exception&) {
+            std::cerr << "--auto-pgo-runs requires positive integer\n";
+            return 1;
+          }
+          if (tuning.auto_pgo_runs <= 0) {
+            std::cerr << "--auto-pgo-runs requires positive integer\n";
+            return 1;
+          }
+          continue;
+        }
         if (!file_path.empty()) {
           std::cerr << "unexpected extra argument: " << arg << "\n";
           print_usage();
@@ -393,6 +440,51 @@ int main(int argc, char** argv) {
         }
         if (arg.rfind("--pgo-profile=", 0) == 0) {
           tuning.pgo_profile = arg.substr(std::string("--pgo-profile=").size());
+          continue;
+        }
+        if (arg == "--profile") {
+          if (i + 1 >= argc) {
+            std::cerr << "--profile requires value (balanced|max|layered-max)\n";
+            return 1;
+          }
+          tuning.optimization_profile = argv[i + 1];
+          ++i;
+          continue;
+        }
+        if (arg.rfind("--profile=", 0) == 0) {
+          tuning.optimization_profile = arg.substr(std::string("--profile=").size());
+          continue;
+        }
+        if (arg == "--auto-pgo-runs") {
+          if (i + 1 >= argc) {
+            std::cerr << "--auto-pgo-runs requires positive integer\n";
+            return 1;
+          }
+          try {
+            tuning.auto_pgo_runs = std::stoi(argv[i + 1]);
+          } catch (const std::exception&) {
+            std::cerr << "--auto-pgo-runs requires positive integer\n";
+            return 1;
+          }
+          if (tuning.auto_pgo_runs <= 0) {
+            std::cerr << "--auto-pgo-runs requires positive integer\n";
+            return 1;
+          }
+          ++i;
+          continue;
+        }
+        if (arg.rfind("--auto-pgo-runs=", 0) == 0) {
+          const auto raw = arg.substr(std::string("--auto-pgo-runs=").size());
+          try {
+            tuning.auto_pgo_runs = std::stoi(raw);
+          } catch (const std::exception&) {
+            std::cerr << "--auto-pgo-runs requires positive integer\n";
+            return 1;
+          }
+          if (tuning.auto_pgo_runs <= 0) {
+            std::cerr << "--auto-pgo-runs requires positive integer\n";
+            return 1;
+          }
           continue;
         }
         if (!file_path.empty()) {

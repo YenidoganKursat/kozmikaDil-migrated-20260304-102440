@@ -1,8 +1,58 @@
+#include <algorithm>
+#include <iomanip>
+#include <sstream>
 #include <string>
 
 #include "../../phase3/evaluator_parts/internal_helpers.h"
 
 namespace spark {
+
+namespace {
+
+using I128 = __int128_t;
+using U128 = __uint128_t;
+
+std::string vr_i128_to_string(I128 value) {
+  if (value == 0) {
+    return "0";
+  }
+  const bool negative = value < 0;
+  U128 magnitude = negative ? static_cast<U128>(-(value + 1)) + 1 : static_cast<U128>(value);
+  std::string out;
+  while (magnitude > 0) {
+    out.push_back(static_cast<char>('0' + static_cast<unsigned>(magnitude % 10)));
+    magnitude /= 10;
+  }
+  if (negative) {
+    out.push_back('-');
+  }
+  std::reverse(out.begin(), out.end());
+  return out;
+}
+
+std::string vr_trim_decimal_string(std::string value) {
+  if (value.find('.') == std::string::npos) {
+    return value;
+  }
+  while (!value.empty() && value.back() == '0') {
+    value.pop_back();
+  }
+  if (!value.empty() && value.back() == '.') {
+    value.pop_back();
+  }
+  if (value.empty() || value == "-0") {
+    return "0";
+  }
+  return value;
+}
+
+std::string vr_long_double_to_string(long double value) {
+  std::ostringstream stream;
+  stream << std::setprecision(36) << value;
+  return vr_trim_decimal_string(stream.str());
+}
+
+}  // namespace
 
 std::string Value::to_string() const {
   switch (kind) {
@@ -12,6 +62,25 @@ std::string Value::to_string() const {
       return std::to_string(int_value);
     case Kind::Double:
       return double_to_string(double_value);
+    case Kind::String:
+      return string_value;
+    case Kind::Numeric:
+      if (!numeric_value) {
+        return "<invalid numeric>";
+      }
+      if (numeric_kind_is_high_precision_float(numeric_value->kind)) {
+        return high_precision_numeric_to_string(*numeric_value);
+      }
+      if (!numeric_value->payload.empty()) {
+        return numeric_value->payload;
+      }
+      if (numeric_kind_is_int(numeric_value->kind) && numeric_value->parsed_int_valid) {
+        return vr_i128_to_string(numeric_value->parsed_int);
+      }
+      if (numeric_value->parsed_float_valid) {
+        return vr_long_double_to_string(numeric_value->parsed_float);
+      }
+      return numeric_value->payload;
     case Kind::Bool:
       return bool_value ? "True" : "False";
     case Kind::List: {
@@ -49,7 +118,8 @@ std::string Value::to_string() const {
 bool Value::equals(const Value& other) const {
   if (kind != other.kind) {
     if (is_numeric_kind(*this) && is_numeric_kind(other)) {
-      return to_number_for_compare(*this) == to_number_for_compare(other);
+      const auto compared = eval_numeric_binary_value(BinaryOp::Eq, *this, other);
+      return compared.kind == Value::Kind::Bool && compared.bool_value;
     }
     return false;
   }
@@ -61,6 +131,15 @@ bool Value::equals(const Value& other) const {
       return int_value == other.int_value;
     case Kind::Double:
       return double_value == other.double_value;
+    case Kind::String:
+      return string_value == other.string_value;
+    case Kind::Numeric: {
+      if (!numeric_value || !other.numeric_value) {
+        return static_cast<bool>(numeric_value) == static_cast<bool>(other.numeric_value);
+      }
+      const auto compared = eval_numeric_binary_value(BinaryOp::Eq, *this, other);
+      return compared.kind == Value::Kind::Bool && compared.bool_value;
+    }
     case Kind::Bool:
       return bool_value == other.bool_value;
     case Kind::List:

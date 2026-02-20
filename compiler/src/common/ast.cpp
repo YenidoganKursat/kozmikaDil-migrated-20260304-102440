@@ -11,6 +11,34 @@ std::string indent_line(std::size_t level) {
   return std::string(level * 2, ' ');
 }
 
+std::string escape_string_literal(const std::string& value) {
+  std::string out;
+  out.reserve(value.size() + 2);
+  for (const char ch : value) {
+    switch (ch) {
+      case '\\':
+        out += "\\\\";
+        break;
+      case '"':
+        out += "\\\"";
+        break;
+      case '\n':
+        out += "\\n";
+        break;
+      case '\r':
+        out += "\\r";
+        break;
+      case '\t':
+        out += "\\t";
+        break;
+      default:
+        out.push_back(ch);
+        break;
+    }
+  }
+  return out;
+}
+
 int expr_precedence(const Expr& expr) {
   if (expr.kind == Expr::Kind::Binary) {
     const auto& binary = static_cast<const BinaryExpr&>(expr);
@@ -34,6 +62,8 @@ int expr_precedence(const Expr& expr) {
       case BinaryOp::Div:
       case BinaryOp::Mod:
         return 6;
+      case BinaryOp::Pow:
+        return 7;
     }
   }
   if (expr.kind == Expr::Kind::Unary) {
@@ -63,6 +93,10 @@ std::string source_of_expr(const Expr& expr, std::size_t indent_level, int paren
       std::ostringstream stream;
       stream << value_expr.value;
       return stream.str();
+    }
+    case Expr::Kind::String: {
+      const auto& string_expr = static_cast<const StringExpr&>(expr);
+      return "\"" + escape_string_literal(string_expr.value) + "\"";
     }
     case Expr::Kind::Bool:
       return static_cast<const BoolExpr&>(expr).value ? "True" : "False";
@@ -96,6 +130,8 @@ std::string source_of_expr(const Expr& expr, std::size_t indent_level, int paren
           op = "/"; break;
         case BinaryOp::Mod:
           op = "%"; break;
+        case BinaryOp::Pow:
+          op = "^"; break;
         case BinaryOp::Eq:
           op = "=="; break;
         case BinaryOp::Ne:

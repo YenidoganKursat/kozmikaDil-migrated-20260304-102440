@@ -234,6 +234,88 @@ while i < n:
       false);
 }
 
+void test_codegen_pow_operator() {
+  expect_success(
+      R"(
+
+a = 2
+b = 8
+c = a ^ b
+)",
+      "pow.f64");
+}
+
+void test_codegen_emit_c_pow_runtime() {
+  expect_irc_success(
+      R"(
+
+a = f64(9.0)
+b = f64(0.5)
+c = a ^ b
+print(c)
+)",
+      "__spark_num_pow_f64",
+      false);
+}
+
+void test_codegen_emit_c_numeric_repeat_fast_path() {
+  expect_irc_success(
+      R"(
+
+i = 0
+n = 100
+b = f64(3.25)
+acc = f64(0)
+while i < n:
+  acc = acc + b
+  i = i + 1
+print(acc)
+)",
+      "__spark_num_repeat_add_f64",
+      false);
+}
+
+void test_codegen_string_native_path() {
+  expect_success(
+      R"(
+
+a = "koz"
+b = "mika"
+c = a + b
+n = len(c)
+u8 = utf8_len(c)
+u16 = utf16_len(c)
+ch = c[2]
+mid = c[1:4]
+print(c)
+)",
+      "__spark_string_concat");
+}
+
+void test_codegen_emit_c_string_runtime() {
+  expect_irc_success(
+      R"(
+
+s = string "kozmika"
+print(s)
+)",
+      "__spark_string __spark_string_from_utf8(",
+      false);
+}
+
+void test_codegen_emit_c_string_function_signature() {
+  expect_irc_success(
+      R"(
+
+def join(a, b):
+  return a + b
+
+print(join("a", "b"))
+)",
+      "static __spark_string join(__spark_string a, __spark_string b)",
+      false);
+}
+
 }  // namespace
 
 int main() {
@@ -253,5 +335,11 @@ int main() {
   test_codegen_emit_c_main_entry();
   test_codegen_emit_c_append_loop_reserve();
   test_codegen_emit_c_append_loop_unchecked_fast_path();
+  test_codegen_pow_operator();
+  test_codegen_emit_c_pow_runtime();
+  test_codegen_emit_c_numeric_repeat_fast_path();
+  test_codegen_string_native_path();
+  test_codegen_emit_c_string_runtime();
+  test_codegen_emit_c_string_function_signature();
   return 0;
 }

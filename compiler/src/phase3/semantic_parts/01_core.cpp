@@ -103,6 +103,8 @@ std::string kind_to_string(Type::Kind kind) {
       return "Int";
     case Type::Kind::Float:
       return "Float";
+    case Type::Kind::String:
+      return "String";
     case Type::Kind::Bool:
       return "Bool";
     case Type::Kind::Any:

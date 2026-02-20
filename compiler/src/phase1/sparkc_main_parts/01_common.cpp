@@ -47,6 +47,8 @@ struct BuildTuningOptions {
   std::string lto_mode;
   std::string pgo_mode;
   std::string pgo_profile;
+  std::string optimization_profile;
+  int auto_pgo_runs = 0;
 };
 
 struct TempFileRegistry {
@@ -134,6 +136,45 @@ void append_if_missing(std::vector<std::string>& flags, const std::string& value
   }
 }
 
+std::string normalize_optimization_profile(std::string value) {
+  std::transform(value.begin(), value.end(), value.begin(), [](unsigned char ch) {
+    return static_cast<char>(std::tolower(ch));
+  });
+  if (value == "layered" || value == "layered_max" || value == "layeredmax") {
+    return "layered-max";
+  }
+  if (value == "max_perf" || value == "max-perf") {
+    return "max";
+  }
+  if (value == "default" || value == "balanced" || value == "none") {
+    return "balanced";
+  }
+  return value;
+}
+
+const char* getenv_non_empty(const char* name) {
+  const char* raw = std::getenv(name);
+  if (!raw || *raw == '\0') {
+    return nullptr;
+  }
+  return raw;
+}
+
+bool env_truthy(const char* name, bool fallback = false) {
+  const auto* raw = getenv_non_empty(name);
+  if (!raw) {
+    return fallback;
+  }
+  std::string text = raw;
+  std::transform(text.begin(), text.end(), text.begin(), [](unsigned char ch) {
+    return static_cast<char>(std::tolower(ch));
+  });
+  if (text == "0" || text == "false" || text == "off" || text == "no") {
+    return false;
+  }
+  return true;
+}
+
 std::vector<std::string> resolve_native_cxx_flags() {
   const char* cflags = std::getenv("SPARK_CFLAGS");
   if (cflags == nullptr || *cflags == '\0') {
@@ -152,11 +193,27 @@ std::vector<std::string> resolve_native_cxx_flags() {
         "-fvectorize",
         "-fslp-vectorize",
         "-ftree-vectorize",
+        "-funroll-loops",
+        "-fno-math-errno",
     };
   }
 
   if (!vector_contains_flag(flags, "-DNDEBUG")) {
     append_if_missing(flags, "-DNDEBUG");
+  }
+
+  const auto has_prefix = [&](const std::string& prefix) {
+    return std::find_if(flags.begin(), flags.end(), [&](const std::string& flag) {
+             return flag.rfind(prefix, 0) == 0;
+           }) != flags.end();
+  };
+  const char* target = std::getenv("SPARK_TARGET_TRIPLE");
+  const bool host_native_target = (target == nullptr || *target == '\0');
+  if (host_native_target && !has_prefix("-march=")) {
+    append_if_missing(flags, "-march=native");
+  }
+  if (host_native_target && !has_prefix("-mtune=")) {
+    append_if_missing(flags, "-mtune=native");
   }
 
   if (const auto* lto = std::getenv("SPARK_LTO")) {
@@ -189,6 +246,19 @@ std::vector<std::string> resolve_native_cxx_flags() {
     if (*sysroot != '\0') {
       append_if_missing(flags, "--sysroot=" + std::string(sysroot));
     }
+  }
+
+  const auto* profile_raw = getenv_non_empty("SPARK_OPT_PROFILE");
+  const auto profile = profile_raw ? normalize_optimization_profile(profile_raw) : std::string("balanced");
+  if (profile == "max" || profile == "layered-max") {
+    append_if_missing(flags, "-fno-trapping-math");
+    append_if_missing(flags, "-fno-semantic-interposition");
+    append_if_missing(flags, "-ffunction-sections");
+    append_if_missing(flags, "-fdata-sections");
+  }
+  if (profile == "layered-max") {
+    append_if_missing(flags, "-falign-functions=32");
+    append_if_missing(flags, "-falign-loops=32");
   }
 
   return flags;
@@ -258,6 +328,38 @@ void apply_build_tuning_env(const BuildTuningOptions& options) {
   if (!options.pgo_profile.empty()) {
     setenv("SPARK_PGO_PROFILE", options.pgo_profile.c_str(), 1);
   }
+  if (!options.optimization_profile.empty()) {
+    const auto normalized = normalize_optimization_profile(options.optimization_profile);
+    setenv("SPARK_OPT_PROFILE", normalized.c_str(), 1);
+  }
+  if (options.auto_pgo_runs > 0) {
+    setenv("SPARK_AUTO_PGO", "1", 1);
+    setenv("SPARK_AUTO_PGO_RUNS", std::to_string(options.auto_pgo_runs).c_str(), 1);
+  }
+
+  const auto* profile_raw = getenv_non_empty("SPARK_OPT_PROFILE");
+  const auto profile = profile_raw ? normalize_optimization_profile(profile_raw) : std::string("balanced");
+  if (profile == "max" || profile == "layered-max") {
+    if (!getenv_non_empty("SPARK_LTO")) {
+      setenv("SPARK_LTO", "full", 1);
+    }
+    // Semantic-preserving runtime fast path toggles.
+    if (!getenv_non_empty("SPARK_ASSIGN_INPLACE_NUMERIC")) {
+      setenv("SPARK_ASSIGN_INPLACE_NUMERIC", "1", 1);
+    }
+    if (!getenv_non_empty("SPARK_BINARY_EXPR_FUSION")) {
+      setenv("SPARK_BINARY_EXPR_FUSION", "1", 1);
+    }
+  }
+  if (profile == "layered-max") {
+    // Build-time is intentionally expensive in this profile.
+    if (!getenv_non_empty("SPARK_AUTO_PGO") && !getenv_non_empty("SPARK_PGO")) {
+      setenv("SPARK_AUTO_PGO", "1", 1);
+    }
+    if (!getenv_non_empty("SPARK_AUTO_PGO_RUNS")) {
+      setenv("SPARK_AUTO_PGO_RUNS", "2", 1);
+    }
+  }
 }
 
 bool target_matches_host(const std::string& target_triple) {
@@ -318,6 +420,37 @@ bool parse_and_typecheck(const std::string& file_path, ProgramBundle& out) {
   out.program = parser.parse_program();
   out.checker.check(*out.program);
   return !out.checker.has_errors();
+}
+
+bool is_identifier_char_for_scan(char c) {
+  const auto uc = static_cast<unsigned char>(c);
+  return std::isalnum(uc) || c == '_';
+}
+
+bool source_contains_identifier_token(const std::string& source, const std::string& token) {
+  if (token.empty()) {
+    return false;
+  }
+  std::size_t pos = 0;
+  while (true) {
+    pos = source.find(token, pos);
+    if (pos == std::string::npos) {
+      return false;
+    }
+    const std::size_t end = pos + token.size();
+    const bool left_ok = (pos == 0) || !is_identifier_char_for_scan(source[pos - 1]);
+    const bool right_ok = (end >= source.size()) || !is_identifier_char_for_scan(source[end]);
+    if (left_ok && right_ok) {
+      return true;
+    }
+    ++pos;
+  }
+}
+
+bool source_uses_high_precision_float_primitives(const std::string& source) {
+  return source_contains_identifier_token(source, "f128") ||
+         source_contains_identifier_token(source, "f256") ||
+         source_contains_identifier_token(source, "f512");
 }
 
 bool lower_to_products(const ProgramBundle& bundle, PipelineProducts& products) {

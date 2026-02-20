@@ -10,6 +10,8 @@ TypePtr TypeChecker::infer_expr(const Expr& expr) {
       const auto& number = static_cast<const NumberExpr&>(expr);
       return number.is_int ? int_type() : float_type(Type::FloatKind::F64);
     }
+    case Expr::Kind::String:
+      return string_type();
     case Expr::Kind::Bool:
       return bool_type();
     case Expr::Kind::Variable: {
@@ -341,24 +343,41 @@ TypePtr TypeChecker::infer_expr(const Expr& expr) {
         return bool_type();
       }
       if (binary.op == BinaryOp::Add || binary.op == BinaryOp::Sub ||
-          binary.op == BinaryOp::Mul || binary.op == BinaryOp::Div || binary.op == BinaryOp::Mod) {
+          binary.op == BinaryOp::Mul || binary.op == BinaryOp::Div ||
+          binary.op == BinaryOp::Mod || binary.op == BinaryOp::Pow) {
         auto left = infer_expr(*binary.left);
         auto right = infer_expr(*binary.right);
+        if (left->kind == Type::Kind::String || right->kind == Type::Kind::String) {
+          if (left->kind != Type::Kind::String || right->kind != Type::Kind::String) {
+            return unknown_type();
+          }
+          if (binary.op == BinaryOp::Add) {
+            return string_type();
+          }
+          if (binary.op == BinaryOp::Lt || binary.op == BinaryOp::Lte ||
+              binary.op == BinaryOp::Gt || binary.op == BinaryOp::Gte) {
+            return bool_type();
+          }
+          return unknown_type();
+        }
         if (left->kind == Type::Kind::Matrix || right->kind == Type::Kind::Matrix) {
           auto matrix = (left->kind == Type::Kind::Matrix) ? left : right;
           auto other = (left->kind == Type::Kind::Matrix) ? right : left;
-
-          if (binary.op == BinaryOp::Mod) {
-            return unknown_type();
-          }
 
           TypePtr element = matrix->list_element ? matrix->list_element : unknown_type();
           if (other->kind == Type::Kind::Matrix) {
             if (other->list_element) {
               element = normalize_list_elements(element, other->list_element);
             }
+            if (binary.op == BinaryOp::Add && element &&
+                element->kind != Type::Kind::Unknown && !is_numeric_type(*element)) {
+              element = string_type();
+            }
           } else if (is_numeric_type(*other) && other->kind != Type::Kind::Unknown) {
             element = normalize_list_elements(element, other);
+          } else if ((binary.op == BinaryOp::Add || binary.op == BinaryOp::Mul) &&
+                     other->kind != Type::Kind::Unknown) {
+            element = string_type();
           }
 
           auto rows = matrix->matrix_rows;
@@ -380,14 +399,35 @@ TypePtr TypeChecker::infer_expr(const Expr& expr) {
           return matrix_type(element, rows, cols);
         }
 
-        if (left->kind == Type::Kind::List && right->kind == Type::Kind::List) {
-          return left;
+        if (left->kind == Type::Kind::List || right->kind == Type::Kind::List) {
+          auto list = (left->kind == Type::Kind::List) ? left : right;
+          auto other = (left->kind == Type::Kind::List) ? right : left;
+          TypePtr element = list->list_element ? list->list_element : unknown_type();
+          if (other->kind == Type::Kind::List) {
+            if (binary.op == BinaryOp::Add) {
+              return left;
+            }
+            if (other->list_element) {
+              element = normalize_list_elements(element, other->list_element);
+            }
+          } else if (is_numeric_type(*other) && other->kind != Type::Kind::Unknown) {
+            element = normalize_list_elements(element, other);
+          } else if ((binary.op == BinaryOp::Add || binary.op == BinaryOp::Mul) &&
+                     other->kind != Type::Kind::Unknown) {
+            element = string_type();
+          } else if (other->kind != Type::Kind::Unknown) {
+            return unknown_type();
+          }
+          if (binary.op == BinaryOp::Div || binary.op == BinaryOp::Pow) {
+            element = float_type();
+          }
+          return list_type(element);
         }
         if (!is_numeric_type(*left) || !is_numeric_type(*right)) {
           return unknown_type();
         }
-        if (binary.op == BinaryOp::Mod && (left->kind != Type::Kind::Int || right->kind != Type::Kind::Int)) {
-          return unknown_type();
+        if (binary.op == BinaryOp::Div || binary.op == BinaryOp::Pow) {
+          return float_type();
         }
         if (left->kind == Type::Kind::Float || right->kind == Type::Kind::Float) {
           return float_type();

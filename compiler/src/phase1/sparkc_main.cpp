@@ -10,6 +10,8 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <map>
+#include <optional>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <vector>

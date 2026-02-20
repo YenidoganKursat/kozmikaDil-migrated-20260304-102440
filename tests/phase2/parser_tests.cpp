@@ -94,6 +94,15 @@ v = -(3 + 4) * 2
                      "v = -(3 + 4) * 2\n");
 }
 
+void test_parser_power_precedence() {
+	assert_ast_snapshot(R"(
+x = 2 ^ 3 ^ 2
+y = 2 * 3 ^ 2
+)",
+	                     "x = 2 ^ (3 ^ 2)\n"
+	                     "y = 2 * 3 ^ 2\n");
+}
+
 void test_parser_nested_functions() {
   assert_ast_snapshot(R"(
 def outer():
@@ -149,6 +158,36 @@ void test_parser_massive_assignment_snapshot() {
   assert_ast_snapshot(source, expected);
 }
 
+void test_parser_numeric_prefix_constructor_syntax() {
+  assert_ast_snapshot(R"(
+a = f8 1.25
+b = f16 2.5
+c = f32 3.75
+d = f128 4.5
+e = f256 5.25
+f = f512 6.125
+g = f512 -7.5
+)",
+                     "a = f8(1.25)\n"
+                     "b = f16(2.5)\n"
+                     "c = f32(3.75)\n"
+                     "d = f128(4.5)\n"
+                     "e = f256(5.25)\n"
+                     "f = f512(6.125)\n"
+                     "g = f512(-7.5)\n");
+}
+
+void test_parser_string_literal_and_constructor_syntax() {
+  assert_ast_snapshot(R"(
+a = "hello"
+b = string "world"
+c = a + " " + b
+)",
+                     "a = \"hello\"\n"
+                     "b = string(\"world\")\n"
+                     "c = a + \" \" + b\n");
+}
+
 }  // namespace
 
 int main() {
@@ -161,10 +200,13 @@ int main() {
   test_parser_parse_error_expected_failure();
   test_parser_boolean_ops();
   test_parser_unary_and_parentheses();
+  test_parser_power_precedence();
   test_parser_nested_functions();
   test_parser_async_and_task_group_syntax();
   test_parser_deadline_alias_syntax();
   test_parser_async_for_syntax();
   test_parser_massive_assignment_snapshot();
+  test_parser_numeric_prefix_constructor_syntax();
+  test_parser_string_literal_and_constructor_syntax();
   return 0;
 }

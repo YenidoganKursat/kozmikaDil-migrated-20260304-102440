@@ -1,3 +1,31 @@
+std::string escape_string_for_ir_literal(const std::string& input) {
+  std::string out;
+  out.reserve(input.size() + 8);
+  for (const auto ch : input) {
+    switch (ch) {
+      case '\\':
+        out += "\\\\";
+        break;
+      case '"':
+        out += "\\\"";
+        break;
+      case '\n':
+        out += "\\n";
+        break;
+      case '\r':
+        out += "\\r";
+        break;
+      case '\t':
+        out += "\\t";
+        break;
+      default:
+        out.push_back(ch);
+        break;
+    }
+  }
+  return out;
+}
+
 Code CodeGenerator::emit_list_expression(const ListExpr& list, FunctionContext& ctx, ExpectedExprContext expected) {
   (void)ctx;
   (void)expected;
@@ -113,7 +141,7 @@ Code CodeGenerator::emit_index_expression(const IndexExpr& index, FunctionContex
 
   auto current_code = current;
   auto current_kind = current.kind;
-  if (!is_container_kind(current_kind) && current_kind != ScalarKind::Unknown) {
+  if (!is_container_kind(current_kind) && current_kind != ScalarKind::Unknown && current_kind != ValueKind::String) {
     add_error("indexing target is not indexable");
     return {"", ScalarKind::Invalid, false};
   }
@@ -260,6 +288,49 @@ Code CodeGenerator::emit_index_expression(const IndexExpr& index, FunctionContex
       current_code = {out, is_float_kind(current_kind) ? ValueKind::ListFloat : ValueKind::ListInt, true};
       current_kind = current_code.kind;
       current_element_kind = infer_container_scalar_type(current_kind);
+      continue;
+    }
+
+    if (current_kind == ValueKind::String) {
+      if (item.is_slice) {
+        const auto start =
+            item.slice_start ? emit_expr(*item.slice_start, ctx, ExpectedExprContext::Int) : Code{"0", ValueKind::Int, true};
+        Code stop;
+        if (item.slice_stop) {
+          stop = emit_expr(*item.slice_stop, ctx, ExpectedExprContext::Int);
+        } else {
+          const auto string_len = next_temp();
+          emit_line(string_len + " = call @__spark_string_len(" + current_code.value + ")");
+          stop = {string_len, ValueKind::Int, true};
+        }
+        const auto step =
+            item.slice_step ? emit_expr(*item.slice_step, ctx, ExpectedExprContext::Int) : Code{"1", ValueKind::Int, true};
+        if (!start.has_value || !stop.has_value || !step.has_value) {
+          return {"", ScalarKind::Invalid, false};
+        }
+
+        const auto out = next_temp();
+        emit_line(out + " = call @__spark_string_slice(" + current_code.value + ", " + start.value + ", " + stop.value + ", " +
+                  step.value + ")");
+        current_code = {out, ValueKind::String, true};
+        current_kind = current_code.kind;
+        current_element_kind = ValueKind::Unknown;
+        continue;
+      }
+
+      if (!item.index) {
+        add_error("invalid string index item");
+        return {"", ScalarKind::Invalid, false};
+      }
+      const auto index_code = emit_expr(*item.index, ctx, ExpectedExprContext::Int);
+      if (!index_code.has_value) {
+        return {"", ScalarKind::Invalid, false};
+      }
+      const auto out = next_temp();
+      emit_line(out + " = call @__spark_string_index(" + current_code.value + ", " + index_code.value + ")");
+      current_code = {out, ValueKind::String, true};
+      current_kind = current_code.kind;
+      current_element_kind = ValueKind::Unknown;
       continue;
     }
 
@@ -414,6 +485,12 @@ Code CodeGenerator::emit_expr(const Expr& expr, FunctionContext& ctx, ExpectedEx
       emit_line(tmp + " = " + scalar_kind_to_name(kind) + ".const " + scalar_to_constant(number_expr.value, kind));
       return {tmp, kind, true};
     }
+    case Expr::Kind::String: {
+      const auto& string_expr = static_cast<const StringExpr&>(expr);
+      const auto tmp = next_temp();
+      emit_line(tmp + " = str.const \"" + escape_string_for_ir_literal(string_expr.value) + "\"");
+      return {tmp, ScalarKind::String, true};
+    }
     case Expr::Kind::Bool: {
       const auto& bool_expr = static_cast<const BoolExpr&>(expr);
       const auto tmp = next_temp();
@@ -432,9 +509,9 @@ Code CodeGenerator::emit_expr(const Expr& expr, FunctionContext& ctx, ExpectedEx
                               : expected == ExpectedExprContext::Bool ? ScalarKind::Bool
                                                                      : ScalarKind::Int;
         set_var_type(ctx, variable.name, inferred);
-        return {variable.name, inferred, true};
+        return {variable.name, inferred, true, lookup_numeric_hint(ctx, variable.name)};
       }
-      return {variable.name, known, true};
+      return {variable.name, known, true, lookup_numeric_hint(ctx, variable.name)};
     }
     case Expr::Kind::Unary: {
       const auto& unary = static_cast<const UnaryExpr&>(expr);
@@ -464,7 +541,7 @@ Code CodeGenerator::emit_expr(const Expr& expr, FunctionContext& ctx, ExpectedEx
       }
       const auto tmp = next_temp();
       emit_line(tmp + " = neg." + scalar_kind_to_name(operand.kind) + " " + operand.value);
-      return {tmp, operand.kind, true};
+      return {tmp, operand.kind, true, operand.numeric_hint};
     }
     case Expr::Kind::Binary: {
       const auto& binary = static_cast<const BinaryExpr&>(expr);
@@ -493,6 +570,24 @@ Code CodeGenerator::emit_expr(const Expr& expr, FunctionContext& ctx, ExpectedEx
         auto right = emit_expr(*binary.right, ctx, ExpectedExprContext::None);
         if (left.kind == ScalarKind::Invalid || right.kind == ScalarKind::Invalid) {
           return {"", ScalarKind::Invalid, false};
+        }
+
+        if (left.kind == ScalarKind::String || right.kind == ScalarKind::String) {
+          if (left.kind != ScalarKind::String || right.kind != ScalarKind::String) {
+            add_error("string comparison requires both operands to be string");
+            return {"", ScalarKind::Invalid, false};
+          }
+          const auto cmp_value = next_temp();
+          emit_line(cmp_value + " = call @__spark_string_cmp(" + left.value + ", " + right.value + ")");
+          const auto out = next_temp();
+          const auto op =
+              (binary.op == BinaryOp::Lt ? "lt" : binary.op == BinaryOp::Lte ? "le" : binary.op == BinaryOp::Gt ? "gt"
+                                                                                                     : binary.op == BinaryOp::Gte
+                                                                                                           ? "ge"
+                                                                                                           : (binary.op == BinaryOp::Eq ? "eq"
+                                                                                                                                         : "ne"));
+          emit_line(out + " = cmp." + op + ".i64 " + cmp_value + ", 0");
+          return {out, ScalarKind::Bool, true};
         }
 
         if (left.kind == ScalarKind::Unknown) {
@@ -561,20 +656,29 @@ Code CodeGenerator::emit_expr(const Expr& expr, FunctionContext& ctx, ExpectedEx
       if (right.kind == ScalarKind::Unknown) {
         right.kind = ScalarKind::Int;
       }
+      if (left.kind == ScalarKind::String || right.kind == ScalarKind::String) {
+        if (binary.op == BinaryOp::Add && left.kind == ScalarKind::String && right.kind == ScalarKind::String) {
+          const auto out = next_temp();
+          emit_line(out + " = call @__spark_string_concat(" + left.value + ", " + right.value + ")");
+          return {out, ScalarKind::String, true};
+        }
+        add_error("string arithmetic only supports '+' between two strings");
+        return {"", ScalarKind::Invalid, false};
+      }
       if (left.kind == ScalarKind::Bool || right.kind == ScalarKind::Bool) {
         add_error("arithmetic expects numeric operands");
         return {"", ScalarKind::Invalid, false};
       }
 
       ScalarKind result_kind = ScalarKind::Int;
-      if (binary.op == BinaryOp::Div) {
+      if (binary.op == BinaryOp::Div || binary.op == BinaryOp::Pow) {
         result_kind = ScalarKind::Float;
       } else if (binary.op == BinaryOp::Mod) {
-        if (left.kind != ScalarKind::Int || right.kind != ScalarKind::Int) {
-          add_error("modulo requires integer operands");
+        result_kind = coerce_numeric(left.kind, right.kind);
+        if (result_kind == ScalarKind::Invalid) {
+          add_error("modulo requires numeric operands");
           return {"", ScalarKind::Invalid, false};
         }
-        result_kind = ScalarKind::Int;
       } else {
         result_kind = coerce_numeric(left.kind, right.kind);
         if (result_kind == ScalarKind::Invalid) {
@@ -589,12 +693,14 @@ Code CodeGenerator::emit_expr(const Expr& expr, FunctionContext& ctx, ExpectedEx
           emit_line(cast_left + " = cast.i64_to_f64 " + left.value);
           left.value = cast_left;
           left.kind = ScalarKind::Float;
+          left.numeric_hint.clear();
         }
         if (right.kind == ScalarKind::Int) {
           auto cast_right = next_temp();
           emit_line(cast_right + " = cast.i64_to_f64 " + right.value);
           right.value = cast_right;
           right.kind = ScalarKind::Float;
+          right.numeric_hint.clear();
         }
       }
 
@@ -602,10 +708,26 @@ Code CodeGenerator::emit_expr(const Expr& expr, FunctionContext& ctx, ExpectedEx
                                  : binary.op == BinaryOp::Sub ? "sub"
                                  : binary.op == BinaryOp::Mul ? "mul"
                                  : binary.op == BinaryOp::Div ? "div"
-                                 : "mod");
+                                 : binary.op == BinaryOp::Mod ? "mod"
+                                                               : "pow");
+      const auto is_supported_float_hint = [](const std::string& hint) {
+        return hint == "f8" || hint == "f16" || hint == "bf16" || hint == "f32" || hint == "f64" ||
+               hint == "f128" || hint == "f256" || hint == "f512";
+      };
+      std::string opcode_kind = scalar_kind_to_name(result_kind);
+      std::string result_hint;
+      if (result_kind == ScalarKind::Float) {
+        if (is_supported_float_hint(left.numeric_hint) && left.numeric_hint == right.numeric_hint) {
+          opcode_kind = left.numeric_hint;
+          result_hint = left.numeric_hint;
+        } else if (is_supported_float_hint(left.numeric_hint) && is_supported_float_hint(right.numeric_hint)) {
+          opcode_kind = "f64";
+          result_hint = "f64";
+        }
+      }
       const auto tmp = next_temp();
-      emit_line(tmp + " = " + opcode + "." + scalar_kind_to_name(result_kind) + " " + left.value + ", " + right.value);
-      return {tmp, result_kind, true};
+      emit_line(tmp + " = " + opcode + "." + opcode_kind + " " + left.value + ", " + right.value);
+      return {tmp, result_kind, true, result_hint};
     }
     case Expr::Kind::Call:
       return emit_function_call(static_cast<const CallExpr&>(expr), ctx, expected);
@@ -860,6 +982,37 @@ Code CodeGenerator::emit_function_call(const CallExpr& call, FunctionContext& ct
     return {"", ScalarKind::Void, false};
   }
 
+  if (callee.name == "string") {
+    if (call.args.size() > 1) {
+      add_error("string() expects zero or one argument");
+      return {"", ScalarKind::Invalid, false};
+    }
+    if (call.args.empty()) {
+      const auto out = next_temp();
+      emit_line(out + " = str.const \"\"");
+      return {out, ScalarKind::String, true};
+    }
+    const auto arg = emit_expr(*call.args[0], ctx, ExpectedExprContext::None);
+    if (!arg.has_value) {
+      return {"", ScalarKind::Invalid, false};
+    }
+    if (arg.kind == ScalarKind::String) {
+      return {arg.value, ScalarKind::String, true};
+    }
+    const auto out = next_temp();
+    if (arg.kind == ScalarKind::Int) {
+      emit_line(out + " = call @__spark_string_from_i64(" + arg.value + ")");
+    } else if (arg.kind == ScalarKind::Float) {
+      emit_line(out + " = call @__spark_string_from_f64(" + arg.value + ")");
+    } else if (arg.kind == ScalarKind::Bool) {
+      emit_line(out + " = call @__spark_string_from_bool(" + arg.value + ")");
+    } else {
+      add_error("string() expects scalar/string input");
+      return {"", ScalarKind::Invalid, false};
+    }
+    return {out, ScalarKind::String, true};
+  }
+
   if (callee.name == "len") {
     if (call.args.size() != 1) {
       add_error("len() expects exactly one argument");
@@ -870,18 +1023,96 @@ Code CodeGenerator::emit_function_call(const CallExpr& call, FunctionContext& ct
       return {"", ScalarKind::Invalid, false};
     }
     const auto target_kind = arg.kind == ValueKind::Unknown ? ValueKind::ListInt : arg.kind;
-    const std::string callee_name =
-        (is_list_kind(target_kind) || is_matrix_kind(target_kind))
-            ? (is_matrix_kind(target_kind) ? matrix_len_rows_fn(target_kind) : "__spark_list_len_i64")
-            : "__spark_list_len_i64";
+    std::string callee_name = "__spark_list_len_i64";
+    if (target_kind == ValueKind::String) {
+      callee_name = "__spark_string_len";
+    } else if (is_matrix_kind(target_kind)) {
+      callee_name = matrix_len_rows_fn(target_kind);
+    } else if (is_list_kind(target_kind)) {
+      callee_name = "__spark_list_len_i64";
+    }
     const auto temp = next_temp();
     emit_line(temp + " = call @" + callee_name + "(" + arg.value + ")");
     return {temp, ValueKind::Int, true};
   }
 
+  if (callee.name == "utf8_len" || callee.name == "utf16_len") {
+    if (call.args.size() != 1) {
+      add_error(callee.name + "() expects exactly one string argument");
+      return {"", ScalarKind::Invalid, false};
+    }
+    const auto arg = emit_expr(*call.args[0], ctx, ExpectedExprContext::None);
+    if (!arg.has_value) {
+      return {"", ScalarKind::Invalid, false};
+    }
+    if (arg.kind != ValueKind::String) {
+      add_error(callee.name + "() expects string argument");
+      return {"", ScalarKind::Invalid, false};
+    }
+    const auto out = next_temp();
+    const auto fn = (callee.name == "utf8_len") ? "__spark_string_utf8_len" : "__spark_string_utf16_len";
+    emit_line(out + " = call @" + std::string(fn) + "(" + arg.value + ")");
+    return {out, ValueKind::Int, true};
+  }
+
   if (callee.name == "range") {
     add_error("range() can only be used in for-loop iterable position in phase4");
     return {"", ScalarKind::Invalid, false};
+  }
+
+  if (callee.name == "bench_tick") {
+    if (!call.args.empty()) {
+      add_error("bench_tick() expects no arguments");
+      return {"", ScalarKind::Invalid, false};
+    }
+    const auto out = next_temp();
+    emit_line(out + " = call @__spark_bench_tick_i64()");
+    return {out, ScalarKind::Int, true};
+  }
+
+  const auto is_int_ctor = [](const std::string& name) {
+    return name == "i8" || name == "i16" || name == "i32" || name == "i64" || name == "i128" ||
+           name == "i256" || name == "i512";
+  };
+  const auto is_float_ctor = [](const std::string& name) {
+    return name == "f8" || name == "f16" || name == "bf16" || name == "f32" || name == "f64" ||
+           name == "f128" || name == "f256" || name == "f512";
+  };
+
+  if (is_int_ctor(callee.name) || is_float_ctor(callee.name)) {
+    if (call.args.size() != 1) {
+      add_error(callee.name + "() expects exactly one numeric argument");
+      return {"", ScalarKind::Invalid, false};
+    }
+    auto arg = emit_expr(*call.args[0], ctx, ExpectedExprContext::None);
+    if (!arg.has_value) {
+      return {"", ScalarKind::Invalid, false};
+    }
+    if (is_container_kind(arg.kind)) {
+      add_error(callee.name + "() does not accept container arguments in phase4 codegen");
+      return {"", ScalarKind::Invalid, false};
+    }
+    if (arg.kind != ScalarKind::Int && arg.kind != ScalarKind::Float && arg.kind != ScalarKind::Bool) {
+      add_error(callee.name + "() expects numeric argument");
+      return {"", ScalarKind::Invalid, false};
+    }
+    if (is_int_ctor(callee.name)) {
+      if (arg.kind == ScalarKind::Float) {
+        const auto casted = next_temp();
+        emit_line(casted + " = cast.f64_to_i64 " + arg.value);
+        return {casted, ScalarKind::Int, true};
+      }
+      return {arg.value, ScalarKind::Int, true};
+    }
+    auto base_value = arg.value;
+    if (arg.kind == ScalarKind::Int) {
+      const auto casted = next_temp();
+      emit_line(casted + " = cast.i64_to_f64 " + arg.value);
+      base_value = casted;
+    }
+    const auto quantized = next_temp();
+    emit_line(quantized + " = add." + callee.name + " " + base_value + ", 0.0");
+    return {quantized, ScalarKind::Float, true, callee.name};
   }
 
   const auto* signature = find_function_signature(callee.name);

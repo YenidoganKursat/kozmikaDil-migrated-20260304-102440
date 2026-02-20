@@ -33,12 +33,14 @@ and_expr       -> equality_expr ("and" equality_expr)*
 equality_expr  -> comparison_expr (("==" | "!=") comparison_expr)*
 comparison_expr-> term (("<" | "<=" | ">" | ">=") term)*
 term           -> factor (("+" | "-") factor)*
-factor         -> unary (("*" | "/" | "%") unary)*
-unary          -> ("-" | "not" | "await") unary | call_or_atom
+factor         -> power (("*" | "/" | "%") power)*
+power          -> unary ("^" power)?
+unary          -> ("-" | "not" | "await") unary | numeric_ctor_prefix | call_or_atom
+numeric_ctor_prefix -> NUMERIC_CTOR unary
 call_or_atom   -> atom (call_or_index)*
 call_or_index  -> "(" [arg_list] ")" | "[" expression "]" | "." IDENTIFIER
 arg_list       -> expression ("," expression)*
-atom           -> IDENTIFIER | NUMBER | TRUE | FALSE | list_literal | "(" expression ")"
+atom           -> IDENTIFIER | NUMBER | STRING | TRUE | FALSE | list_literal | "(" expression ")"
 list_literal   -> "[" list_items "]"
 list_items     -> [ expression_list | matrix_rows ]
 expression_list-> expression ("," expression)*
@@ -56,9 +58,23 @@ matrix_rows    -> list_expr (";" list_expr)*
 
 - `IDENTIFIER`: `[A-Za-z_][A-Za-z0-9_]*`
 - `NUMBER`: integer and float literals
+- `STRING`: single or double quoted literal with backslash escapes
+- `NUMERIC_CTOR`: `i8|i16|i32|i64|i128|i256|i512|f8|f16|bf16|f32|f64|f128|f256|f512|string`
 - `TRUE` / `FALSE`
 - unary keywords: `not`, `await`
 - comments: `# ...` till end of line
+
+### Numeric constructor sugar
+
+- Both forms are valid and canonicalize to the same AST call form:
+  - `x = f512(1.25)`
+  - `x = f512 1.25`
+
+### String/Unicode runtime builtins
+
+- `len(s)` for string values returns Unicode codepoint count.
+- `utf8_len(s)` returns UTF-8 byte length.
+- `utf16_len(s)` returns UTF-16 code-unit length.
 
 ### Concurrency Runtime Builtins (Phase 9)
 

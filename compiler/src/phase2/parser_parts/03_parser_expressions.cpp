@@ -46,6 +46,7 @@ int Parser::precedence(const std::string& op) {
   if (op == "<" || op == ">" || op == "<=" || op == ">=") return 4;
   if (op == "+" || op == "-") return 5;
   if (op == "*" || op == "/" || op == "%") return 6;
+  if (op == "^") return 7;
   return -1;
 }
 
@@ -62,7 +63,8 @@ ExprPtr Parser::parse_expr_binary(std::vector<ExprToken>& tokens, std::size_t& p
     }
     const std::string op_text = token.text;
     ++pos;
-    auto rhs = parse_expr_binary(tokens, pos, p + 1);
+    const int next_min_precedence = (op_text == "^") ? p : (p + 1);
+    auto rhs = parse_expr_binary(tokens, pos, next_min_precedence);
 
     BinaryOp op = BinaryOp::Add;
     if (op_text == "+") op = BinaryOp::Add;
@@ -70,6 +72,7 @@ ExprPtr Parser::parse_expr_binary(std::vector<ExprToken>& tokens, std::size_t& p
     else if (op_text == "*") op = BinaryOp::Mul;
     else if (op_text == "/") op = BinaryOp::Div;
     else if (op_text == "%") op = BinaryOp::Mod;
+    else if (op_text == "^") op = BinaryOp::Pow;
     else if (op_text == "==") op = BinaryOp::Eq;
     else if (op_text == "!=") op = BinaryOp::Ne;
     else if (op_text == "<") op = BinaryOp::Lt;

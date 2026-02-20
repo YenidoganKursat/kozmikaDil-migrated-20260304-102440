@@ -258,3 +258,336 @@
 - Dispatch correctness should be tested with forced feature sets on one host; otherwise real multi-CPU lab dependency slows iteration.
 - PGO gains are more stable when profiling run count is explicit (`>=3`) and median timing is used.
 - BOLT integration must be optional; many machines lack a full `perf/perf2bolt/llvm-bolt` stack.
+
+## Primitive Runtime Optimization Addendum (2026-02-19)
+
+### External references reviewed for this pass
+
+- MPFR manual, performance guidance (`How to avoid Memory Leakage`, `Efficiency`):
+  - <https://www.mpfr.org/mpfr-current/mpfr.html>
+- CPython adaptive interpreter design (specialization/quickening model):
+  - <https://peps.python.org/pep-0659/>
+- Adaptive interpreter survey paper (context for inline/cache-driven specialization):
+  - Brunthaler et al., *Inline Caching Meets Quickening*:
+    <https://arxiv.org/abs/2206.01754>
+
+### Problem measured
+
+- `100M` primitive loops were dominated by interpreter dispatch and repeated numeric conversion work in canonical loops:
+  - `while i < N: acc = acc <op> rhs; i = i + 1`
+- High-precision (`f128/f256/f512`) path spent most time in repeated per-iteration MPFR operand materialization and generic statement dispatch.
+
+### What was implemented from research
+
+- Added a guarded canonical while-loop fast path in evaluator:
+  - recognizes loop/index/update shape,
+  - preserves semantics,
+  - falls back to generic path when pattern is not provably safe.
+- Added MPFR in-place alias path:
+  - `acc = acc <op> rhs` now updates target cache directly when legal.
+- Added `eval_numeric_repeat_inplace(...)` kernel:
+  - hoists repeat count and stable RHS out of per-iteration dispatch,
+  - preserves strict arithmetic semantics (no fast-math, no approximation shortcuts).
+
+### Result summary (100M full table, v2 -> v4)
+
+- Native low precision:
+  - `f8`: `1.71x` geomean
+  - `f16`: `1.22x` geomean
+  - `f32`: `1.27x` geomean
+  - `f64`: `1.46x` geomean
+- Strict high precision (interpreter/MPFR):
+  - `f128`: `111.83x` geomean
+  - `f256`: `92.58x` geomean
+  - `f512`: `89.13x` geomean
+
+### Important limit
+
+- `100M` operations under `0.1s` implies `<1 ns/op`, which is below realistic single-core limits for strict high-precision MPFR arithmetic.
+- Current pass maximizes safe wins without changing numerical guarantees; further gains now require either:
+  - high-precision native codegen path with the same strict semantics, and/or
+  - benchmark-kernel-specific lowering with stronger compile-time proofs.
+
+## Primitive Ops Throughput Addendum (2026-02-19)
+
+### External references used
+
+- GCC optimization flag behavior (`-O3`, `-Ofast`, unroll/vectorization family):
+  - <https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html>
+- Clang optimization and profile options (for compatible flag strategy):
+  - <https://clang.llvm.org/docs/UsersManual.html>
+- MPFR manual (high-precision semantics and operational expectations):
+  - <https://www.mpfr.org/mpfr-current/mpfr.html>
+- PCG random generation background (deterministic, reproducible streams):
+  - <https://www.pcg-random.org/paper.html>
+
+### What changed
+
+- Added a dedicated primitive operator benchmark harness:
+  - `bench/scripts/primitives/benchmark_primitive_ops_random.py`
+  - deterministic random x/y stream, one operator kernel per run, baseline vs optimized comparison.
+- Added integer primitive Python reference validation:
+  - `bench/scripts/primitives/validate_int_ops_python.py`
+- Historical note: benchmark-only native approximation override for high float families existed temporarily,
+  but is now disabled in strict correctness mode.
+
+### What worked
+
+- For long-run workloads (10M/100M loops), moving from interpreter baseline to native optimized profile produces large speedups.
+- A 100M sample (`i32 +`) showed speedup above 50x on this host.
+- High precision families (`f128/f256/f512`) are now kept on strict interpreter/MPFR path for correctness.
+
+### Caution
+
+- Approximate native high-precision mode is intentionally non-default and should not be used for strict numerical conformance gates.
+
+## String Primitive + 200x Throughput Notes (2026-02-19)
+
+### External references checked
+
+- LLVM IR attributes and alias/effect metadata (optimizer unlock):
+  - <https://llvm.org/docs/LangRef.html>
+- GCC optimize options and aggressive throughput flags:
+  - <https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html>
+- Clang profiling/instrumentation flow (PGO pipeline):
+  - <https://clang.llvm.org/docs/UsersManual.html#profiling-with-instrumentation>
+- Clang ThinLTO design:
+  - <https://clang.llvm.org/docs/ThinLTO.html>
+
+### Applied design decisions
+
+- Added first-class `String` value path in AST/lexer/parser/runtime/type-checker.
+- Opened native codegen path for string:
+  - string literal lowering (`str.const`)
+  - native concat/compare/index/slice
+  - native print and `string(x)` constructor conversions
+  - native `utf8_len(s)` / `utf16_len(s)` builtins
+- Preserved strict/approx separation for high-precision numeric families.
+
+### Native string runtime choices
+
+- Internal representation is UTF-8 bytes + cached codepoint count:
+  - `len(s)` returns Unicode codepoint count.
+  - `utf8_len(s)` returns byte length.
+  - `utf16_len(s)` computes code-unit count from UTF-8 decode.
+- This keeps common string hot-path cheap (`len` O(1)) while still exposing UTF-16 length when needed.
+
+### Practical throughput rules (positive)
+
+- Keep runtime measurements single-thread pinned and reproducible.
+- Compare runtime-only numbers; exclude build/compile/link time.
+- Use strict mode as the only correctness gate for `f128/f256/f512`.
+
+### Anti-patterns to avoid (negative)
+
+- Do not enable fast-math style flags in strict correctness runs.
+- Do not change algorithm shape between baseline and optimized comparisons.
+- Do not label approximate high-precision runs as strict conformance results.
+
+### Benchmark fairness update
+
+- `benchmark_primitive_ops_random.py` now defaults to `--checksum-mode accumulate`:
+  - `tmp = x <op> y`
+  - `acc = acc + f64(tmp)`
+- This preserves a loop-carried dependency and reduces dead-code elimination artifacts in the native path.
+- The old behavior remains available as `--checksum-mode last` for stress/ceiling experiments.
+
+### Host-tuned native build defaults
+
+- Added host-target tuning defaults when cross-target is not requested:
+  - `-march=native`
+  - `-mtune=native`
+  - `-funroll-loops`
+  - `-fno-math-errno`
+
+## Primitive Numeric Throughput + Memory Layout Notes (2026-02-19)
+
+### External references checked
+
+- MPFR C++ wrapper docs (notes that mpfr object init has non-trivial cost):
+  - <https://www.holoborodko.com/pavel/mpfr/>
+- MPFR manual (init/set APIs and conversion paths):
+  - <https://www.mpfr.org/mpfr-current/mpfr.html>
+- GCC half precision support (`_Float16`):
+  - <https://gcc.gnu.org/onlinedocs/gcc/Half-Precision.html>
+- RLIBM project/papers (correctly-rounded low-precision math via table/polynomial design):
+  - <https://people.cs.rutgers.edu/~sn349/rlibm/>
+  - <https://arxiv.org/abs/2101.11408>
+
+### Applied implementation decisions
+
+- High-precision (`f128/f256/f512`) path now keeps runtime values in an opaque MPFR cache attached to `Value::NumericValue`.
+  - This removes repeated decimal parse/format on every operator step.
+- Added thread-local MPFR scratch operands (`lhs/rhs/out`) to avoid per-op `mpfr_init/mpfr_clear` churn.
+- Kept strict semantics: compile/build native still blocked for `f128/f256/f512`; runtime path remains interpreter/MPFR.
+- Low-float (`f8/f16/f32`) native codegen received fast paths:
+  - `f16`: `_Float16` quantization path when available.
+  - `f8`: integer-only subnormal conversion path + decode LUT initialization.
+
+### Measured impact (same host)
+
+- High precision add microbench (500k, strict interpret):
+  - prior median (`f128`): ~2.595s
+  - after cache/scratch: ~1.283s
+  - gain: ~2.0x
+- Low-float add microbench (5M, native):
+  - `f8`: 0.2549s -> 0.0959s (~2.66x)
+  - `f16`: 0.2156s -> 0.0110s (~19.53x)
+  - `f32`: 0.0172s -> 0.0117s (~1.47x)
+
+### Constraint note
+
+- `100M ops in 0.1s` means 1 billion ops/sec effective throughput, which is generally not reachable in this benchmark shape because each iteration still includes RNG/update + type quantization + loop-carried checksum dependency.
+
+### Cross-language optimization references (2026-02-19 follow-up)
+
+- Julia performance guidance emphasizes keeping hot code in typed functions, avoiding global type instability, and enabling vectorization patterns:
+  - <https://docs.julialang.org/en/v1/manual/performance-tips/>
+- MATLAB guidance emphasizes preallocation and vectorization/JIT-friendly loop shapes:
+  - <https://www.mathworks.com/help/matlab/matlab_prog/preallocating-arrays.html>
+  - <https://www.mathworks.com/help/matlab/matlab_prog/vectorization.html>
+- GCC autovectorization and aggressive optimization options:
+  - <https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html>
+- High-throughput GEMM implementations (OpenBLAS) rely on blocked/packed kernels and architecture dispatch:
+  - <https://github.com/OpenMathLib/OpenBLAS>
+
+Applied takeaway:
+- Keep strict-correctness tier for `f128+` separate from throughput tier.
+- For throughput tier, build-time specialization + dispatch + vectorizable kernels are the primary path (not per-element MPFR in hot loops).
+
+### High-precision policy update
+
+- Throughput override for `f128/f256/f512` has been disabled to avoid precision loss.
+- Current policy: these families always use strict MPFR-backed semantics at runtime.
+
+## Primitive Throughput Follow-up (2026-02-19, strict-safe)
+
+### External references checked
+
+- MPFR manual (`MPFR_DECL_INIT`, `mpfr_set_*`, precision/rounding flow):
+  - <https://www.mpfr.org/mpfr-current/mpfr.html>
+- GMP low-level limb APIs (fixed-size arithmetic speed strategy):
+  - <https://gmplib.org/manual/Low_002dlevel-Functions>
+- GCC function multiversioning (`target_clones`, IFUNC-backed dispatch path):
+  - <https://gcc.gnu.org/onlinedocs/gcc/Function-Multiversioning.html>
+- oneDNN CPU dispatcher control and ISA gating:
+  - <https://uxlfoundation.github.io/oneDNN/dev_guide_cpu_dispatcher_control.html>
+- oneDNN data type support matrix (bf16/f16/f32/f64):
+  - <https://uxlfoundation.github.io/oneDNN/dev_guide_data_types.html>
+- ARM ACLE FP16 capability macro guidance:
+  - <https://arm-software.github.io/acle/main/acle.html>
+- SLEEF (vectorized elementary functions) and CORE-MATH (correct rounding project):
+  - <https://github.com/shibatch/sleef>
+  - <https://core-math.gitlabpages.inria.fr/>
+- LibBF (binary floating-point library with configurable precision):
+  - <https://bellard.org/libbf/>
+
+### Applied now (implemented)
+
+- Added strict-safe in-place numeric assignment path for arithmetic writes:
+  - `target = lhs <op> rhs` can reuse target numeric storage/cache when kind matches.
+- Added fast-path for numeric primitive constructor calls (`i8..i512`, `f8..f512`) to bypass
+  generic builtin dispatch overhead in hot loops.
+- Added runtime toggle for A/B validation:
+  - `SPARK_ASSIGN_INPLACE_NUMERIC=0/1`.
+
+### Measured impact (same host, same harness)
+
+- High precision strict interpret (`+`, 500k loops):
+  - `f128`: `1.520s -> 1.209s` (`1.257x`)
+  - `f256`: `1.501s -> 1.207s` (`1.244x`)
+  - `f512`: `1.507s -> 1.222s` (`1.233x`)
+- Low float interpret (`+`, 1M loops):
+  - `f8`: `2.765s -> 2.311s` (`1.196x`)
+  - `f16`: `2.843s -> 2.355s` (`1.208x`)
+  - `f32`: `2.835s -> 2.325s` (`1.220x`)
+  - `f64`: `2.778s -> 2.392s` (`1.162x`)
+
+### Next strict-safe acceleration roadmap
+
+- `f128` tier:
+  - optional quad backend (`__float128`/libquadmath where available) with strict differential gate.
+- `f256/f512` tier:
+  - fixed-limb backend (GMP low-level style) for add/sub/mul/div/mod/pow hot kernels.
+  - keep MPFR as oracle/reference path and fallback for difficult transcendental cases.
+- `f8/f16/f32/f64` tier:
+  - ISA-specialized SIMD kernels with runtime dispatch (SSE/AVX/AVX512 + NEON/SVE).
+  - keep strict mode default; aggressive modes remain opt-in with differential checks.
+
+### Layered build-time-heavy policy integration
+
+- Added CLI-level profile selection for `sparkc run/build`:
+  - `--profile balanced|max|layered-max`
+  - `--auto-pgo-runs <n>`
+- `layered-max` is intended for environments where build time is cheap:
+  - enables full LTO by default,
+  - runs automatic instrumented training and profile-use rebuild (auto-PGO),
+  - keeps strict numeric correctness path while enabling semantic-preserving runtime fast-path toggles.
+- This provides a practical "multi-layer" strategy:
+  - compile/link layer: LTO + section-level dead-strip + profile-guided layout,
+  - runtime evaluation layer: in-place numeric assignment + binary expression fusion.
+
+## Phase 4 Repeat-Loop Lowering (2026-02-19)
+
+### External references checked
+
+- LLVM Loop Idiom Recognize (canonical loop-to-intrinsic/idiom lowering):
+  - <https://llvm.org/docs/Passes.html#loop-idiom-loop-idiom-recognition>
+- LLVM Loop Strength Reduce:
+  - <https://llvm.org/docs/Passes.html#loop-reduce-loop-strength-reduction>
+- "What Every Computer Scientist Should Know About Floating-Point Arithmetic"
+  (rounding/association caveats for algebraic rewrites):
+  - <https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html>
+
+### Applied now
+
+- Added phase4 codegen canonical numeric while fast path:
+  - detects `while i < N` + `acc = acc <op> rhs` + `i = i + 1`
+  - lowers loop to one repeat-kernel call:
+    - `__spark_num_repeat_<op>_<kind>(acc, rhs, iterations)`
+- Added generated C repeat kernels for `f8/f16/bf16/f32/f64/f128/f256/f512`:
+  - strict path: per-step recurrence with fixed-point early-exit
+- Safety model:
+  - runtime now strict-only for repeat kernels (no fast-math toggle).
+
+### Measured effect (100M loops, warmup=2, runs=3)
+
+- Low-float native strict mode measurements remain bounded by strict recurrence cost.
+- `* / % ^` still accelerate strongly via fixed-point early-exit.
+- `+ -` remain throughput-bound in strict mode (expected).
+
+### Current hotspots after this pass
+
+- Native high-precision (`f128/f256/f512`) remains intentionally blocked in build mode
+  for correctness (interpreter MPFR path required).
+- Strict `+/-` recurrence remains the dominant cost in numeric-loop microbenchmarks.
+
+## High-Precision Enablement Without Correctness Loss (2026-02-19)
+
+### External references checked
+
+- Julia `BigFloat` semantics and MPFR backing:
+  - <https://docs.julialang.org/en/v1/base/numbers/#Base.MPFR.BigFloat>
+- GCC quadmath (`__float128`) scope and limits:
+  - <https://gcc.gnu.org/onlinedocs/libquadmath/>
+- MPFR official manual:
+  - <https://www.mpfr.org/mpfr-current/mpfr.html>
+- QD (double-double / quad-double) project (software precision tradeoffs):
+  - <https://www.davidhbailey.com/dhbsoftware/>
+- Boost.Multiprecision numeric families and backend tradeoffs:
+  - <https://www.boost.org/doc/libs/release/libs/multiprecision/doc/html/index.html>
+
+### Applied now
+
+- Removed `build` hard-fail blocker for `f128/f256/f512`.
+- Replaced with strict launcher generation:
+  - output artifact is executable,
+  - runs interpreter strict path (`--interpret`) for correctness,
+  - no approximate native fallback.
+
+### Rationale
+
+- Industry pattern is also tiered:
+  - hardware-native fast path for low precision (`f8..f64`),
+  - software multiprecision path (MPFR/decimal backends) for strict high precision.
+- This change removes the "cannot build" usability wall while keeping strict numeric guarantees intact.

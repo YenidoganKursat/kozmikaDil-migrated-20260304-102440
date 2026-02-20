@@ -39,6 +39,8 @@ IRToCResult IRToCGenerator::translate(const std::string& ir, const IRToCOptions&
   generated << "#include <stdio.h>\n";
   generated << "#include <stdlib.h>\n";
   generated << "#include <string.h>\n";
+  generated << "#include <math.h>\n";
+  generated << "#include <time.h>\n";
   generated << "#if defined(__clang__) || defined(__GNUC__)\n";
   generated << "#define SPARK_FORCE_INLINE __attribute__((always_inline)) inline\n";
   generated << "#define SPARK_RESTRICT __restrict__\n";
@@ -54,9 +56,474 @@ IRToCResult IRToCGenerator::translate(const std::string& ir, const IRToCOptions&
   generated << "#endif\n";
   generated << "typedef long long i64;\n";
   generated << "typedef double f64;\n\n";
+  generated << "typedef struct { char* data; i64 bytes; i64 codepoints; } __spark_string;\n\n";
+  generated << R"(static SPARK_FORCE_INLINE i64 __spark_utf8_codepoint_count(const char* data, i64 bytes) {
+  if (!data || bytes <= 0) return 0;
+  i64 count = 0;
+  for (i64 i = 0; i < bytes; ++i) {
+    const unsigned char ch = (unsigned char)data[i];
+    if ((ch & 0xC0u) != 0x80u) ++count;
+  }
+  return count;
+}
+static SPARK_FORCE_INLINE i64 __spark_utf8_codepoint_to_byte(const __spark_string* s, i64 cp_index) {
+  if (!s || !s->data || s->bytes <= 0 || cp_index <= 0) return 0;
+  i64 cp = 0;
+  for (i64 i = 0; i < s->bytes; ++i) {
+    const unsigned char ch = (unsigned char)s->data[i];
+    if ((ch & 0xC0u) != 0x80u) {
+      if (cp == cp_index) return i;
+      ++cp;
+    }
+  }
+  return s->bytes;
+}
+static SPARK_FORCE_INLINE __spark_string __spark_string_empty(void) {
+  __spark_string out;
+  out.data = (char*)malloc(1u);
+  if (out.data) out.data[0] = '\0';
+  out.bytes = 0;
+  out.codepoints = 0;
+  return out;
+}
+static __spark_string __spark_string_from_bytes(const char* data, i64 bytes) {
+  if (!data || bytes <= 0) {
+    return __spark_string_empty();
+  }
+  __spark_string out;
+  out.data = (char*)malloc((size_t)bytes + 1u);
+  if (!out.data) {
+    out.bytes = 0;
+    out.codepoints = 0;
+    return out;
+  }
+  memcpy(out.data, data, (size_t)bytes);
+  out.data[bytes] = '\0';
+  out.bytes = bytes;
+  out.codepoints = __spark_utf8_codepoint_count(data, bytes);
+  return out;
+}
+static __spark_string __spark_string_from_utf8(const char* text) {
+  if (!text) return __spark_string_empty();
+  const i64 bytes = (i64)strlen(text);
+  return __spark_string_from_bytes(text, bytes);
+}
+static __spark_string __spark_string_from_i64(i64 value) {
+  char buffer[64];
+  const int n = snprintf(buffer, sizeof(buffer), "%lld", value);
+  return __spark_string_from_bytes(buffer, n > 0 ? (i64)n : 0);
+}
+static __spark_string __spark_string_from_f64(f64 value) {
+  char buffer[128];
+  const int n = snprintf(buffer, sizeof(buffer), "%.17g", value);
+  return __spark_string_from_bytes(buffer, n > 0 ? (i64)n : 0);
+}
+static SPARK_FORCE_INLINE __spark_string __spark_string_from_bool(bool value) {
+  return __spark_string_from_utf8(value ? "True" : "False");
+}
+static SPARK_FORCE_INLINE i64 __spark_string_len(__spark_string value) { return value.codepoints; }
+static SPARK_FORCE_INLINE i64 __spark_string_utf8_len(__spark_string value) { return value.bytes; }
+static i64 __spark_string_utf16_len(__spark_string value) {
+  if (!value.data || value.bytes <= 0) return 0;
+  i64 units = 0;
+  for (i64 i = 0; i < value.bytes;) {
+    const unsigned char c0 = (unsigned char)value.data[i];
+    uint32_t cp = 0xFFFDu;
+    i64 advance = 1;
+    if ((c0 & 0x80u) == 0u) {
+      cp = c0;
+      advance = 1;
+    } else if ((c0 & 0xE0u) == 0xC0u && i + 1 < value.bytes) {
+      const unsigned char c1 = (unsigned char)value.data[i + 1];
+      cp = ((uint32_t)(c0 & 0x1Fu) << 6) | (uint32_t)(c1 & 0x3Fu);
+      advance = 2;
+    } else if ((c0 & 0xF0u) == 0xE0u && i + 2 < value.bytes) {
+      const unsigned char c1 = (unsigned char)value.data[i + 1];
+      const unsigned char c2 = (unsigned char)value.data[i + 2];
+      cp = ((uint32_t)(c0 & 0x0Fu) << 12) | ((uint32_t)(c1 & 0x3Fu) << 6) | (uint32_t)(c2 & 0x3Fu);
+      advance = 3;
+    } else if ((c0 & 0xF8u) == 0xF0u && i + 3 < value.bytes) {
+      const unsigned char c1 = (unsigned char)value.data[i + 1];
+      const unsigned char c2 = (unsigned char)value.data[i + 2];
+      const unsigned char c3 = (unsigned char)value.data[i + 3];
+      cp = ((uint32_t)(c0 & 0x07u) << 18) | ((uint32_t)(c1 & 0x3Fu) << 12) |
+           ((uint32_t)(c2 & 0x3Fu) << 6) | (uint32_t)(c3 & 0x3Fu);
+      advance = 4;
+    }
+    units += (cp > 0xFFFFu) ? 2 : 1;
+    i += advance;
+  }
+  return units;
+}
+static __spark_string __spark_string_concat(__spark_string lhs, __spark_string rhs) {
+  const i64 left_bytes = lhs.bytes > 0 ? lhs.bytes : 0;
+  const i64 right_bytes = rhs.bytes > 0 ? rhs.bytes : 0;
+  const i64 out_bytes = left_bytes + right_bytes;
+  if (out_bytes <= 0) return __spark_string_empty();
+  __spark_string out;
+  out.data = (char*)malloc((size_t)out_bytes + 1u);
+  if (!out.data) {
+    out.bytes = 0;
+    out.codepoints = 0;
+    return out;
+  }
+  if (left_bytes > 0 && lhs.data) memcpy(out.data, lhs.data, (size_t)left_bytes);
+  if (right_bytes > 0 && rhs.data) memcpy(out.data + left_bytes, rhs.data, (size_t)right_bytes);
+  out.data[out_bytes] = '\0';
+  out.bytes = out_bytes;
+  out.codepoints = (lhs.codepoints > 0 ? lhs.codepoints : 0) + (rhs.codepoints > 0 ? rhs.codepoints : 0);
+  return out;
+}
+static i64 __spark_string_cmp(__spark_string lhs, __spark_string rhs) {
+  const i64 lhs_bytes = lhs.bytes > 0 ? lhs.bytes : 0;
+  const i64 rhs_bytes = rhs.bytes > 0 ? rhs.bytes : 0;
+  const i64 common = lhs_bytes < rhs_bytes ? lhs_bytes : rhs_bytes;
+  int cmp = 0;
+  if (common > 0 && lhs.data && rhs.data) {
+    cmp = memcmp(lhs.data, rhs.data, (size_t)common);
+  }
+  if (cmp < 0) return -1;
+  if (cmp > 0) return 1;
+  if (lhs_bytes < rhs_bytes) return -1;
+  if (lhs_bytes > rhs_bytes) return 1;
+  return 0;
+}
+static __spark_string __spark_string_index(__spark_string value, i64 index) {
+  if (!value.data || value.codepoints <= 0) return __spark_string_empty();
+  i64 normalized = index;
+  if (normalized < 0) normalized += value.codepoints;
+  if (normalized < 0 || normalized >= value.codepoints) return __spark_string_empty();
+  const i64 start = __spark_utf8_codepoint_to_byte(&value, normalized);
+  const i64 stop = __spark_utf8_codepoint_to_byte(&value, normalized + 1);
+  if (stop <= start) return __spark_string_empty();
+  return __spark_string_from_bytes(value.data + start, stop - start);
+}
+static __spark_string __spark_string_slice(__spark_string value, i64 start, i64 stop, i64 step) {
+  if (!value.data || value.codepoints <= 0 || step == 0) return __spark_string_empty();
+  i64 s = start;
+  i64 e = stop;
+  if (s < 0) s += value.codepoints;
+  if (e < 0) e += value.codepoints;
+  if (s < 0) s = 0;
+  if (e < 0) e = 0;
+  if (s > value.codepoints) s = value.codepoints;
+  if (e > value.codepoints) e = value.codepoints;
+  if (step == 1) {
+    if (e < s) e = s;
+    const i64 b0 = __spark_utf8_codepoint_to_byte(&value, s);
+    const i64 b1 = __spark_utf8_codepoint_to_byte(&value, e);
+    if (b1 <= b0) return __spark_string_empty();
+    return __spark_string_from_bytes(value.data + b0, b1 - b0);
+  }
+  i64 picked_bytes = 0;
+  i64 picked_cp = 0;
+  for (i64 cp = s; (step > 0) ? (cp < e) : (cp > e); cp += step) {
+    if (cp < 0 || cp >= value.codepoints) continue;
+    const i64 b0 = __spark_utf8_codepoint_to_byte(&value, cp);
+    const i64 b1 = __spark_utf8_codepoint_to_byte(&value, cp + 1);
+    if (b1 > b0) {
+      picked_bytes += (b1 - b0);
+      ++picked_cp;
+    }
+  }
+  if (picked_bytes <= 0) return __spark_string_empty();
+  __spark_string out;
+  out.data = (char*)malloc((size_t)picked_bytes + 1u);
+  if (!out.data) {
+    out.bytes = 0;
+    out.codepoints = 0;
+    return out;
+  }
+  i64 cursor = 0;
+  for (i64 cp = s; (step > 0) ? (cp < e) : (cp > e); cp += step) {
+    if (cp < 0 || cp >= value.codepoints) continue;
+    const i64 b0 = __spark_utf8_codepoint_to_byte(&value, cp);
+    const i64 b1 = __spark_utf8_codepoint_to_byte(&value, cp + 1);
+    if (b1 > b0) {
+      const i64 width = b1 - b0;
+      memcpy(out.data + cursor, value.data + b0, (size_t)width);
+      cursor += width;
+    }
+  }
+  out.data[cursor] = '\0';
+  out.bytes = cursor;
+  out.codepoints = picked_cp;
+  return out;
+}
+static void __spark_print_str(__spark_string value) {
+  if (value.data && value.bytes > 0) {
+    fwrite(value.data, 1u, (size_t)value.bytes, stdout);
+  }
+  fputc('\n', stdout);
+}
+)";
   generated << "static void __spark_print_i64(i64 value) { printf(\"%lld\\n\", value); }\n";
   generated << "static void __spark_print_f64(f64 value) { printf(\"%.15g\\n\", value); }\n";
   generated << "static void __spark_print_bool(bool value) { printf(\"%s\\n\", value ? \"True\" : \"False\"); }\n\n";
+  generated << R"(static SPARK_FORCE_INLINE uint32_t __spark_f32_bits(float value) {
+  uint32_t bits = 0u;
+  memcpy(&bits, &value, sizeof(bits));
+  return bits;
+}
+static SPARK_FORCE_INLINE float __spark_bits_to_f32(uint32_t bits) {
+  float value = 0.0f;
+  memcpy(&value, &bits, sizeof(value));
+  return value;
+}
+static SPARK_FORCE_INLINE uint32_t __spark_round_shr_even_u32(uint32_t value, unsigned shift) {
+  if (shift == 0u) return value;
+  if (shift >= 32u) return 0u;
+  const uint32_t truncated = value >> shift;
+  const uint32_t mask = (1u << shift) - 1u;
+  const uint32_t remainder = value & mask;
+  const uint32_t halfway = 1u << (shift - 1u);
+  if (remainder > halfway) return truncated + 1u;
+  if (remainder < halfway) return truncated;
+  return (truncated & 1u) ? (truncated + 1u) : truncated;
+}
+static SPARK_FORCE_INLINE uint16_t __spark_f32_to_f16_bits_rne(float value) {
+  const uint32_t bits = __spark_f32_bits(value);
+  const uint16_t sign = (uint16_t)((bits >> 16) & 0x8000u);
+  const uint32_t exp = (bits >> 23) & 0xFFu;
+  const uint32_t frac = bits & 0x7FFFFFu;
+  if (exp == 0xFFu) {
+    if (frac == 0u) return (uint16_t)(sign | 0x7C00u);
+    uint16_t payload = (uint16_t)(frac >> 13);
+    if (payload == 0u) payload = 1u;
+    return (uint16_t)(sign | 0x7C00u | payload);
+  }
+  const int32_t exp_unbiased = (int32_t)exp - 127;
+  int32_t half_exp = exp_unbiased + 15;
+  if (half_exp >= 0x1F) return (uint16_t)(sign | 0x7C00u);
+  if (half_exp <= 0) {
+    if (half_exp < -10) return sign;
+    const uint32_t mantissa = frac | 0x800000u;
+    const uint32_t shift = (uint32_t)(14 - half_exp);
+    uint32_t half_frac = __spark_round_shr_even_u32(mantissa, shift);
+    if (half_frac >= 0x400u) return (uint16_t)(sign | 0x0400u);
+    return (uint16_t)(sign | half_frac);
+  }
+  uint32_t half_frac = __spark_round_shr_even_u32(frac, 13u);
+  if (half_frac >= 0x400u) {
+    half_frac = 0u;
+    ++half_exp;
+    if (half_exp >= 0x1F) return (uint16_t)(sign | 0x7C00u);
+  }
+  return (uint16_t)(sign | ((uint16_t)half_exp << 10) | (uint16_t)half_frac);
+}
+static SPARK_FORCE_INLINE float __spark_f16_bits_to_f32(uint16_t bits) {
+  const uint32_t sign = ((uint32_t)(bits & 0x8000u)) << 16;
+  const uint32_t exp = ((uint32_t)bits >> 10) & 0x1Fu;
+  const uint32_t frac = (uint32_t)bits & 0x03FFu;
+  if (exp == 0u) {
+    if (frac == 0u) return __spark_bits_to_f32(sign);
+    const float magnitude = ldexpf((float)frac, -24);
+    return (sign != 0u) ? -magnitude : magnitude;
+  }
+  if (exp == 0x1Fu) {
+    const uint32_t out = sign | 0x7F800000u | (frac << 13);
+    return __spark_bits_to_f32(out);
+  }
+  const uint32_t out_exp = exp + (127u - 15u);
+  const uint32_t out = sign | (out_exp << 23) | (frac << 13);
+  return __spark_bits_to_f32(out);
+}
+static SPARK_FORCE_INLINE float __spark_qf32_bf16(float value) {
+  uint32_t bits = __spark_f32_bits(value);
+  const uint32_t exp = bits & 0x7F800000u;
+  const uint32_t frac = bits & 0x007FFFFFu;
+  if (exp == 0x7F800000u) {
+    if (frac != 0u) bits |= 0x00010000u;
+    return __spark_bits_to_f32(bits & 0xFFFF0000u);
+  }
+  const uint32_t lsb = (bits >> 16) & 1u;
+  bits += 0x7FFFu + lsb;
+  bits &= 0xFFFF0000u;
+  return __spark_bits_to_f32(bits);
+}
+static SPARK_FORCE_INLINE uint8_t __spark_f32_to_f8_e4m3fn_bits_rne(float value) {
+  const uint32_t bits = __spark_f32_bits(value);
+  const uint8_t sign = (bits & 0x80000000u) ? 0x80u : 0x00u;
+  const uint32_t exp = (bits >> 23) & 0xFFu;
+  const uint32_t frac = bits & 0x7FFFFFu;
+  if (exp == 0xFFu) {
+    if (frac == 0u) return (uint8_t)(sign | 0x7Eu);
+    return (uint8_t)(sign | 0x7Fu);
+  }
+  if ((bits & 0x7FFFFFFFu) == 0u) return sign;
+  const int32_t exp_unbiased = (int32_t)exp - 127;
+  int32_t f8_exp = exp_unbiased + 7;
+  if (f8_exp >= 0x0F) return (uint8_t)(sign | 0x7Eu);
+  if (f8_exp <= 0) {
+    if (f8_exp < -3) return sign;
+    const uint32_t mantissa = frac | 0x800000u;
+    const uint32_t shift = (uint32_t)(21 - f8_exp);
+    uint32_t f8_frac = __spark_round_shr_even_u32(mantissa, shift);
+    if (f8_frac >= 8u) return (uint8_t)(sign | 0x08u);
+    return (uint8_t)(sign | (uint8_t)f8_frac);
+  }
+  uint32_t mant = __spark_round_shr_even_u32(frac, 20u);
+  if (mant >= 8u) {
+    mant = 0u;
+    ++f8_exp;
+    if (f8_exp >= 0x0F) return (uint8_t)(sign | 0x7Eu);
+  }
+  return (uint8_t)(sign | ((uint8_t)f8_exp << 3) | (uint8_t)mant);
+}
+static SPARK_FORCE_INLINE float __spark_f8_e4m3fn_bits_to_f32_slow(uint8_t bits) {
+  const bool negative = (bits & 0x80u) != 0u;
+  const uint8_t exp = (uint8_t)((bits >> 3) & 0x0Fu);
+  const uint8_t frac = (uint8_t)(bits & 0x07u);
+  if (exp == 0u) {
+    const float magnitude = ldexpf((float)frac, -9);
+    return negative ? -magnitude : magnitude;
+  }
+  if (exp == 0x0Fu && frac == 0x07u) {
+    return negative ? -NAN : NAN;
+  }
+  const int32_t exponent = (exp == 0x0Fu) ? 8 : ((int32_t)exp - 7);
+  const float magnitude = ldexpf(1.0f + ((float)frac / 8.0f), exponent);
+  return negative ? -magnitude : magnitude;
+}
+static float __spark_f8_decode_table[256];
+#if defined(__clang__) || defined(__GNUC__)
+__attribute__((constructor))
+#endif
+static void __spark_init_f8_decode_table(void) {
+  for (int i = 0; i < 256; ++i) {
+    __spark_f8_decode_table[i] = __spark_f8_e4m3fn_bits_to_f32_slow((uint8_t)i);
+  }
+}
+static SPARK_FORCE_INLINE float __spark_f8_e4m3fn_bits_to_f32(uint8_t bits) {
+  return __spark_f8_decode_table[(unsigned)bits];
+}
+static SPARK_FORCE_INLINE long double __spark_q_f8(long double v) {
+  return (long double)__spark_f8_e4m3fn_bits_to_f32(__spark_f32_to_f8_e4m3fn_bits_rne((float)v));
+}
+static SPARK_FORCE_INLINE long double __spark_q_f16(long double v) {
+#if defined(__FLT16_MANT_DIG__) && (__FLT16_MANT_DIG__ == 11)
+  _Float16 h = (_Float16)((float)v);
+  return (long double)((float)h);
+#else
+  return (long double)__spark_f16_bits_to_f32(__spark_f32_to_f16_bits_rne((float)v));
+#endif
+}
+static SPARK_FORCE_INLINE long double __spark_q_bf16(long double v) { return (long double)__spark_qf32_bf16((float)v); }
+static SPARK_FORCE_INLINE long double __spark_q_f32(long double v) { return (long double)((float)v); }
+static SPARK_FORCE_INLINE long double __spark_q_f64(long double v) { return (long double)((double)v); }
+static SPARK_FORCE_INLINE long double __spark_q_f128(long double v) { return v; }
+static SPARK_FORCE_INLINE long double __spark_q_f256(long double v) { return v; }
+static SPARK_FORCE_INLINE long double __spark_q_f512(long double v) { return v; }
+static SPARK_FORCE_INLINE int __spark_pow_int_exp(long double x, long long* out) {
+  if (!isfinite((double)x)) return 0;
+  long double rounded = nearbyintl(x);
+  if (fabsl(x - rounded) > 1e-12L) return 0;
+  if (fabsl(rounded) > 1000000.0L) return 0;
+  *out = (long long)rounded;
+  return 1;
+}
+static SPARK_FORCE_INLINE long double __spark_powi_ld(long double base, long long exp) {
+  if (exp == 0) return 1.0L;
+  if (base == 0.0L && exp < 0) return INFINITY;
+  int neg = exp < 0;
+  unsigned long long n = (unsigned long long)(neg ? -exp : exp);
+  long double result = 1.0L;
+  long double factor = base;
+  while (n > 0ULL) {
+    if (n & 1ULL) result *= factor;
+    n >>= 1ULL;
+    if (n > 0ULL) factor *= factor;
+  }
+  return neg ? (1.0L / result) : result;
+}
+)";
+  generated << "#define SPARK_DEFINE_NUM_OPS(KIND, QFN) \\\n";
+  generated << "static SPARK_FORCE_INLINE long double __spark_num_add_##KIND(long double a, long double b) { return QFN(a + b); } \\\n";
+  generated << "static SPARK_FORCE_INLINE long double __spark_num_sub_##KIND(long double a, long double b) { return QFN(a - b); } \\\n";
+  generated << "static SPARK_FORCE_INLINE long double __spark_num_mul_##KIND(long double a, long double b) { return QFN(a * b); } \\\n";
+  generated << "static SPARK_FORCE_INLINE long double __spark_num_div_##KIND(long double a, long double b) { return QFN(a / b); } \\\n";
+  generated << "static SPARK_FORCE_INLINE long double __spark_num_mod_##KIND(long double a, long double b) { return QFN(fmodl(a, b)); } \\\n";
+  generated << "static SPARK_FORCE_INLINE long double __spark_num_pow_##KIND(long double a, long double b) { long long __exp = 0; return QFN(__spark_pow_int_exp(b, &__exp) ? __spark_powi_ld(a, __exp) : powl(a, b)); }\n";
+  generated << "SPARK_DEFINE_NUM_OPS(f8, __spark_q_f8)\n";
+  generated << "SPARK_DEFINE_NUM_OPS(f16, __spark_q_f16)\n";
+  generated << "SPARK_DEFINE_NUM_OPS(bf16, __spark_q_bf16)\n";
+  generated << "SPARK_DEFINE_NUM_OPS(f32, __spark_q_f32)\n";
+  generated << "SPARK_DEFINE_NUM_OPS(f64, __spark_q_f64)\n";
+  generated << "SPARK_DEFINE_NUM_OPS(f128, __spark_q_f128)\n";
+  generated << "SPARK_DEFINE_NUM_OPS(f256, __spark_q_f256)\n";
+  generated << "SPARK_DEFINE_NUM_OPS(f512, __spark_q_f512)\n";
+  generated << "#undef SPARK_DEFINE_NUM_OPS\n";
+  generated << "#define SPARK_DEFINE_NUM_REPEAT_OPS(KIND) \\\n";
+  generated << "static SPARK_FORCE_INLINE long double __spark_num_repeat_add_##KIND(long double a, long double b, long long n) { \\\n";
+  generated << "  if (n <= 0) return a; \\\n";
+  generated << "  for (long long i = 0; i < n; ++i) { \\\n";
+  generated << "    const long double next = __spark_num_add_##KIND(a, b); \\\n";
+  generated << "    if (next == a) { a = next; break; } \\\n";
+  generated << "    a = next; \\\n";
+  generated << "  } \\\n";
+  generated << "  return a; \\\n";
+  generated << "} \\\n";
+  generated << "static SPARK_FORCE_INLINE long double __spark_num_repeat_sub_##KIND(long double a, long double b, long long n) { \\\n";
+  generated << "  if (n <= 0) return a; \\\n";
+  generated << "  for (long long i = 0; i < n; ++i) { \\\n";
+  generated << "    const long double next = __spark_num_sub_##KIND(a, b); \\\n";
+  generated << "    if (next == a) { a = next; break; } \\\n";
+  generated << "    a = next; \\\n";
+  generated << "  } \\\n";
+  generated << "  return a; \\\n";
+  generated << "} \\\n";
+  generated << "static SPARK_FORCE_INLINE long double __spark_num_repeat_mul_##KIND(long double a, long double b, long long n) { \\\n";
+  generated << "  if (n <= 0) return a; \\\n";
+  generated << "  for (long long i = 0; i < n; ++i) { \\\n";
+  generated << "    const long double next = __spark_num_mul_##KIND(a, b); \\\n";
+  generated << "    if (next == a) { a = next; break; } \\\n";
+  generated << "    a = next; \\\n";
+  generated << "  } \\\n";
+  generated << "  return a; \\\n";
+  generated << "} \\\n";
+  generated << "static SPARK_FORCE_INLINE long double __spark_num_repeat_div_##KIND(long double a, long double b, long long n) { \\\n";
+  generated << "  if (n <= 0) return a; \\\n";
+  generated << "  for (long long i = 0; i < n; ++i) { \\\n";
+  generated << "    const long double next = __spark_num_div_##KIND(a, b); \\\n";
+  generated << "    if (next == a) { a = next; break; } \\\n";
+  generated << "    a = next; \\\n";
+  generated << "  } \\\n";
+  generated << "  return a; \\\n";
+  generated << "} \\\n";
+  generated << "static SPARK_FORCE_INLINE long double __spark_num_repeat_mod_##KIND(long double a, long double b, long long n) { \\\n";
+  generated << "  if (n <= 0) return a; \\\n";
+  generated << "  for (long long i = 0; i < n; ++i) { \\\n";
+  generated << "    const long double next = __spark_num_mod_##KIND(a, b); \\\n";
+  generated << "    if (next == a) { a = next; break; } \\\n";
+  generated << "    a = next; \\\n";
+  generated << "  } \\\n";
+  generated << "  return a; \\\n";
+  generated << "} \\\n";
+  generated << "static SPARK_FORCE_INLINE long double __spark_num_repeat_pow_##KIND(long double a, long double b, long long n) { \\\n";
+  generated << "  if (n <= 0) return a; \\\n";
+  generated << "  for (long long i = 0; i < n; ++i) { \\\n";
+  generated << "    const long double next = __spark_num_pow_##KIND(a, b); \\\n";
+  generated << "    if (next == a) { a = next; break; } \\\n";
+  generated << "    a = next; \\\n";
+  generated << "  } \\\n";
+  generated << "  return a; \\\n";
+  generated << "}\n";
+  generated << "SPARK_DEFINE_NUM_REPEAT_OPS(f8)\n";
+  generated << "SPARK_DEFINE_NUM_REPEAT_OPS(f16)\n";
+  generated << "SPARK_DEFINE_NUM_REPEAT_OPS(bf16)\n";
+  generated << "SPARK_DEFINE_NUM_REPEAT_OPS(f32)\n";
+  generated << "SPARK_DEFINE_NUM_REPEAT_OPS(f64)\n";
+  generated << "SPARK_DEFINE_NUM_REPEAT_OPS(f128)\n";
+  generated << "SPARK_DEFINE_NUM_REPEAT_OPS(f256)\n";
+  generated << "SPARK_DEFINE_NUM_REPEAT_OPS(f512)\n";
+  generated << "#undef SPARK_DEFINE_NUM_REPEAT_OPS\n\n";
+  generated << "static i64 __spark_bench_tick_i64(void) {\n";
+  generated << "  struct timespec ts;\n";
+  generated << "  if (timespec_get(&ts, TIME_UTC) != TIME_UTC) {\n";
+  generated << "    return 0;\n";
+  generated << "  }\n";
+  generated << "  return (i64)ts.tv_sec * 1000000000LL + (i64)ts.tv_nsec;\n";
+  generated << "}\n\n";
   generated << "typedef struct { i64* data; i64 size; i64 capacity; } __spark_list_i64;\n";
   generated << "typedef struct { f64* data; i64 size; i64 capacity; } __spark_list_f64;\n";
   generated << "typedef struct { i64* data; i64 rows; i64 cols; } __spark_matrix_i64;\n";

@@ -18,6 +18,22 @@ double to_number_for_compare(const Value& value);
 long long value_to_int(const Value& value);
 double matrix_element_to_double(const Value& value);
 bool matrix_element_wants_double(const Value& value);
+std::string numeric_kind_to_string(Value::NumericKind kind);
+Value::NumericKind numeric_kind_from_name(const std::string& name);
+bool numeric_kind_is_int(Value::NumericKind kind);
+bool numeric_kind_is_float(Value::NumericKind kind);
+bool numeric_kind_is_high_precision_float(Value::NumericKind kind);
+std::string high_precision_numeric_to_string(const Value::NumericValue& numeric);
+double numeric_value_to_double(const Value& value);
+long long numeric_value_to_i64(const Value& value);
+bool numeric_value_is_zero(const Value& value);
+Value cast_numeric_to_kind(Value::NumericKind kind, const Value& input);
+Value eval_numeric_binary_value(BinaryOp op, const Value& left, const Value& right);
+bool eval_numeric_binary_value_inplace(BinaryOp op, const Value& left, const Value& right, Value& target);
+bool eval_numeric_repeat_inplace(BinaryOp op, Value& target, const Value& rhs, long long iterations);
+Value bench_mixed_numeric_op_runtime(const std::string& kind_name, const std::string& op_name,
+                                     long long loops, long long seed_x, long long seed_y);
+void register_numeric_primitive_builtins(const std::shared_ptr<Environment>& globals);
 
 long long normalize_matrix_index(long long idx, std::size_t size);
 void normalize_matrix_slice(long long size, long long& start, long long& stop, long long& step);
@@ -132,6 +148,8 @@ Value make_matrix_from_layout(std::size_t rows, std::size_t cols, const std::vec
 
 // Expression handlers.
 Value evaluate_case_number(const NumberExpr& expr, Interpreter& self,
+                         const std::shared_ptr<Environment>& env);
+Value evaluate_case_string(const StringExpr& expr, Interpreter& self,
                          const std::shared_ptr<Environment>& env);
 Value evaluate_case_bool(const BoolExpr& expr, Interpreter& self,
                         const std::shared_ptr<Environment>& env);

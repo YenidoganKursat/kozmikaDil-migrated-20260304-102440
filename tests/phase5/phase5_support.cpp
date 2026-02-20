@@ -52,6 +52,17 @@ void expect_global_list_double(std::string_view source, std::string_view name,
   }
 }
 
+void expect_global_list_string(std::string_view source, std::string_view name,
+                               const std::vector<std::string>& expected) {
+  const auto actual = run_and_get(source, name);
+  assert(actual.kind == spark::Value::Kind::List);
+  assert(actual.list_value.size() == expected.size());
+  for (std::size_t i = 0; i < expected.size(); ++i) {
+    assert(actual.list_value[i].kind == spark::Value::Kind::String);
+    assert(actual.list_value[i].string_value == expected[i]);
+  }
+}
+
 void expect_global_matrix(std::string_view source, std::string_view name,
                          std::size_t rows, std::size_t cols,
                          const std::vector<long long>& flat_values) {
@@ -84,6 +95,21 @@ void expect_global_matrix_double(std::string_view source, std::string_view name,
                                    ? static_cast<double>(actual.matrix_value->data[i].int_value)
                                    : actual.matrix_value->data[i].double_value;
     assert(std::fabs(actual_value - expected) < 1e-12);
+  }
+}
+
+void expect_global_matrix_string(std::string_view source, std::string_view name,
+                                 std::size_t rows, std::size_t cols,
+                                 const std::vector<std::string>& flat_values) {
+  const auto actual = run_and_get(source, name);
+  assert(actual.kind == spark::Value::Kind::Matrix);
+  assert(actual.matrix_value != nullptr);
+  assert(actual.matrix_value->rows == rows);
+  assert(actual.matrix_value->cols == cols);
+  assert(actual.matrix_value->data.size() == flat_values.size());
+  for (std::size_t i = 0; i < flat_values.size(); ++i) {
+    assert(actual.matrix_value->data[i].kind == spark::Value::Kind::String);
+    assert(actual.matrix_value->data[i].string_value == flat_values[i]);
   }
 }
 

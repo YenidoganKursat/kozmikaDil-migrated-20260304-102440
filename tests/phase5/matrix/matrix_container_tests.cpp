@@ -70,11 +70,15 @@ add = left + right
 sub = left - 2
 mul = left * 2
 div = right / left
+pow = left ^ 2
+rpow = 2 ^ left
 )";
   phase5_test::expect_global_matrix_double(source, "add", 2, 2, {2.0, 3.0, 4.0, 5.0});
   phase5_test::expect_global_matrix(source, "sub", 2, 2, { -1, 0, 1, 2});
   phase5_test::expect_global_matrix(source, "mul", 2, 2, {2, 4, 6, 8});
   phase5_test::expect_global_matrix_double(source, "div", 2, 2, {1.0, 0.5, 0.333333333333, 0.25});
+  phase5_test::expect_global_matrix_double(source, "pow", 2, 2, {1.0, 4.0, 9.0, 16.0});
+  phase5_test::expect_global_matrix_double(source, "rpow", 2, 2, {2.0, 4.0, 8.0, 16.0});
 }
 
 void test_matrix_mod_arithmetic() {
@@ -88,6 +92,23 @@ rmod_scalar = 20 % left
   phase5_test::expect_global_matrix_double(source, "mod_elem", 2, 2, {1.0, 2.0, 1.0, 3.0});
   phase5_test::expect_global_matrix_double(source, "mod_scalar", 2, 2, {2.0, 0.0, 1.0, 2.0});
   phase5_test::expect_global_matrix_double(source, "rmod_scalar", 2, 2, {0.0, 2.0, 6.0, 4.0});
+}
+
+void test_matrix_hetero_string_object_ops() {
+  const char* source = R"(
+left = [["a", "bc"]; ["d", "e"]]
+plus = left + "!"
+rplus = ">" + left
+repeat = left * 2
+obj = [[len, range]; [print, string]]
+obj_plus = obj + "_fn"
+)";
+  phase5_test::expect_global_matrix_string(source, "plus", 2, 2, {"a!", "bc!", "d!", "e!"});
+  phase5_test::expect_global_matrix_string(source, "rplus", 2, 2, {">a", ">bc", ">d", ">e"});
+  phase5_test::expect_global_matrix_string(source, "repeat", 2, 2, {"aa", "bcbc", "dd", "ee"});
+  phase5_test::expect_global_matrix_string(source, "obj_plus", 2, 2,
+                                           {"<builtin len>_fn", "<builtin range>_fn",
+                                            "<builtin print>_fn", "<builtin string>_fn"});
 }
 
 void test_matrix_star_is_matmul() {
@@ -128,6 +149,7 @@ void run_matrix_container_tests() {
   test_matrix_block_slice();
   test_matrix_elementwise_arithmetic();
   test_matrix_mod_arithmetic();
+  test_matrix_hetero_string_object_ops();
   test_matrix_star_is_matmul();
   test_matrix_mutate_by_slice();
   test_matrix_transpose();

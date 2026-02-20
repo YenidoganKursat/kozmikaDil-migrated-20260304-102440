@@ -19,6 +19,7 @@ struct Type {
     Nil,
     Int,
     Float,
+    String,
     Bool,
     Any,
     List,
@@ -151,6 +152,7 @@ class TypeChecker {
   TypePtr bool_type();
   TypePtr int_type();
   TypePtr float_type(Type::FloatKind kind = Type::FloatKind::F64);
+  TypePtr string_type();
   TypePtr nil_type();
   TypePtr unknown_type();
   TypePtr any_type() const;

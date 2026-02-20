@@ -78,6 +78,17 @@
 - Why: playbook requires heavy build-time optimization options exploration (`LTO`, `PGO`, architecture tuning, link options) without changing command flow.
 - Implementation rule: `SPARK_CC`, `SPARK_CFLAGS` (with `SPARK_CXX`/`SPARK_CXXFLAGS` as compatibility aliases), `SPARK_LDFLAGS`, `SPARK_LTO`, and `SPARK_PGO` are honored by `k build`, `k run` (native path), and `k compile --emit-asm`.
 
+## Decision 16.1: Layered-Max Runtime-First Profile
+- Decision: add a CLI profile selector for runtime-first optimization when build time is intentionally expensive.
+- Why: project policy is "build-time cheap, runtime expensive"; a single command should enable layered optimization stack without manual env orchestration.
+- Implementation rule:
+  - `k run` / `k build` accept `--profile balanced|max|layered-max` and `--auto-pgo-runs <n>`.
+  - `layered-max` enables:
+    - `LTO=full` by default,
+    - automatic PGO cycle (`instrument -> train -> merge -> use`) when explicit `SPARK_PGO` is not set,
+    - semantic-preserving runtime fast-path toggles (`SPARK_ASSIGN_INPLACE_NUMERIC=1`, `SPARK_BINARY_EXPR_FUSION=1`),
+    - section-based link stripping (`--gc-sections` on Linux, `-dead_strip` on macOS).
+
 ## Decision 17: Phase 4 Scalar Canonicalization
 - Decision: apply a post-Canonicalization pass in IR→C lowering.
 - Why: remove branch-temp and single-use temp artifacts before final C emission to reduce register pressure and simplify branched loops for LLVM.
@@ -248,6 +259,23 @@
   - `sum(map_mul(c, X)) = sum(X)*c`
   - `sum(map_mul(b, map_add(a, X))) = (sum(X) + a*N)*b`
 
+## Decision 39: Canonical Numeric While Hot-Loop Specialization
+- Decision: evaluator içinde güvenli pattern tespiti ile canonical numeric while döngülerine özel hızlı yol eklendi.
+- Why: `while i < N; acc = acc <op> rhs; i = i + 1` şeklinde döngülerde AST dispatch ve environment lookup maliyeti baskındı.
+- Implementation rule:
+  - yalnızca doğruluk kanıtlanabilen pattern'lerde aktif,
+  - pattern dışı kodlar mevcut generic execution path'e düşer,
+  - `SPARK_WHILE_FAST_NUMERIC` ile aç/kapa yapılabilir (default: açık).
+
+## Decision 40: Strict High-Precision Repeat Kernel
+- Decision: high-precision loop'lar için `eval_numeric_repeat_inplace(...)` eklendi; sabit RHS ve bilinen repeat count durumunda per-iteration dispatch kaldırıldı.
+- Why: MPFR path'te en büyük maliyet her iterasyonda operand hazırlığı + genel statement yürütmesiydi.
+- Implementation rule:
+  - strict semantics korunur (no fast-math, no approximation mode),
+  - `f128/f256/f512` için cache-authoritative in-place MPFR güncellemesi kullanılır,
+  - `div/mod` zero kontrolleri korunur,
+  - uygun olmayan durumlarda otomatik fallback mevcut.
+
 ## Decision 39: Phase 8 Size-Aware Kernel + Dense Cache Path
 - Decision: own GEMM için size-aware mikro-kernel kullan ve large matrix setup'ta eager dense-f64 cache ile BLAS giriş maliyetini düşür.
 - Why: 256/512 boyutlarında stead-state throughput'u artırırken küçük boyutta (128) gereksiz setup maliyetini sınırlamak.
@@ -332,3 +360,35 @@
   - differential: interpreter vs native output parity on representative suites,
   - fuzz: parser non-crash and runtime output parity fuzz loops,
   - sanitizer: ASan/UBSan and TSan isolated build profiles.
+
+## Decision 49: Canonical Numeric While Lowering To Repeat Kernels
+- Decision: phase4 native codegen canonical numeric recurrence loops are lowered to repeat kernels.
+- Why: `while i < N` + scalar recurrence had high branch/dispatch overhead and was the top runtime hotspot in 100M operator microbenchmarks.
+- Implementation rule:
+  - pattern:
+    - condition `i < bound` (stable bound expression),
+    - body includes `acc = acc <op> rhs` and `i = i + 1`,
+    - `rhs` must be loop-invariant scalar.
+  - lowering:
+    - compute iteration count once (`bound - i`),
+    - call `__spark_num_repeat_<op>_<kind>(acc, rhs, n)`,
+    - update `i = bound`.
+  - kind routing:
+    - float kinds `f8/f16/bf16/f32/f64/f128/f256/f512`.
+
+## Decision 50: Repeat Kernels Are Strict-Only
+- Decision: repeat kernels now run only strict recurrence semantics; no fast-math/algebraic shortcut toggle remains.
+- Why: user policy is zero tolerance for optional correctness drift in floating trajectories.
+- Implementation rule:
+  - `__spark_num_repeat_*` always executes per-step semantics,
+  - fixed-point early-stop remains (semantics-preserving),
+  - no runtime env switch for algebraic repeat rewrite.
+
+## Decision 51: High-Precision Build Barrier Replaced With Strict Launcher
+- Decision: `build` no longer hard-fails for `f128/f256/f512`; it now emits an executable launcher that runs interpreter strict mode.
+- Why: remove usability blocker while preserving correctness guarantees (native C backend is still precision-limited for these kinds).
+- Implementation rule:
+  - detect high-precision primitives at build time,
+  - emit executable wrapper script at requested output path,
+  - wrapper executes `k run --interpret <source>` (fallback: `sparkc run --interpret`),
+  - no silent downcast to native approximate path.

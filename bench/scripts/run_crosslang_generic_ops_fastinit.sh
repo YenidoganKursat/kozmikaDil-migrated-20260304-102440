@@ -2,4 +2,4 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec python3 "${SCRIPT_DIR}/run_crosslang_generic_ops_fastinit.py" "$@"
+exec python3 "${SCRIPT_DIR}/benchmark_crosslang_generic_ops_fastinit.py" "$@"

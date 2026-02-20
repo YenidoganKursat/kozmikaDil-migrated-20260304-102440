@@ -22,6 +22,7 @@ struct Node {
 struct Expr : Node {
   enum class Kind {
     Number,
+    String,
     Bool,
     Variable,
     List,
@@ -39,8 +40,17 @@ struct Expr : Node {
 struct NumberExpr : Expr {
   double value;
   bool is_int;
+  std::string raw_text;
 
-  NumberExpr(double v, bool is_int_value) : Expr(Kind::Number), value(v), is_int(is_int_value) {}
+  NumberExpr(double v, bool is_int_value, std::string raw = "")
+      : Expr(Kind::Number), value(v), is_int(is_int_value), raw_text(std::move(raw)) {}
+};
+
+struct StringExpr : Expr {
+  std::string value;
+
+  explicit StringExpr(std::string text)
+      : Expr(Kind::String), value(std::move(text)) {}
 };
 
 struct BoolExpr : Expr {
@@ -81,6 +91,7 @@ enum class BinaryOp {
   Mul,
   Div,
   Mod,
+  Pow,
   Eq,
   Ne,
   Lt,

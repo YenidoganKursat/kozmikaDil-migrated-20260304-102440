@@ -10,6 +10,8 @@ void CodeGenerator::emit_default_return(const FunctionContext& ctx) {
     emit_line("return 0");
   } else if (ctx.return_kind == ScalarKind::Float) {
     emit_line("return 0.0");
+  } else if (ctx.return_kind == ScalarKind::String) {
+    emit_line("return \"\"");
   } else {
     emit_line("return");
   }
@@ -23,6 +25,8 @@ std::string CodeGenerator::scalar_kind_to_name(ScalarKind kind) const {
       return "f64";
     case ScalarKind::Bool:
       return "bool";
+    case ScalarKind::String:
+      return "str";
     case ScalarKind::Void:
       return "void";
     case ScalarKind::Unknown:
@@ -114,6 +118,9 @@ ScalarKind CodeGenerator::merge_types(ScalarKind left, ScalarKind right) const {
   if ((left == ScalarKind::Int && right == ScalarKind::Float) || (left == ScalarKind::Float && right == ScalarKind::Int)) {
     return ScalarKind::Float;
   }
+  if (left == ScalarKind::String && right == ScalarKind::String) {
+    return ScalarKind::String;
+  }
   return ScalarKind::Invalid;
 }
 
@@ -161,6 +168,9 @@ ScalarKind CodeGenerator::ensure_expected(ScalarKind actual, ExpectedExprContext
   if (required == ScalarKind::Bool && (actual == ScalarKind::Int || actual == ScalarKind::Float)) {
     return actual;
   }
+  if (required == ScalarKind::Bool && actual == ScalarKind::String) {
+    return actual;
+  }
 
   add_error(node + ": type mismatch");
   return ScalarKind::Invalid;
@@ -185,8 +195,16 @@ ScalarKind CodeGenerator::ensure_bool_for_condition(Code& code, FunctionContext&
     code = Code{temp, ScalarKind::Bool, true};
     return ScalarKind::Bool;
   }
+  if (code.kind == ScalarKind::String) {
+    const auto len_temp = next_temp();
+    const auto bool_temp = next_temp();
+    emit_line(len_temp + " = call @__spark_string_len(" + code.value + ")");
+    emit_line(bool_temp + " = cmp.ne.i64 " + len_temp + ", 0");
+    code = Code{bool_temp, ScalarKind::Bool, true};
+    return ScalarKind::Bool;
+  }
 
-  add_error("control-flow condition must be bool/int/float");
+  add_error("control-flow condition must be bool/int/float/string");
   return ScalarKind::Invalid;
 }
 
@@ -238,6 +256,26 @@ void CodeGenerator::set_var_type(FunctionContext& ctx, const std::string& name, 
       }
     }
   }
+}
+
+std::string CodeGenerator::lookup_numeric_hint(const FunctionContext& ctx, const std::string& name) const {
+  const auto it = ctx.scalar_numeric_hints.find(name);
+  if (it == ctx.scalar_numeric_hints.end()) {
+    return {};
+  }
+  return it->second;
+}
+
+void CodeGenerator::set_numeric_hint(FunctionContext& ctx, const std::string& name, const std::string& hint) {
+  if (hint.empty()) {
+    ctx.scalar_numeric_hints.erase(name);
+    return;
+  }
+  ctx.scalar_numeric_hints[name] = hint;
+}
+
+void CodeGenerator::clear_numeric_hint(FunctionContext& ctx, const std::string& name) {
+  ctx.scalar_numeric_hints.erase(name);
 }
 
 ValueKind CodeGenerator::lookup_container_element_type(const FunctionContext& ctx, const std::string& name) const {
@@ -323,7 +361,20 @@ void CodeGenerator::emit_var_decl_if_needed(FunctionContext& ctx, const std::str
   if (has_var(ctx, name)) {
     return;
   }
-  emit_line("var " + name + ": " + scalar_kind_to_name(kind == ScalarKind::Unknown ? ScalarKind::Int : kind));
+  const auto resolved = kind == ScalarKind::Unknown ? ScalarKind::Int : kind;
+  if (resolved == ScalarKind::Float) {
+    const auto hint = lookup_numeric_hint(ctx, name);
+    if (hint == "f8" || hint == "f16" || hint == "bf16" || hint == "f32" || hint == "f64" ||
+        hint == "f128" || hint == "f256" || hint == "f512") {
+      emit_line("var " + name + ": " + hint);
+    } else {
+      emit_line("var " + name + ": f64");
+    }
+  } else if (resolved == ScalarKind::String) {
+    emit_line("var " + name + ": str");
+  } else {
+    emit_line("var " + name + ": " + scalar_kind_to_name(resolved));
+  }
   set_var_type(ctx, name, kind == ScalarKind::Unknown ? ScalarKind::Int : kind);
 }
 

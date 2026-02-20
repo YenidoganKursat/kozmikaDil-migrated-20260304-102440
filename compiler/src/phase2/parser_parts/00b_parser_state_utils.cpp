@@ -79,12 +79,13 @@ std::string Parser::strip_comment(std::string value) {
   bool in_single = false;
   bool in_double = false;
   for (std::size_t i = 0; i < value.size(); ++i) {
-    char ch = value[i];
-    if (!in_double && ch == '\'') {
+    const char ch = value[i];
+    const bool escaped = i > 0 && value[i - 1] == '\\';
+    if (!escaped && !in_double && ch == '\'') {
       in_single = !in_single;
       continue;
     }
-    if (!in_single && ch == '"') {
+    if (!escaped && !in_single && ch == '"') {
       in_double = !in_double;
       continue;
     }
@@ -107,11 +108,12 @@ bool Parser::is_assignment(const std::string& line, std::string* target, std::st
 
   for (std::size_t i = 0; i < line.size(); ++i) {
     const char ch = line[i];
-    if (!in_double && ch == '\'') {
+    const bool escaped = i > 0 && line[i - 1] == '\\';
+    if (!escaped && !in_double && ch == '\'') {
       in_single = !in_single;
       continue;
     }
-    if (!in_single && ch == '"') {
+    if (!escaped && !in_single && ch == '"') {
       in_double = !in_double;
       continue;
     }

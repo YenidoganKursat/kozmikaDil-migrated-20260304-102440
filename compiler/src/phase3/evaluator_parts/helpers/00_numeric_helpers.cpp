@@ -30,7 +30,8 @@ std::string double_to_string(double value) {
 }
 
 bool is_numeric_kind(const Value& value) {
-  return value.kind == Value::Kind::Int || value.kind == Value::Kind::Double;
+  return value.kind == Value::Kind::Int || value.kind == Value::Kind::Double ||
+         value.kind == Value::Kind::Numeric;
 }
 
 double to_number_for_compare(const Value& value) {
@@ -39,6 +40,9 @@ double to_number_for_compare(const Value& value) {
   }
   if (value.kind == Value::Kind::Double) {
     return value.double_value;
+  }
+  if (value.kind == Value::Kind::Numeric) {
+    return numeric_value_to_double(value);
   }
   throw EvalException("expected numeric value");
 }
@@ -50,6 +54,9 @@ long long value_to_int(const Value& value) {
   if (value.kind == Value::Kind::Double) {
     return static_cast<long long>(value.double_value);
   }
+  if (value.kind == Value::Kind::Numeric) {
+    return numeric_value_to_i64(value);
+  }
   throw EvalException("expected integer value");
 }
 
@@ -60,11 +67,14 @@ double matrix_element_to_double(const Value& value) {
   if (value.kind == Value::Kind::Double) {
     return value.double_value;
   }
+  if (value.kind == Value::Kind::Numeric) {
+    return numeric_value_to_double(value);
+  }
   throw EvalException("matrix elements must be numeric");
 }
 
 bool matrix_element_wants_double(const Value& value) {
-  return value.kind == Value::Kind::Double;
+  return value.kind == Value::Kind::Double || value.kind == Value::Kind::Numeric;
 }
 
 }  // namespace spark

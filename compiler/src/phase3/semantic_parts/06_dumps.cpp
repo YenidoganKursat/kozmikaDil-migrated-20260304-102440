@@ -11,6 +11,8 @@ std::string TypeChecker::type_to_string(const Type& type) {
     case Type::Kind::Float: {
       return std::string("Float(") + float_kind_to_string(type.float_kind) + ")";
     }
+    case Type::Kind::String:
+      return "String";
     case Type::Kind::Bool:
       return "Bool";
     case Type::Kind::Any:

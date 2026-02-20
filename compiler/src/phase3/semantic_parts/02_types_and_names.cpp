@@ -24,8 +24,27 @@ void TypeChecker::check(const Program& program) {
   define_name("range", builtin_type({int_type(), int_type(), int_type()}, list_type(int_type()), 1));
   define_name("append", builtin_type({list_type(any_type()), any_type()}, nil_type(), 2));
   define_name("len", builtin_type({any_type()}, int_type(), 1));
+  define_name("bench_tick", builtin_type({}, int_type(), 0));
+  define_name("string", builtin_type({any_type()}, string_type(), 0));
+  define_name("utf8_len", builtin_type({string_type()}, int_type(), 1));
+  define_name("utf16_len", builtin_type({string_type()}, int_type(), 1));
   define_name("matrix_i64", builtin_type({int_type(), int_type()}, matrix_type(int_type(), 0, 0), 2));
   define_name("matrix_f64", builtin_type({int_type(), int_type()}, matrix_type(float_type(Type::FloatKind::F64), 0, 0), 2));
+  define_name("i8", builtin_type({any_type()}, int_type(), 1));
+  define_name("i16", builtin_type({any_type()}, int_type(), 1));
+  define_name("i32", builtin_type({any_type()}, int_type(), 1));
+  define_name("i64", builtin_type({any_type()}, int_type(), 1));
+  define_name("i128", builtin_type({any_type()}, int_type(), 1));
+  define_name("i256", builtin_type({any_type()}, int_type(), 1));
+  define_name("i512", builtin_type({any_type()}, int_type(), 1));
+  define_name("f8", builtin_type({any_type()}, float_type(Type::FloatKind::F8), 1));
+  define_name("f16", builtin_type({any_type()}, float_type(Type::FloatKind::F16), 1));
+  define_name("bf16", builtin_type({any_type()}, float_type(Type::FloatKind::BF16), 1));
+  define_name("f32", builtin_type({any_type()}, float_type(Type::FloatKind::F32), 1));
+  define_name("f64", builtin_type({any_type()}, float_type(Type::FloatKind::F64), 1));
+  define_name("f128", builtin_type({any_type()}, float_type(Type::FloatKind::F128), 1));
+  define_name("f256", builtin_type({any_type()}, float_type(Type::FloatKind::F256), 1));
+  define_name("f512", builtin_type({any_type()}, float_type(Type::FloatKind::F512), 1));
   define_name("matrix_fill_affine",
               builtin_type({int_type(), int_type(), int_type(), int_type(), int_type(),
                             float_type(Type::FloatKind::F64), float_type(Type::FloatKind::F64)},
@@ -137,6 +156,10 @@ TypePtr TypeChecker::int_type() {
 
 TypePtr TypeChecker::float_type(Type::FloatKind kind) {
   return std::make_shared<Type>(Type{.kind = Type::Kind::Float, .float_kind = kind});
+}
+
+TypePtr TypeChecker::string_type() {
+  return std::make_shared<Type>(Type{.kind = Type::Kind::String});
 }
 
 TypePtr TypeChecker::nil_type() {
@@ -307,7 +330,8 @@ bool TypeChecker::is_numeric_type(const Type& type) const {
 }
 
 bool TypeChecker::is_bool_like(const Type& type) const {
-  return type.kind == Type::Kind::Bool || is_numeric_type(type) || type.kind == Type::Kind::Unknown;
+  return type.kind == Type::Kind::Bool || type.kind == Type::Kind::String ||
+         is_numeric_type(type) || type.kind == Type::Kind::Unknown;
 }
 
 bool TypeChecker::same_or_unknown(const Type& a, const Type& b) const {

@@ -34,6 +34,25 @@ bool is_integer_literal(const std::string& token) {
   return true;
 }
 
+char decode_string_escape(char escape) {
+  switch (escape) {
+    case 'n':
+      return '\n';
+    case 'r':
+      return '\r';
+    case 't':
+      return '\t';
+    case '\\':
+      return '\\';
+    case '"':
+      return '"';
+    case '\'':
+      return '\'';
+    default:
+      return escape;
+  }
+}
+
 }  // namespace
 
 Lexer::Lexer(std::string text, int line_no) : source(std::move(text)), line_no(line_no) {}
@@ -60,6 +79,33 @@ std::vector<ExprToken> Lexer::tokenize() const {
       } else {
         tokens.emplace_back(ExprToken::Type::Identifier, token);
       }
+      continue;
+    }
+
+    if (ch == '"' || ch == '\'') {
+      const char quote = ch;
+      ++i;
+      std::string decoded;
+      bool closed = false;
+      while (i < source.size()) {
+        const char current = source[i++];
+        if (current == '\\') {
+          if (i >= source.size()) {
+            throw ParseException("unterminated string escape");
+          }
+          decoded.push_back(decode_string_escape(source[i++]));
+          continue;
+        }
+        if (current == quote) {
+          closed = true;
+          break;
+        }
+        decoded.push_back(current);
+      }
+      if (!closed) {
+        throw ParseException("unterminated string literal");
+      }
+      tokens.emplace_back(ExprToken::Type::String, std::move(decoded));
       continue;
     }
 
@@ -142,7 +188,8 @@ std::vector<ExprToken> Lexer::tokenize() const {
       continue;
     }
 
-    if (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '%' || ch == '<' || ch == '>' || ch == '=') {
+    if (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '%' || ch == '^' ||
+        ch == '<' || ch == '>' || ch == '=') {
       tokens.emplace_back(ExprToken::Type::Operator, std::string(1, ch));
       ++i;
       continue;

@@ -14,6 +14,7 @@ struct ExprToken {
   enum class Type {
     Identifier,
     Number,
+    String,
     LParen,
     RParen,
     LBracket,

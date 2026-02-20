@@ -26,8 +26,94 @@ bool compile_pipeline(const std::string& file_path, PipelineProducts& products, 
   return true;
 }
 
+bool allow_approx_high_precision_native() {
+  const char* raw = std::getenv("SPARK_ALLOW_APPROX_HIGH_PRECISION_NATIVE");
+  if (raw && *raw != '\0') {
+    static bool warned_once = false;
+    if (!warned_once) {
+      warned_once = true;
+      std::cerr << "warning: SPARK_ALLOW_APPROX_HIGH_PRECISION_NATIVE is ignored in strict correctness mode.\n";
+    }
+  }
+  return false;
+}
+
+bool allow_hybrid_high_precision_native() {
+  const char* raw = std::getenv("SPARK_HP_HYBRID_FAST");
+  if (raw && *raw != '\0') {
+    static bool warned_once = false;
+    if (!warned_once) {
+      warned_once = true;
+      std::cerr << "warning: SPARK_HP_HYBRID_FAST is disabled for f128/f256/f512 to preserve precision.\n";
+    }
+  }
+  return false;
+}
+
+bool write_high_precision_interpreter_launcher(const std::filesystem::path& source_file,
+                                               const std::filesystem::path& output_file,
+                                               std::string& error_message) {
+  const auto source_abs = std::filesystem::absolute(source_file);
+  const auto local_k = std::filesystem::absolute(std::filesystem::current_path() / "k");
+  const auto output_parent = output_file.parent_path();
+  if (!output_parent.empty()) {
+    std::error_code ec;
+    std::filesystem::create_directories(output_parent, ec);
+    if (ec) {
+      error_message = "failed to create output directory: " + output_parent.string();
+      return false;
+    }
+  }
+
+  std::ofstream out(output_file);
+  if (!out) {
+    error_message = "failed to open output path: " + output_file.string();
+    return false;
+  }
+
+  out << "#!/usr/bin/env bash\n";
+  out << "set -euo pipefail\n";
+  out << "SOURCE_FILE=" << shell_escape(source_abs.string()) << "\n";
+  out << "if [ -x " << shell_escape(local_k.string()) << " ]; then\n";
+  out << "  exec " << shell_escape(local_k.string()) << " run --interpret \"$SOURCE_FILE\"\n";
+  out << "fi\n";
+  out << "if command -v sparkc >/dev/null 2>&1; then\n";
+  out << "  exec sparkc run --interpret \"$SOURCE_FILE\"\n";
+  out << "fi\n";
+  out << "echo \"error: no spark launcher found for high-precision runtime\" >&2\n";
+  out << "exit 1\n";
+  out.close();
+  if (!out) {
+    error_message = "failed to write launcher output: " + output_file.string();
+    return false;
+  }
+
+  std::error_code perm_error;
+  std::filesystem::permissions(
+      output_file,
+      std::filesystem::perms::owner_read | std::filesystem::perms::owner_write |
+          std::filesystem::perms::owner_exec | std::filesystem::perms::group_read |
+          std::filesystem::perms::group_exec | std::filesystem::perms::others_read |
+          std::filesystem::perms::others_exec,
+      std::filesystem::perm_options::replace, perm_error);
+  if (perm_error) {
+    error_message = "failed to set executable permissions: " + output_file.string();
+    return false;
+  }
+  return true;
+}
+
 int compile_mode_main(const std::string& file_path, bool emit_c, bool emit_asm,
                      bool emit_llvm, bool emit_mlir, const std::string& output_path) {
+  const auto source_text = read_file(file_path);
+  if (source_uses_high_precision_float_primitives(source_text)) {
+    (void)allow_hybrid_high_precision_native();
+    (void)allow_approx_high_precision_native();
+    std::cerr << "compile: f128/f256/f512 detected; native C backend is precision-limited.\n";
+    std::cerr << "compile: use `sparkc run --interpret` for high-precision execution.\n";
+    return 1;
+  }
+
   PipelineProducts products;
   if (!compile_pipeline(file_path, products)) {
     return 1;
@@ -100,6 +186,20 @@ int build_mode_main(const std::string& file_path, const std::string& output_path
     return 1;
   }
 
+  if (source_uses_high_precision_float_primitives(bundle.source)) {
+    (void)allow_hybrid_high_precision_native();
+    (void)allow_approx_high_precision_native();
+    const std::filesystem::path out_path = output_path.empty() ? "a.out" : output_path;
+    std::string launcher_error;
+    if (!write_high_precision_interpreter_launcher(file_path, out_path, launcher_error)) {
+      std::cerr << "build: f128/f256/f512 detected; strict launcher generation failed: " << launcher_error << "\n";
+      return 1;
+    }
+    std::cout << "built: " << out_path
+              << " (high-precision strict launcher -> interpret runtime)\n";
+    return 0;
+  }
+
   const auto summary = summarize_tier_report(bundle.checker);
   if (summary.blocking_records.size() > 0 && has_tier_blockers(bundle.checker, allow_t5_codegen)) {
     print_tier_blocking_report(bundle.checker, "build", allow_t5_codegen);
@@ -162,6 +262,13 @@ int run_mode_main(const std::string& file_path, bool force_interpreter,
       std::cerr << "run: " << message << "\n";
     }
     return 1;
+  }
+
+  if (source_uses_high_precision_float_primitives(bundle.source)) {
+    (void)allow_hybrid_high_precision_native();
+    (void)allow_approx_high_precision_native();
+    std::cerr << "run: f128/f256/f512 detected; switching to interpreter high-precision backend.\n";
+    return run_interpreter_main(file_path, false);
   }
 
   if (has_tier_blockers(bundle.checker, allow_t5_codegen)) {

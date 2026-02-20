@@ -6,6 +6,8 @@ Value Interpreter::evaluate(const Expr& expr, const std::shared_ptr<Environment>
   switch (expr.kind) {
     case Expr::Kind::Number:
       return evaluate_case_number(static_cast<const NumberExpr&>(expr), *this, env);
+    case Expr::Kind::String:
+      return evaluate_case_string(static_cast<const StringExpr&>(expr), *this, env);
     case Expr::Kind::Bool:
       return evaluate_case_bool(static_cast<const BoolExpr&>(expr), *this, env);
     case Expr::Kind::Variable:

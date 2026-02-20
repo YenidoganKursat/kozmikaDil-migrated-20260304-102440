@@ -28,7 +28,7 @@ void run_inference_shape_tests() {
                      "c", "Matrix[Int][2,2]");
   expect_type_errors("a = [[1, 2]; [3, 4]]\nb = [[1, 2]; [3, 4]; [5, 6]]\nc = a * b\n", 1);
   expect_type_errors("a = [[1, 2]; [3, 4]]\nb = a + [[1,2,3]; [4,5,6]]\n", 1);
-  expect_type_errors("a = [[1, 2]; [3, 4]]\nb = a + True\n", 1);
+  expect_symbol_type("a = [[1, 2]; [3, 4]]\nb = a + True\n", "b", "Matrix[String][2,2]");
   expect_symbol_type("values = [1,2]\nvalue = values.pop()\n", "value", "Int");
   expect_symbol_type("values = [1,2]\nvalues.insert(1, 9)\n", "values", "List[Int]");
   expect_symbol_type("values = [1,2]\nvalue = values.pop(0)\n", "value", "Int");

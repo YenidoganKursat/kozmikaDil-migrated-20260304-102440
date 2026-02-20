@@ -27,7 +27,7 @@ bool env_bool_enabled_binary_expr(const char* name, bool fallback) {
 
 bool is_container_arith_op(const BinaryOp op) {
   return op == BinaryOp::Add || op == BinaryOp::Sub || op == BinaryOp::Mul ||
-         op == BinaryOp::Div || op == BinaryOp::Mod;
+         op == BinaryOp::Div || op == BinaryOp::Mod || op == BinaryOp::Pow;
 }
 
 double apply_scalar_binary(const BinaryOp op, const double lhs, const double rhs) {
@@ -48,6 +48,8 @@ double apply_scalar_binary(const BinaryOp op, const double lhs, const double rhs
         throw EvalException("modulo by zero");
       }
       return std::fmod(lhs, rhs);
+    case BinaryOp::Pow:
+      return std::pow(lhs, rhs);
     case BinaryOp::Eq:
     case BinaryOp::Ne:
     case BinaryOp::Lt:
@@ -62,7 +64,8 @@ double apply_scalar_binary(const BinaryOp op, const double lhs, const double rhs
 }
 
 bool value_is_numeric_scalar(const Value& value) {
-  return value.kind == Value::Kind::Int || value.kind == Value::Kind::Double;
+  return value.kind == Value::Kind::Int || value.kind == Value::Kind::Double ||
+         value.kind == Value::Kind::Numeric;
 }
 
 double value_to_scalar_double(const Value& value) {
@@ -71,6 +74,9 @@ double value_to_scalar_double(const Value& value) {
   }
   if (value.kind == Value::Kind::Double) {
     return value.double_value;
+  }
+  if (value.kind == Value::Kind::Numeric) {
+    return numeric_value_to_double(value);
   }
   throw EvalException("expected numeric scalar");
 }
@@ -276,6 +282,7 @@ BuildResult build_fused_tree(const Expr& expr, Interpreter& self,
           .node_index = append_binary(context, binary.op, left.node_index, right.node_index),
       };
     }
+    case Expr::Kind::String:
     case Expr::Kind::Bool:
     case Expr::Kind::List:
     case Expr::Kind::Attribute:
@@ -372,7 +379,7 @@ bool matrix_source_is_integral(const Value& value) {
 bool fused_matrix_prefers_int_output(const BuildContext& context) {
   for (const auto& node : context.nodes) {
     if (node.kind == FusedNode::Kind::Binary &&
-        (node.op == BinaryOp::Div || node.op == BinaryOp::Mod)) {
+        (node.op == BinaryOp::Div || node.op == BinaryOp::Mod || node.op == BinaryOp::Pow)) {
       return false;
     }
     if (node.kind == FusedNode::Kind::Constant && !is_integer_like(node.constant)) {
@@ -503,7 +510,7 @@ std::optional<Value> try_fused_container_eval(const BinaryExpr& binary, Interpre
       for (std::size_t i = 0; i < total; ++i) {
         const auto& item = container.value->list_value[i];
         if (!value_is_numeric_scalar(item)) {
-          throw EvalException("list arithmetic expects numeric list elements");
+          return std::nullopt;
         }
         container.scratch[i] = value_to_scalar_double(item);
       }
@@ -536,7 +543,7 @@ std::optional<Value> try_fused_container_eval(const BinaryExpr& binary, Interpre
       container.scratch.resize(total);
       for (std::size_t i = 0; i < total; ++i) {
         if (!value_is_numeric_scalar(data[i])) {
-          throw EvalException("matrix arithmetic expects numeric matrix cells");
+          return std::nullopt;
         }
         container.scratch[i] = value_to_scalar_double(data[i]);
       }

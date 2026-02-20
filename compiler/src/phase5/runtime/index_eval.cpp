@@ -1,3 +1,4 @@
+#include <string>
 #include <vector>
 
 #include "../../phase3/evaluator_parts/internal_helpers.h"
@@ -6,10 +7,13 @@ namespace spark {
 
 Value evaluate_slice(const ExprEvaluator& evaluator, const Value& target, const IndexExpr::IndexItem& item,
                     const std::shared_ptr<Environment>& env) {
-  if (target.kind != Value::Kind::List) {
-    throw EvalException("slice target is not a list");
+  if (target.kind != Value::Kind::List && target.kind != Value::Kind::String) {
+    throw EvalException("slice target is not a list/string");
   }
-  const auto size = static_cast<long long>(target.list_value.size());
+  const auto target_size = (target.kind == Value::Kind::String)
+                               ? target.string_value.size()
+                               : target.list_value.size();
+  const auto size = static_cast<long long>(target_size);
   long long start = 0;
   long long stop = size;
   long long step = 1;
@@ -27,8 +31,8 @@ Value evaluate_slice(const ExprEvaluator& evaluator, const Value& target, const 
     throw EvalException("slice step cannot be zero");
   }
 
-  start = normalize_index_value(start, target.list_value.size());
-  stop = normalize_index_value(stop, target.list_value.size());
+  start = normalize_index_value(start, target_size);
+  stop = normalize_index_value(stop, target_size);
   if (start < 0) {
     start = 0;
   }
@@ -40,6 +44,24 @@ Value evaluate_slice(const ExprEvaluator& evaluator, const Value& target, const 
   }
   if (stop > size) {
     stop = size;
+  }
+
+  if (target.kind == Value::Kind::String) {
+    std::string out;
+    if (step > 0) {
+      for (long long i = start; i < stop; i += step) {
+        if (i >= 0 && static_cast<std::size_t>(i) < target.string_value.size()) {
+          out.push_back(target.string_value[static_cast<std::size_t>(i)]);
+        }
+      }
+    } else {
+      for (long long i = start; i > stop; i += step) {
+        if (i >= 0 && static_cast<std::size_t>(i) < target.string_value.size()) {
+          out.push_back(target.string_value[static_cast<std::size_t>(i)]);
+        }
+      }
+    }
+    return Value::string_value_of(std::move(out));
   }
 
   Value out;
@@ -117,8 +139,19 @@ Value evaluate_indexed_expression(const ExprEvaluator& evaluator, const Value& t
       current = evaluate_slice(evaluator, current, item, env);
       continue;
     }
+    if (current.kind == Value::Kind::String) {
+      const long long idx = value_to_int(evaluator(*item.index, env));
+      const auto normalized = normalize_index_value(idx, current.string_value.size());
+      if (normalized < 0 || static_cast<std::size_t>(normalized) >= current.string_value.size()) {
+        throw EvalException("index out of range");
+      }
+      std::string one_char;
+      one_char.push_back(current.string_value[static_cast<std::size_t>(normalized)]);
+      current = Value::string_value_of(std::move(one_char));
+      continue;
+    }
     if (current.kind != Value::Kind::List) {
-      throw EvalException("indexing target is not a list");
+      throw EvalException("indexing target is not a list/string");
     }
     const long long idx = value_to_int(evaluator(*item.index, env));
     const auto normalized = normalize_index_value(idx, current.list_value.size());

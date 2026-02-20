@@ -195,6 +195,10 @@ TypePtr TypeChecker::infer_index_access_type(const IndexExpr& index, bool in_ass
         current = list_type(list_type(element));
         continue;
       }
+      if (current->kind == Type::Kind::String) {
+        current = string_type();
+        continue;
+      }
       add_error("invalid sliced target type");
       add_context_reason({.message = "cannot slice non-container", .normalizable = false});
       return error_type();
@@ -219,6 +223,10 @@ TypePtr TypeChecker::infer_index_access_type(const IndexExpr& index, bool in_ass
     }
     if (current->kind == Type::Kind::Matrix) {
       current = list_type(current->list_element ? current->list_element : any_type());
+      continue;
+    }
+    if (current->kind == Type::Kind::String) {
+      current = string_type();
       continue;
     }
 
@@ -443,6 +451,7 @@ TypePtr TypeChecker::check_call(const CallExpr& call) {
       case Type::Kind::Nil:
       case Type::Kind::Int:
       case Type::Kind::Float:
+      case Type::Kind::String:
       case Type::Kind::Bool:
       case Type::Kind::Task:
       case Type::Kind::Channel:

@@ -105,20 +105,16 @@ void TypeChecker::check_binary(const BinaryExpr& binary) {
   analyze_expr(*binary.right, right);
 
   if (binary.op == BinaryOp::Add || binary.op == BinaryOp::Sub ||
-      binary.op == BinaryOp::Mul || binary.op == BinaryOp::Div || binary.op == BinaryOp::Mod) {
+      binary.op == BinaryOp::Mul || binary.op == BinaryOp::Div ||
+      binary.op == BinaryOp::Mod || binary.op == BinaryOp::Pow) {
     if (left->kind == Type::Kind::Unknown || right->kind == Type::Kind::Unknown) {
       return;
     }
 
     if (left->kind == Type::Kind::Matrix || right->kind == Type::Kind::Matrix) {
-      if (binary.op == BinaryOp::Mod) {
-        add_error("matrix modulo is unsupported");
-        add_context_reason({.message = "unsupported matrix arithmetic operator", .normalizable = false});
-        return;
-      }
-
       auto matrix = (left->kind == Type::Kind::Matrix) ? left : right;
       auto other = (left->kind == Type::Kind::Matrix) ? right : left;
+      const bool allow_hetero_matrix = (binary.op == BinaryOp::Add || binary.op == BinaryOp::Mul);
       if (other->kind == Type::Kind::Matrix) {
         if (binary.op == BinaryOp::Mul) {
           if (left->matrix_cols != 0 && right->matrix_rows != 0 &&
@@ -142,23 +138,58 @@ void TypeChecker::check_binary(const BinaryExpr& binary) {
         if (other->list_element && matrix->list_element &&
             other->list_element->kind != Type::Kind::Unknown &&
             matrix->list_element->kind != Type::Kind::Unknown &&
-            !(is_numeric_type(*other->list_element) && is_numeric_type(*matrix->list_element))) {
+            !(is_numeric_type(*other->list_element) && is_numeric_type(*matrix->list_element)) &&
+            binary.op != BinaryOp::Add) {
           add_error("matrix arithmetic expects numeric element types");
           add_context_reason({.message = "invalid matrix element type in arithmetic", .normalizable = false});
         }
-      } else if (!is_numeric_type(*other) && other->kind != Type::Kind::Unknown) {
+      } else if (!is_numeric_type(*other) && other->kind != Type::Kind::Unknown &&
+                 !allow_hetero_matrix) {
         add_error("matrix arithmetic with scalar expects numeric scalar");
         add_context_reason({.message = "invalid matrix-scalar arithmetic operand", .normalizable = false});
       }
       return;
     }
 
+    if (left->kind == Type::Kind::List || right->kind == Type::Kind::List) {
+      const auto list = (left->kind == Type::Kind::List) ? left : right;
+      const auto other = (left->kind == Type::Kind::List) ? right : left;
+      const bool allow_hetero_list = (binary.op == BinaryOp::Add || binary.op == BinaryOp::Mul);
+      const auto list_elem_numeric_or_unknown = [&](const TypePtr& t) {
+        if (!t || !t->list_element) {
+          return true;
+        }
+        return t->list_element->kind == Type::Kind::Unknown || is_numeric_type(*t->list_element);
+      };
+
+      if (other->kind == Type::Kind::List && binary.op == BinaryOp::Add) {
+        return;
+      }
+      if (!list_elem_numeric_or_unknown(list) ||
+          (other->kind == Type::Kind::List && !list_elem_numeric_or_unknown(other))) {
+        if (!allow_hetero_list) {
+          add_error("list arithmetic expects numeric element types");
+          add_context_reason({.message = "invalid list element type in arithmetic", .normalizable = false});
+          return;
+        }
+      }
+      if (other->kind == Type::Kind::List || is_numeric_type(*other) || other->kind == Type::Kind::Unknown) {
+        return;
+      }
+      if (allow_hetero_list) {
+        return;
+      }
+      add_error("list arithmetic expects list/list or list/scalar numeric operands");
+      add_context_reason({.message = "invalid list arithmetic operands", .normalizable = false});
+      return;
+    }
+
     if (binary.op == BinaryOp::Add) {
-      if (left->kind == Type::Kind::List && right->kind == Type::Kind::List) {
+      if (left->kind == Type::Kind::String && right->kind == Type::Kind::String) {
         return;
       }
       if (!is_numeric_type(*left) || !is_numeric_type(*right)) {
-        add_error("binary + expects numeric values or two lists");
+        add_error("binary + expects numeric values, two lists, or two strings");
         add_context_reason({.message = "invalid binary + operands", .normalizable = false});
       }
       return;
@@ -167,9 +198,10 @@ void TypeChecker::check_binary(const BinaryExpr& binary) {
       add_error("binary arithmetic expects numeric values");
       add_context_reason({.message = "invalid arithmetic operands", .normalizable = false});
     }
-    if (binary.op == BinaryOp::Mod && left->kind != Type::Kind::Int) {
-      add_error("modulo expects integer left operand");
-      add_context_reason({.message = "invalid modulo use", .normalizable = false});
+    if ((binary.op == BinaryOp::Mod || binary.op == BinaryOp::Pow) &&
+        (!is_numeric_type(*left) || !is_numeric_type(*right))) {
+      add_error("numeric operator expects numeric operands");
+      add_context_reason({.message = "invalid numeric operator use", .normalizable = false});
     }
     return;
   }
@@ -186,6 +218,14 @@ void TypeChecker::check_binary(const BinaryExpr& binary) {
     return;
   }
   if (left->kind == Type::Kind::Unknown || right->kind == Type::Kind::Unknown) {
+    return;
+  }
+  if (left->kind == Type::Kind::String || right->kind == Type::Kind::String) {
+    if (left->kind == Type::Kind::String && right->kind == Type::Kind::String) {
+      return;
+    }
+    add_error("comparison operators require both operands to be string or numeric");
+    add_context_reason({.message = "invalid comparison operands", .normalizable = false});
     return;
   }
 

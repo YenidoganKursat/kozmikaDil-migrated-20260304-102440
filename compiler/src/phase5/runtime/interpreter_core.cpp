@@ -1,13 +1,67 @@
 #include <memory>
 #include <iostream>
 #include <cstdlib>
+#include <chrono>
 #include <limits>
+#include <cstdint>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 
 #include "../../phase3/evaluator_parts/internal_helpers.h"
 
 namespace spark {
+
+namespace {
+
+std::size_t utf8_codepoint_count(std::string_view text) {
+  std::size_t count = 0;
+  for (unsigned char ch : text) {
+    if ((ch & 0xC0u) != 0x80u) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+std::size_t utf8_to_utf16_units(std::string_view text) {
+  std::size_t units = 0;
+  for (std::size_t i = 0; i < text.size();) {
+    const auto c0 = static_cast<unsigned char>(text[i]);
+    std::uint32_t cp = 0xFFFDu;
+    std::size_t advance = 1;
+    if ((c0 & 0x80u) == 0u) {
+      cp = c0;
+      advance = 1;
+    } else if ((c0 & 0xE0u) == 0xC0u && i + 1 < text.size()) {
+      const auto c1 = static_cast<unsigned char>(text[i + 1]);
+      cp = (static_cast<std::uint32_t>(c0 & 0x1Fu) << 6) |
+           static_cast<std::uint32_t>(c1 & 0x3Fu);
+      advance = 2;
+    } else if ((c0 & 0xF0u) == 0xE0u && i + 2 < text.size()) {
+      const auto c1 = static_cast<unsigned char>(text[i + 1]);
+      const auto c2 = static_cast<unsigned char>(text[i + 2]);
+      cp = (static_cast<std::uint32_t>(c0 & 0x0Fu) << 12) |
+           (static_cast<std::uint32_t>(c1 & 0x3Fu) << 6) |
+           static_cast<std::uint32_t>(c2 & 0x3Fu);
+      advance = 3;
+    } else if ((c0 & 0xF8u) == 0xF0u && i + 3 < text.size()) {
+      const auto c1 = static_cast<unsigned char>(text[i + 1]);
+      const auto c2 = static_cast<unsigned char>(text[i + 2]);
+      const auto c3 = static_cast<unsigned char>(text[i + 3]);
+      cp = (static_cast<std::uint32_t>(c0 & 0x07u) << 18) |
+           (static_cast<std::uint32_t>(c1 & 0x3Fu) << 12) |
+           (static_cast<std::uint32_t>(c2 & 0x3Fu) << 6) |
+           static_cast<std::uint32_t>(c3 & 0x3Fu);
+      advance = 4;
+    }
+    units += (cp > 0xFFFFu) ? 2u : 1u;
+    i += advance;
+  }
+  return units;
+}
+
+}  // namespace
 
 Interpreter::Interpreter() {
   reset();
@@ -79,8 +133,69 @@ void Interpreter::reset() {
     if (args[0].kind == Value::Kind::Matrix && args[0].matrix_value) {
       return Value::int_value_of(static_cast<long long>(args[0].matrix_value->rows));
     }
-    throw EvalException("len() currently supports only list or matrix values");
+    if (args[0].kind == Value::Kind::String) {
+      return Value::int_value_of(static_cast<long long>(utf8_codepoint_count(args[0].string_value)));
+    }
+    throw EvalException("len() currently supports list, matrix, or string values");
   });
+
+  auto utf8_len_fn = Value::builtin("utf8_len", [](const std::vector<Value>& args) -> Value {
+    if (args.size() != 1 || args[0].kind != Value::Kind::String) {
+      throw EvalException("utf8_len() expects exactly one string argument");
+    }
+    return Value::int_value_of(static_cast<long long>(args[0].string_value.size()));
+  });
+
+  auto utf16_len_fn = Value::builtin("utf16_len", [](const std::vector<Value>& args) -> Value {
+    if (args.size() != 1 || args[0].kind != Value::Kind::String) {
+      throw EvalException("utf16_len() expects exactly one string argument");
+    }
+    return Value::int_value_of(static_cast<long long>(utf8_to_utf16_units(args[0].string_value)));
+  });
+
+  auto string_fn = Value::builtin("string", [](const std::vector<Value>& args) -> Value {
+    if (args.size() > 1) {
+      throw EvalException("string() expects zero or one argument");
+    }
+    if (args.empty()) {
+      return Value::string_value_of("");
+    }
+    if (args[0].kind == Value::Kind::String) {
+      return args[0];
+    }
+    return Value::string_value_of(args[0].to_string());
+  });
+
+  auto bench_tick_fn = Value::builtin("bench_tick", [](const std::vector<Value>& args) -> Value {
+    if (!args.empty()) {
+      throw EvalException("bench_tick() expects no arguments");
+    }
+    const auto now = std::chrono::steady_clock::now().time_since_epoch();
+    const auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
+    return Value::int_value_of(static_cast<long long>(ns));
+  });
+
+  auto bench_mixed_numeric_op_fn =
+      Value::builtin("bench_mixed_numeric_op", [](const std::vector<Value>& args) -> Value {
+        if (args.size() < 3 || args.size() > 5) {
+          throw EvalException(
+              "bench_mixed_numeric_op() expects kind, operator, loops, optional seed_x, seed_y");
+        }
+        if (args[0].kind != Value::Kind::String || args[1].kind != Value::Kind::String) {
+          throw EvalException("bench_mixed_numeric_op() kind/operator must be strings");
+        }
+        const auto loops = value_to_int(args[2]);
+        long long seed_x = 123456789;
+        long long seed_y = 362436069;
+        if (args.size() >= 4) {
+          seed_x = value_to_int(args[3]);
+        }
+        if (args.size() >= 5) {
+          seed_y = value_to_int(args[4]);
+        }
+        return bench_mixed_numeric_op_runtime(args[0].string_value, args[1].string_value, loops, seed_x,
+                                             seed_y);
+      });
 
   auto cols_fn = Value::builtin("cols", [](const std::vector<Value>& args) -> Value {
     if (args.size() != 1) {
@@ -669,6 +784,11 @@ void Interpreter::reset() {
   globals->define("print", print_fn);
   globals->define("range", range_fn);
   globals->define("len", len_fn);
+  globals->define("utf8_len", utf8_len_fn);
+  globals->define("utf16_len", utf16_len_fn);
+  globals->define("string", string_fn);
+  globals->define("bench_tick", bench_tick_fn);
+  globals->define("bench_mixed_numeric_op", bench_mixed_numeric_op_fn);
   globals->define("cols", cols_fn);
   globals->define("matrix_i64", matrix_i64_fn);
   globals->define("matrix_f64", matrix_f64_fn);
@@ -695,6 +815,7 @@ void Interpreter::reset() {
   globals->define("close", close_fn);
   globals->define("stream", stream_fn);
   globals->define("anext", anext_fn);
+  register_numeric_primitive_builtins(globals);
   globals->define("None", Value::nil());
 }
 

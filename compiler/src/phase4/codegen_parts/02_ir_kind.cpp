@@ -152,11 +152,17 @@ std::string pseudo_kind_to_cpp(const std::string& kind) {
   if (kind == "i64") {
     return "long long";
   }
-  if (kind == "f64") {
+  if (kind == "f64" || kind == "f32" || kind == "f16" || kind == "f8" || kind == "bf16") {
     return "double";
+  }
+  if (kind == "f128" || kind == "f256" || kind == "f512") {
+    return "long double";
   }
   if (kind == "bool") {
     return "bool";
+  }
+  if (kind == "str") {
+    return "__spark_string";
   }
   if (kind == "list_i64") {
     return "__spark_list_i64*";
@@ -206,6 +212,9 @@ std::string parse_identifier_type(const std::string& token, const std::unordered
       token == "matrix_any") {
     return token;
   }
+  if (token == "str") {
+    return "str";
+  }
   if (token == "true" || token == "false") {
     return "bool";
   }
@@ -234,6 +243,10 @@ std::string parse_identifier_type(const std::string& token, const std::unordered
   }
   if (has_dot || has_exp) {
     return has_digit ? "f64" : "unknown";
+  }
+  if (token == "f8" || token == "f16" || token == "bf16" || token == "f32" || token == "f64" ||
+      token == "f128" || token == "f256" || token == "f512") {
+    return "f64";
   }
   return "i64";
 }
@@ -282,7 +295,7 @@ bool is_container_of_numeric(const ValueKind kind) {
 }
 
 bool is_scalar_value_kind(const ValueKind kind) {
-  return kind == ValueKind::Int || kind == ValueKind::Float || kind == ValueKind::Bool;
+  return kind == ValueKind::Int || kind == ValueKind::Float || kind == ValueKind::Bool || kind == ValueKind::String;
 }
 
 bool is_matrix_kind(const ValueKind kind) {
@@ -400,7 +413,8 @@ std::string value_kind_to_container_type(ValueKind kind, const std::string& scal
 }
 
 std::string canonical_runtime_type(const std::string& kind) {
-  if (kind == "i64" || kind == "bool" || kind == "f64" || kind == "void" || kind == "unknown" || kind == "invalid") {
+  if (kind == "i64" || kind == "bool" || kind == "f64" || kind == "str" || kind == "void" || kind == "unknown" ||
+      kind == "invalid") {
     return kind;
   }
   if (kind == "list_i64" || kind == "list_f64" || kind == "list_any" || kind == "matrix_i64" || kind == "matrix_f64" ||
@@ -500,6 +514,15 @@ ValueKind infer_container_from_runtime_call(const std::string& callee, bool assi
   if (has("__spark_list_len_f64")) {
     return ValueKind::Int;
   }
+  if (has("__spark_string_from_utf8") || has("__spark_string_from_i64") || has("__spark_string_from_f64") ||
+      has("__spark_string_from_bool") || has("__spark_string_concat") || has("__spark_string_index") ||
+      has("__spark_string_slice")) {
+    return ValueKind::String;
+  }
+  if (has("__spark_string_len") || has("__spark_string_utf8_len") || has("__spark_string_utf16_len") ||
+      has("__spark_string_cmp")) {
+    return ValueKind::Int;
+  }
 
   if (has("matrix_set_i64") || has("matrix_append_i64") || has("matrix_set_f64") ||
       has("__spark_matrix_set_row_i64") || has("__spark_matrix_set_row_f64")) {
@@ -563,6 +586,9 @@ std::string emit_cast_for_kind(const std::string& target_type, const std::string
   if (target_type == "f64") {
     return "((double)(" + source_expr + "))";
   }
+  if (target_type == "f128" || target_type == "f256" || target_type == "f512") {
+    return "((long double)(" + source_expr + "))";
+  }
   if (target_type == "i64") {
     return "((long long)(" + source_expr + "))";
   }
@@ -584,7 +610,7 @@ TranslatedExpr parse_pseudo_expression(
   }
 
   if (t[0] == '"' || t[0] == '\'') {
-    return {t, "unknown"};
+    return {"__spark_string_from_utf8(" + t + ")", "str"};
   }
 
   const auto literal_kind = detect_literal(t);
@@ -662,6 +688,9 @@ TranslatedExpr parse_pseudo_expression(
         if (infer_runtime_kind == ValueKind::MatrixFloat) {
           return {callee + arg_expr, "matrix_f64"};
         }
+        if (infer_runtime_kind == ValueKind::String) {
+          return {callee + arg_expr, "str"};
+        }
       }
 
       if (callee == "print") {
@@ -673,13 +702,26 @@ TranslatedExpr parse_pseudo_expression(
         if (print_kind == "void" || print_kind == "unknown") {
           print_kind = parse_identifier_type(args[0], var_types);
         }
+        if (print_kind == "f128" || print_kind == "f256" || print_kind == "f512") {
+          return {"__spark_print_f64((double)(" + arg.code + "))", "void"};
+        }
+        if (print_kind == "str") {
+          return {"__spark_print_str(" + arg.code + ")", "void"};
+        }
         if (print_kind != "f64" && print_kind != "i64" && print_kind != "bool") {
           print_kind = "i64";
         }
         return {"__spark_print_" + print_kind + "(" + arg.code + ")", "void"};
       }
       if (callee == "len") {
-        return {"__spark_list_len_i64(" + arg_expr.substr(1, arg_expr.size() > 1 ? arg_expr.size() - 2 : 0) + ")", "i64"};
+        if (args.empty()) {
+          return {"0", "i64"};
+        }
+        const auto arg = parse_pseudo_expression(args[0], var_types, function_return_types);
+        if (arg.kind == "str") {
+          return {"__spark_string_len(" + arg.code + ")", "i64"};
+        }
+        return {"__spark_list_len_i64(" + arg.code + ")", "i64"};
       }
       return {callee + arg_expr, function_return_types.count(callee) ? function_return_types.at(callee) : "i64"};
     }
@@ -690,7 +732,7 @@ TranslatedExpr parse_pseudo_expression(
     return {"(!(" + arg.code + "))", "bool"};
   }
 
-  if (op == "i64.const" || op == "f64.const" || op == "bool.const") {
+  if (op == "i64.const" || op == "f64.const" || op == "bool.const" || op == "str.const") {
     const auto kind = op.substr(0, op.find(".const"));
     const auto value = rest;
     if (kind == "i64") {
@@ -701,6 +743,9 @@ TranslatedExpr parse_pseudo_expression(
     }
     if (kind == "bool") {
       return {value, "bool"};
+    }
+    if (kind == "str") {
+      return {"__spark_string_from_utf8(" + value + ")", "str"};
     }
   }
 
@@ -729,15 +774,24 @@ TranslatedExpr parse_pseudo_expression(
   if (dot != std::string::npos) {
     const std::string base = op.substr(0, dot);
     const std::string kind = op.substr(dot + 1);
+    const auto is_custom_float_kind = [&](const std::string& k) {
+      return k == "f8" || k == "f16" || k == "bf16" || k == "f32" || k == "f64" ||
+             k == "f128" || k == "f256" || k == "f512";
+    };
     if (base == "neg") {
       auto arg = parse_pseudo_expression(rest, var_types, function_return_types);
       return {"((-" + arg.code + "))", kind};
     }
-    if (base == "add" || base == "sub" || base == "mul" || base == "div" || base == "mod") {
+    if (base == "add" || base == "sub" || base == "mul" || base == "div" || base == "mod" || base == "pow") {
       const auto ops = split_csv_args(rest);
       if (ops.size() >= 2) {
         auto left = parse_pseudo_expression(ops[0], var_types, function_return_types);
         auto right = parse_pseudo_expression(ops[1], var_types, function_return_types);
+        if (is_custom_float_kind(kind)) {
+          const auto out_kind =
+              (kind == "f128" || kind == "f256" || kind == "f512") ? kind : std::string("f64");
+          return {"__spark_num_" + base + "_" + kind + "((" + left.code + "), (" + right.code + "))", out_kind};
+        }
         std::string op_text = base;
         if (op_text == "mul") {
           op_text = "*";
@@ -748,7 +802,12 @@ TranslatedExpr parse_pseudo_expression(
         } else if (op_text == "div") {
           op_text = "/";
         } else if (op_text == "mod") {
+          if (kind == "f64") {
+            return {"fmod((" + left.code + "), (" + right.code + "))", kind};
+          }
           op_text = "%";
+        } else if (op_text == "pow") {
+          return {"pow((" + left.code + "), (" + right.code + "))", kind};
         }
         return {"((" + left.code + ") " + op_text + " (" + right.code + "))", kind};
       }

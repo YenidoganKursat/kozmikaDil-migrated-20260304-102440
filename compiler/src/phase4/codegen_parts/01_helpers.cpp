@@ -140,7 +140,8 @@ void replace_identifier(std::string& line, const std::string& source, const std:
 
 void collect_identifier_usage(const std::vector<std::string>& lines, std::unordered_map<std::string, std::size_t>& usage) {
   static const std::regex assignment_pattern(R"(^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+?)\s*;?\s*$)");
-  static const std::regex declaration_pattern(R"(^\s*(?:long long|double|bool|int)\s+([A-Za-z_][A-Za-z0-9_]*)\s*;\s*$)");
+  static const std::regex declaration_pattern(
+      R"(^\s*(?:long long|double|long double|bool|int|__spark_string|__spark_list_i64\*|__spark_list_f64\*|__spark_matrix_i64\*|__spark_matrix_f64\*)\s+([A-Za-z_][A-Za-z0-9_]*)\s*;\s*$)");
   static const std::regex identifier_pattern(R"([A-Za-z_][A-Za-z0-9_]*)");
 
   usage.clear();
@@ -181,7 +182,8 @@ bool is_redundant_goto_to_next_label(const std::string& this_line, const std::st
 
 std::vector<std::string> canonicalize_c_lines(std::vector<std::string> lines) {
   static const std::regex assignment_pattern(R"(^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+?)\s*;?\s*$)");
-  static const std::regex declaration_pattern(R"(^\s*(?:long long|double|bool|int)\s+([A-Za-z_][A-Za-z0-9_]*)\s*;\s*$)");
+  static const std::regex declaration_pattern(
+      R"(^\s*(?:long long|double|long double|bool|int|__spark_string|__spark_list_i64\*|__spark_list_f64\*|__spark_matrix_i64\*|__spark_matrix_f64\*)\s+([A-Za-z_][A-Za-z0-9_]*)\s*;\s*$)");
   static const std::regex direct_call_pattern(R"(^[A-Za-z_][A-Za-z0-9_]*\s*\(.*\)$)");
 
   bool changed = true;
@@ -337,6 +339,10 @@ std::string describe_expr(const Expr& expr) {
       const auto& number = static_cast<const NumberExpr&>(expr);
       return number.is_int ? std::to_string(static_cast<long long>(number.value)) : std::to_string(number.value);
     }
+    case Expr::Kind::String: {
+      const auto& string_expr = static_cast<const StringExpr&>(expr);
+      return "\"" + string_expr.value + "\"";
+    }
     case Expr::Kind::Bool: {
       return static_cast<const BoolExpr&>(expr).value ? "true" : "false";
     }
@@ -357,6 +363,7 @@ std::string describe_expr(const Expr& expr) {
         case BinaryOp::Mul: op = "*"; break;
         case BinaryOp::Div: op = "/"; break;
         case BinaryOp::Mod: op = "%"; break;
+        case BinaryOp::Pow: op = "^"; break;
         case BinaryOp::Eq: op = "=="; break;
         case BinaryOp::Ne: op = "!="; break;
         case BinaryOp::Lt: op = "<"; break;
@@ -454,6 +461,8 @@ ValueKind infer_ast_expr_kind(const Expr& expr) {
       const auto& number = static_cast<const NumberExpr&>(expr);
       return number.is_int ? ValueKind::Int : ValueKind::Float;
     }
+    case Expr::Kind::String:
+      return ValueKind::String;
     case Expr::Kind::Bool:
       return ValueKind::Bool;
     case Expr::Kind::List:
@@ -507,6 +516,8 @@ std::string value_type_for_identifier(const ValueKind kind) {
       return "f64";
     case ValueKind::Bool:
       return "bool";
+    case ValueKind::String:
+      return "str";
     case ValueKind::ListInt:
       return "list_i64";
     case ValueKind::ListFloat:

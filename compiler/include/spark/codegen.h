@@ -17,6 +17,7 @@ enum class ValueKind {
   Int,
   Float,
   Bool,
+  String,
   Void,
   Invalid,
   ListInt,
@@ -55,6 +56,7 @@ class CodeGenerator {
     std::string value;
     ValueKind kind = ValueKind::Unknown;
     bool has_value = true;
+    std::string numeric_hint;
   };
 
   CodegenResult generate(const Program& program, const CodegenOptions& options = {});
@@ -83,6 +85,7 @@ class CodeGenerator {
     std::vector<ValueKind> return_types;
     std::vector<std::unordered_map<std::string, ValueKind>> scopes;
     std::unordered_map<std::string, ValueKind> container_element_kinds;
+    std::unordered_map<std::string, std::string> scalar_numeric_hints;
     std::unordered_set<std::string> unchecked_append_targets;
   };
 
@@ -133,6 +136,9 @@ class CodeGenerator {
   ValueKind lookup_var_type(const FunctionContext& ctx, const std::string& name) const;
   bool has_var(const FunctionContext& ctx, const std::string& name) const;
   void set_var_type(FunctionContext& ctx, const std::string& name, ValueKind kind);
+  std::string lookup_numeric_hint(const FunctionContext& ctx, const std::string& name) const;
+  void set_numeric_hint(FunctionContext& ctx, const std::string& name, const std::string& hint);
+  void clear_numeric_hint(FunctionContext& ctx, const std::string& name);
   ValueKind lookup_container_element_type(const FunctionContext& ctx, const std::string& name) const;
   void set_container_element_type(FunctionContext& ctx, const std::string& name, ValueKind kind);
   ValueKind infer_container_scalar_type(ValueKind container_kind) const;

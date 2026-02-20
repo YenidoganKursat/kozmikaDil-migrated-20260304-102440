@@ -66,6 +66,158 @@ std::string default_cxx() {
   return "clang";
 }
 
+struct ScopedEnvOverride {
+  void set(const std::string& name, const std::string& value) {
+    if (saved_.find(name) == saved_.end()) {
+      const auto* current = std::getenv(name.c_str());
+      saved_[name] = current ? std::optional<std::string>(current) : std::nullopt;
+    }
+    setenv(name.c_str(), value.c_str(), 1);
+  }
+
+  void unset(const std::string& name) {
+    if (saved_.find(name) == saved_.end()) {
+      const auto* current = std::getenv(name.c_str());
+      saved_[name] = current ? std::optional<std::string>(current) : std::nullopt;
+    }
+    unsetenv(name.c_str());
+  }
+
+  ~ScopedEnvOverride() {
+    for (auto it = saved_.rbegin(); it != saved_.rend(); ++it) {
+      if (it->second.has_value()) {
+        setenv(it->first.c_str(), it->second->c_str(), 1);
+      } else {
+        unsetenv(it->first.c_str());
+      }
+    }
+  }
+
+ private:
+  std::map<std::string, std::optional<std::string>> saved_;
+};
+
+int parse_positive_env_int(const char* name, int fallback) {
+  const auto* raw = getenv_non_empty(name);
+  if (!raw) {
+    return fallback;
+  }
+  try {
+    const int parsed = std::stoi(raw);
+    return parsed > 0 ? parsed : fallback;
+  } catch (const std::exception&) {
+    return fallback;
+  }
+}
+
+bool compile_c_source_to_binary(const std::filesystem::path& c_path,
+                                const std::filesystem::path& output_binary,
+                                std::string& compile_error) {
+  const auto compiler = default_cxx();
+  auto native_cxx_flags = resolve_native_cxx_flags();
+  auto native_ld_flags = split_env_flags(std::getenv("SPARK_LDFLAGS"));
+  const auto* profile_raw = getenv_non_empty("SPARK_OPT_PROFILE");
+  const auto profile = profile_raw ? normalize_optimization_profile(profile_raw) : std::string("balanced");
+  if (profile == "max" || profile == "layered-max") {
+#if defined(__APPLE__)
+    append_if_missing(native_ld_flags, "-Wl,-dead_strip");
+#else
+    append_if_missing(native_ld_flags, "-Wl,--gc-sections");
+#endif
+  }
+  if (profile == "layered-max") {
+    append_if_missing(native_ld_flags, "-Wl,-O3");
+  }
+
+  std::ostringstream command;
+  command << shell_escape(compiler);
+  append_flags(command, native_cxx_flags);
+  command << " " << shell_escape(c_path.string())
+          << " -o " << shell_escape(output_binary.string());
+  append_flags(command, native_ld_flags);
+  const auto status = run_system_command(command.str());
+  if (status != 0) {
+    compile_error = "native compile failed (exit " + std::to_string(status) + ")";
+    return false;
+  }
+  return true;
+}
+
+bool run_auto_pgo_cycle(TempFileRegistry& temp_files,
+                        const std::filesystem::path& c_path,
+                        const std::filesystem::path& output_binary,
+                        std::string& compile_error) {
+  const auto profile_raw = getenv_non_empty("SPARK_OPT_PROFILE");
+  const auto profile = profile_raw ? normalize_optimization_profile(profile_raw) : std::string("balanced");
+  if (profile != "layered-max") {
+    return compile_c_source_to_binary(c_path, output_binary, compile_error);
+  }
+  if (!env_truthy("SPARK_AUTO_PGO", false) || getenv_non_empty("SPARK_PGO")) {
+    return compile_c_source_to_binary(c_path, output_binary, compile_error);
+  }
+
+  const auto instrumented_binary = temp_files.make_temp_file(".pgo_gen.out");
+  {
+    ScopedEnvOverride env;
+    env.set("SPARK_PGO", "instrument");
+    env.unset("SPARK_PGO_PROFILE");
+    if (!compile_c_source_to_binary(c_path, instrumented_binary, compile_error)) {
+      std::cerr << "warning: auto-pgo instrumentation failed, falling back to normal build\n";
+      return compile_c_source_to_binary(c_path, output_binary, compile_error);
+    }
+  }
+
+  std::vector<std::filesystem::path> profraw_files;
+  const int train_runs = parse_positive_env_int("SPARK_AUTO_PGO_RUNS", 2);
+  for (int i = 0; i < train_runs; ++i) {
+    const auto profraw = temp_files.make_temp_file(".profraw");
+    {
+      ScopedEnvOverride env;
+      env.set("LLVM_PROFILE_FILE", profraw.string());
+      const auto status =
+          run_system_command(shell_escape(instrumented_binary.string()) + " > /dev/null 2>&1");
+      if (status != 0) {
+        std::cerr << "warning: auto-pgo training run failed (exit " << status
+                  << "), falling back to normal build\n";
+        return compile_c_source_to_binary(c_path, output_binary, compile_error);
+      }
+    }
+    profraw_files.push_back(profraw);
+  }
+
+  const auto profdata_path = temp_files.make_temp_file(".profdata");
+  const auto* profdata_tool_raw = getenv_non_empty("SPARK_LLVM_PROFDATA");
+  std::ostringstream merge_command;
+  if (profdata_tool_raw) {
+    merge_command << shell_escape(profdata_tool_raw);
+  } else {
+#if defined(__APPLE__)
+    merge_command << "xcrun llvm-profdata";
+#else
+    merge_command << "llvm-profdata";
+#endif
+  }
+  merge_command << " merge -output=" << shell_escape(profdata_path.string());
+  for (const auto& profraw : profraw_files) {
+    merge_command << " " << shell_escape(profraw.string());
+  }
+  if (run_system_command(merge_command.str()) != 0) {
+    std::cerr << "warning: auto-pgo profile merge failed, falling back to normal build\n";
+    return compile_c_source_to_binary(c_path, output_binary, compile_error);
+  }
+
+  {
+    ScopedEnvOverride env;
+    env.set("SPARK_PGO", "use");
+    env.set("SPARK_PGO_PROFILE", profdata_path.string());
+    if (!compile_c_source_to_binary(c_path, output_binary, compile_error)) {
+      std::cerr << "warning: auto-pgo optimized build failed, falling back to normal build\n";
+      return compile_c_source_to_binary(c_path, output_binary, compile_error);
+    }
+  }
+  return true;
+}
+
 bool write_temp_source_and_compile(
     TempFileRegistry& temp_files,
     const std::string& c_source,
@@ -83,21 +235,7 @@ bool write_temp_source_and_compile(
     }
   }
 
-  const auto compiler = default_cxx();
-  const auto native_cxx_flags = resolve_native_cxx_flags();
-  const auto native_ld_flags = split_env_flags(std::getenv("SPARK_LDFLAGS"));
-  std::ostringstream command;
-  command << shell_escape(compiler);
-  append_flags(command, native_cxx_flags);
-  command << " " << shell_escape(c_path.string())
-          << " -o " << shell_escape(output_binary.string());
-  append_flags(command, native_ld_flags);
-  const auto status = run_system_command(command.str());
-  if (status != 0) {
-    compile_error = "native compile failed (exit " + std::to_string(status) + ")";
-    return false;
-  }
-  return true;
+  return run_auto_pgo_cycle(temp_files, c_path, output_binary, compile_error);
 }
 
 bool compile_to_assembly(const std::string& c_source, std::string& asm_output, std::string& asm_error) {

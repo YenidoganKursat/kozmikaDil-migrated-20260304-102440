@@ -31,6 +31,10 @@ a = 10.0
 b = a / 4
 c = b + 1.5
 )", "c", spark::Value::double_value_of(4.0));
+
+  run_program(R"(
+p = 2 ^ 10
+)", "p", spark::Value::double_value_of(1024.0));
 }
 
 void run_bulk_arithmetic_suite() {
@@ -174,6 +178,154 @@ value = m[1, 2] + m[0, 1]
 )", "value", spark::Value::int_value_of(12));
 }
 
+void run_numeric_primitive_builtins() {
+  run_program(R"(
+x = f32(1.5)
+y = f32(2.25)
+z = x + y
+)", "z", spark::Value::numeric_value_of(spark::Value::NumericKind::F32, "3.75"));
+
+  run_program(R"(
+a = f512(1.0)
+b = f512(2.0)
+c = a * b + a
+)", "c", spark::Value::numeric_value_of(spark::Value::NumericKind::F512, "3"));
+
+  run_program(R"(
+p = i128(7)
+q = i128(9)
+r = p * q
+)", "r", spark::Value::numeric_value_of(spark::Value::NumericKind::I128, "63"));
+
+  run_program(R"(
+a = f8 1.5
+b = f16 2.5
+c = f32 3.5
+d = f128 4.5
+e = f256 5.5
+f = f512 6.5
+sum = a + b + c + d + e + f
+)", "sum", spark::Value::numeric_value_of(spark::Value::NumericKind::F512, "24"));
+
+  run_program(R"(
+x = f64(9.0)
+y = f64(0.5)
+z = x ^ y
+)", "z", spark::Value::numeric_value_of(spark::Value::NumericKind::F64, "3"));
+
+  run_program(R"(
+x = f512 1
+i = 0
+while i < 200:
+  x = x / f512 2
+  i = i + 1
+delta = (f512 1 + x) - (f512 1)
+nz = delta != f512 0
+)", "nz", spark::Value::bool_value_of(true));
+
+  run_program(R"(
+x = f128 1
+i = 0
+while i < 200:
+  x = x / f128 2
+  i = i + 1
+delta = (f128 1 + x) - (f128 1)
+nz = delta != f128 0
+)", "nz", spark::Value::bool_value_of(false));
+
+  run_program(R"(
+x = f256 1
+i = 0
+while i < 200:
+  x = x / f256 2
+  i = i + 1
+delta = (f256 1 + x) - (f256 1)
+nz = delta != f256 0
+)", "nz", spark::Value::bool_value_of(true));
+}
+
+void run_while_hotloop_numeric_fastpath_smoke() {
+  run_program(R"(
+i = 0
+x = f128 1.25
+step = f128 0.5
+while i < 1000:
+  x = x + step
+  i = i + 1
+)", "x", spark::Value::numeric_value_of(spark::Value::NumericKind::F128, "501.25"));
+
+  run_program(R"(
+i = 0
+x = 0
+while i < 5:
+  x = x + i
+  i = i + 1
+)", "x", spark::Value::int_value_of(10));
+
+  run_program(R"(
+i = 0
+x = 0
+while i < 5:
+  i = i + 1
+  x = x + i
+)", "x", spark::Value::int_value_of(15));
+}
+
+void run_numeric_constructor_family_smoke() {
+  struct PrimitiveCase {
+    const char* ctor;
+    spark::Value::NumericKind kind;
+  };
+  const std::vector<PrimitiveCase> cases = {
+      {"i8", spark::Value::NumericKind::I8},     {"i16", spark::Value::NumericKind::I16},
+      {"i32", spark::Value::NumericKind::I32},   {"i64", spark::Value::NumericKind::I64},
+      {"i128", spark::Value::NumericKind::I128}, {"i256", spark::Value::NumericKind::I256},
+      {"i512", spark::Value::NumericKind::I512}, {"f8", spark::Value::NumericKind::F8},
+      {"f16", spark::Value::NumericKind::F16},   {"bf16", spark::Value::NumericKind::BF16},
+      {"f32", spark::Value::NumericKind::F32},   {"f64", spark::Value::NumericKind::F64},
+      {"f128", spark::Value::NumericKind::F128}, {"f256", spark::Value::NumericKind::F256},
+      {"f512", spark::Value::NumericKind::F512},
+  };
+
+  for (const auto& primitive : cases) {
+    std::ostringstream stream;
+    stream << "v = " << primitive.ctor << "(7)\n";
+    run_program(stream.str(), "v", spark::Value::numeric_value_of(primitive.kind, "7"));
+  }
+}
+
+void run_string_primitive_programs() {
+  run_program(R"(
+a = "koz"
+b = "mika"
+c = a + b
+)", "c", spark::Value::string_value_of("kozmika"));
+
+  run_program(R"(
+s = string(123)
+)", "s", spark::Value::string_value_of("123"));
+
+  run_program(R"(
+t = "phase10"
+u = t[1:5]
+)", "u", spark::Value::string_value_of("hase"));
+
+  run_program(R"(
+t = "kozmika"
+v = t[3]
+)", "v", spark::Value::string_value_of("m"));
+
+  run_program(R"(
+t = "kafe🙂"
+u8 = utf8_len(t)
+)", "u8", spark::Value::int_value_of(8));
+
+  run_program(R"(
+t = "kafe🙂"
+u16 = utf16_len(t)
+)", "u16", spark::Value::int_value_of(6));
+}
+
 }  // namespace
 
 int main() {
@@ -190,5 +342,9 @@ int main() {
   run_return_and_nested();
   run_list_addition();
   run_matrix_builtin_constructor();
+  run_numeric_primitive_builtins();
+  run_while_hotloop_numeric_fastpath_smoke();
+  run_numeric_constructor_family_smoke();
+  run_string_primitive_programs();
   return 0;
 }

@@ -9,6 +9,7 @@
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -24,7 +25,38 @@ struct TaskGroupHandle;
 struct ChannelHandle;
 
 struct Value {
-  enum class Kind { Nil, Int, Double, Bool, List, Matrix, Function, Builtin, Task, TaskGroup, Channel };
+  enum class Kind {
+    Nil,
+    Int,
+    Double,
+    String,
+    Numeric,
+    Bool,
+    List,
+    Matrix,
+    Function,
+    Builtin,
+    Task,
+    TaskGroup,
+    Channel
+  };
+  enum class NumericKind {
+    I8,
+    I16,
+    I32,
+    I64,
+    I128,
+    I256,
+    I512,
+    F8,
+    F16,
+    BF16,
+    F32,
+    F64,
+    F128,
+    F256,
+    F512,
+  };
   enum class LayoutTag {
     Unknown = 0,
     PackedInt = 1,
@@ -87,6 +119,7 @@ struct Value {
   Kind kind = Kind::Nil;
   long long int_value = 0;
   double double_value = 0.0;
+  std::string string_value;
   bool bool_value = false;
   std::vector<Value> list_value;
   ListCache list_cache;
@@ -112,8 +145,21 @@ struct Value {
     std::function<Value(const std::vector<Value>&)> impl;
   };
 
+  struct NumericValue {
+    NumericKind kind = NumericKind::F64;
+    std::string payload;
+    bool parsed_int_valid = false;
+    __int128_t parsed_int = 0;
+    bool parsed_float_valid = false;
+    long double parsed_float = 0.0L;
+    // Opaque runtime cache for high-precision numeric backends (e.g. MPFR).
+    // Stored as void to keep public headers backend-agnostic.
+    mutable std::shared_ptr<void> high_precision_cache;
+  };
+
   std::shared_ptr<Function> function_value;
   std::shared_ptr<Builtin> builtin_value;
+  std::optional<NumericValue> numeric_value;
   std::shared_ptr<MatrixValue> matrix_value;
   std::shared_ptr<TaskHandle> task_value;
   std::shared_ptr<TaskGroupHandle> task_group_value;
@@ -123,6 +169,10 @@ struct Value {
   static Value nil();
   static Value int_value_of(long long v);
   static Value double_value_of(double v);
+  static Value string_value_of(std::string v);
+  static Value numeric_value_of(NumericKind kind, std::string payload);
+  static Value numeric_int_value_of(NumericKind kind, __int128_t v);
+  static Value numeric_float_value_of(NumericKind kind, long double v);
   static Value bool_value_of(bool v);
   static Value list_value_of(std::vector<Value> values);
   static Value matrix_value_of(std::size_t rows, std::size_t cols, std::vector<Value> values);
