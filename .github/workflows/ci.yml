@@ -50,3 +50,104 @@ jobs:
             --python-crosscheck \
             --python-loops 300 \
             --fail-on-nonfinite
+
+  compiler-matrix-build:
+    name: Compiler Matrix Build (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: gcc
+            cc: gcc
+            cxx: g++
+          - name: clang
+            cc: clang
+            cxx: clang++
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build clang g++ make python3 libmpfr-dev libgmp-dev
+
+      - name: Configure
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: cmake -S . -B build_${{ matrix.name }} -G Ninja -DCMAKE_BUILD_TYPE=Release -DSPARK_BUILD_TESTS=ON
+
+      - name: Build
+        run: cmake --build build_${{ matrix.name }} -j 4
+
+      - name: Smoke tests
+        run: |
+          ./build_${{ matrix.name }}/compiler/sparkc_smoke_test
+          ./build_${{ matrix.name }}/compiler/sparkc_parser_tests
+          ./build_${{ matrix.name }}/compiler/sparkc_eval_tests
+
+  sanitizer:
+    name: Sanitizer (ASan + UBSan)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build clang g++ make python3 libmpfr-dev libgmp-dev
+
+      - name: Configure (sanitizers)
+        run: |
+          cmake -S . -B build_san -G Ninja \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DSPARK_BUILD_TESTS=ON \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" \
+            -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined" \
+            -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address,undefined"
+
+      - name: Build
+        run: cmake --build build_san -j 4
+
+      - name: Run sanitizer smoke tests
+        run: |
+          ./build_san/compiler/sparkc_smoke_test
+          ./build_san/compiler/sparkc_parser_tests
+          ./build_san/compiler/sparkc_eval_tests
+          ./build_san/compiler/sparkc_phase5_tests
+
+  perf-regression:
+    name: Performance Regression Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build clang g++ make python3 python3-pip libmpfr-dev libgmp-dev
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSPARK_BUILD_TESTS=OFF
+
+      - name: Build sparkc
+        run: cmake --build build -j 4 --target sparkc
+
+      - name: Run perf regression gate
+        run: |
+          python3 ./.github/scripts/perf_regression_gate.py \
+            --baseline ./.github/perf/perf_baseline.json \
+            --output ./bench/results/ci_perf_regression.json
+
+      - name: Upload perf gate report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-perf-regression
+          path: bench/results/ci_perf_regression.json

@@ -3776,3 +3776,23 @@ Sonuc:
   generated int primitive constructor yolunun uyumsuzlugu.
 - Int dogruluk CI'da halen `sparkc_eval_tests` + `sparkc_phase5_tests` ile gate.
 - Java+MPFR float reference smoke CI gate olarak acik kaldi.
+
+-------------------------------------------------------------------------------
+104) CRITICAL CI/CD HARDENING (2026-02-20)
+-------------------------------------------------------------------------------
+Eklenen kritik guardlar:
+- Compiler matrix build:
+  - gcc + clang icin ayri build/smoke test job
+- Sanitizer gate:
+  - ASan + UBSan ile configure/build ve smoke test
+- Perf regression gate:
+  - `.github/scripts/perf_regression_gate.py`
+  - `.github/perf/perf_baseline.json`
+  - native mod + ust-sinir median kontrolu (catastrophic regression yakalama)
+- Security scan:
+  - `.github/workflows/security-codeql.yml`
+  - CodeQL (cpp + python), push/PR + haftalik schedule
+
+Not:
+- Perf gate thresholdlari ilk asamada konservatif tutuldu (flaky false-positive'i azaltmak)
+  ve ilerleyen commitlerde daraltilabilir.

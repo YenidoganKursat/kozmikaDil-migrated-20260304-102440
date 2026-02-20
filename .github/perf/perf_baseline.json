@@ -1,0 +1,22 @@
+{
+  "checks": [
+    {
+      "id": "f32-scalar-native",
+      "primitive": "f32",
+      "loops": 100000,
+      "warmup": 0,
+      "runs": 1,
+      "expected_mode": "native",
+      "max_median_sec": 2.0
+    },
+    {
+      "id": "f64-scalar-native",
+      "primitive": "f64",
+      "loops": 100000,
+      "warmup": 0,
+      "runs": 1,
+      "expected_mode": "native",
+      "max_median_sec": 2.2
+    }
+  ]
+}
