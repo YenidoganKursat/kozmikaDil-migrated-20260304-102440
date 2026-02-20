@@ -41,7 +41,7 @@ jobs:
       - name: Runtime benchmark smoke (no build-time measurement)
         run: |
           ./bench/scripts/primitives/benchmark_mixed_signed_ops_100m.py \
-            --backend interpret \
+            --backend builtin \
             --loops 10000 \
             --runs 1 \
             --warmup 0 \
