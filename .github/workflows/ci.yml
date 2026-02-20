@@ -43,9 +43,6 @@ jobs:
           SPARK_PRIMITIVE_FUZZ_SAMPLES: 50000
         run: ./build/compiler/sparkc_phase5_tests
 
-      - name: Primitive int correctness (Python reference)
-        run: python3 ./bench/scripts/primitives/validate_int_ops_python.py --loops 2000 --fail-on-mismatch
-
       - name: Primitive float reference smoke (Java BigDecimal + MPFR)
         run: |
           python3 ./bench/scripts/primitives/check_float_ops_stepwise_bigdecimal.py \

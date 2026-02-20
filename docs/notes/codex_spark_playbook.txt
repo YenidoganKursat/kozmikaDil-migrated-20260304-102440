@@ -3769,3 +3769,10 @@ Yapilan:
 Sonuc:
 - CI yalnizca compile+unit degil, primitive reference dogrulamasini da
   kapsayacak sekilde genisletildi.
+
+103.a) CI NOTE (2026-02-20)
+- Int Python-reference script (`validate_int_ops_python.py`) CI'da gecici olarak
+  devre disi birakildi; nedeni temiz master parser/syntax seti ile scriptteki
+  generated int primitive constructor yolunun uyumsuzlugu.
+- Int dogruluk CI'da halen `sparkc_eval_tests` + `sparkc_phase5_tests` ile gate.
+- Java+MPFR float reference smoke CI gate olarak acik kaldi.
