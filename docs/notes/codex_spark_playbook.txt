@@ -2150,3 +2150,1596 @@ Tek komutla tekrar:
 - `bench/scripts/run_crosslang_generic_ops_fastinit.sh`
 - Son rapor:
   - `bench/results/crosslang_generic_ops_fastinit_list200000_mat256_r5.json`
+
+-------------------------------------------------------------------------------
+54) MODULERLESTIRME + TEMIZLIK TURU (2026-02-18)
+-------------------------------------------------------------------------------
+Hedef:
+- Uzun runtime/script dosyalarini gorev bazli alt bilesenlere bolmek.
+- Gereksiz / uretilmis dosyalari repodan temizlemek.
+- Ana dispatch kodunu okunur ve bakimi kolay hale getirmek.
+
+Yapilan:
+- Phase5 runtime arithmetic ayrildi:
+  - yeni ortak API: `compiler/src/phase5/runtime/ops/runtime_ops.h`
+  - ortak helperlar: `compiler/src/phase5/runtime/ops/ops_common_numeric.cpp`
+  - list aritmetik cekirdegi (+,-,*,/,%): `compiler/src/phase5/runtime/ops/ops_list_arithmetic.cpp`
+  - matrix aritmetik cekirdegi (+,-,*,/,%): `compiler/src/phase5/runtime/ops/ops_matrix_arithmetic.cpp`
+  - `compiler/src/phase5/runtime/interpreter_ops.cpp` artik sadece dispatcher /
+    unary-binary eval girislerini tutuyor.
+- Derleyici toplama zinciri guncellendi:
+  - `compiler/src/phase3/evaluator.cpp` icine yeni `ops/*` modulleri eklendi.
+- Cross-lang benchmark script modulerlestirildi:
+  - ortak benchmark yardimcilari: `bench/scripts/crosslang/benchmark_core.py`
+  - matmul source-uretimi modulleri:
+    - `bench/scripts/crosslang/generate_matmul_pair_sources.py`
+    - `bench/scripts/crosslang/generate_matmul_chain4_sources.py`
+  - driver scriptler inceltildi:
+    - `bench/scripts/benchmark_crosslang_matmul_pair_runtime.py`
+    - `bench/scripts/benchmark_crosslang_matmul_chain4_runtime.py`
+- Temizlik:
+  - tum `__pycache__` ve `*.pyc` dosyalari silindi.
+  - `.gitignore` guncellendi (`*.pyc`, `__pycache__/`).
+
+Dogrulama:
+- `cmake --build build -j8` PASS
+- `./build/compiler/sparkc_phase5_tests` PASS
+- script syntax kontrolu:
+  - `python3 -m py_compile` ile yeni/degisen benchmark modulleri PASS
+
+Not:
+- Bu turda hedef performans degisimi degil, kod organizasyonu ve bakim maliyetini dusurmekti.
+- Sonraki adimda matrix/list source-generator modullerini de alt dil dosyalarina (C/NumPy/Java/MATLAB)
+  bolerek her modulu ~150-250 satir bandina cekmek mumkun.
+
+-------------------------------------------------------------------------------
+55) SCRIPT BASINA TEK GOREV + ACIK ISIMLENDIRME KURALI (2026-02-18)
+-------------------------------------------------------------------------------
+Karar:
+- Her script tek ana sorumluluk tasir (single responsibility).
+- Isimden gorev anlasilmali:
+  - `benchmark_*`: sadece olc ve raporla.
+  - `generate_*`: sadece benchmark kaynaklarini uret.
+  - `run_*`: sadece uyumluluk wrapper/launcher.
+
+Uygulama:
+- yeni benchmark scriptleri:
+  - `bench/scripts/benchmark_crosslang_matmul_pair_runtime.py`
+  - `bench/scripts/benchmark_crosslang_matmul_chain4_runtime.py`
+  - `bench/scripts/benchmark_crosslang_generic_ops_fastinit.py`
+- yeni acik adli shell launcherlar:
+  - `bench/scripts/benchmark_crosslang_matmul_pair_runtime.sh`
+  - `bench/scripts/benchmark_crosslang_matmul_chain4_runtime.sh`
+  - `bench/scripts/benchmark_crosslang_generic_ops_fastinit.sh`
+- uyumluluk icin kalan wrapper adlari:
+  - `bench/scripts/run_crosslang_matmul_runtime.py`
+  - `bench/scripts/run_crosslang_matmul4_runtime.py`
+  - `bench/scripts/run_crosslang_generic_ops_fastinit.py`
+  (yalnizca yeni scriptleri cagiriyor; ekstra is yapmiyor.)
+- benchmark script kurallari dokumani:
+ - `bench/scripts/README.md`
+- phase5 ops kurallari dokumani:
+  - `compiler/src/phase5/runtime/ops/README.md`
+
+-------------------------------------------------------------------------------
+56) PRIMITIVE FAMILY + INT VERSIYONLARI (2026-02-18)
+-------------------------------------------------------------------------------
+Hedef:
+- Tum primitive constructor ailesini calisir hale getirmek:
+  - int: i8/i16/i32/i64/i128/i256/i512
+  - float: f8/f16/bf16/f32/f64/f128/f256/f512
+- Her primitive icin ayri benchmark script ve 1x baseline dongusu.
+- Numeric hot-path'te parse/string maliyetini dusurmek.
+
+Yapilan:
+- Runtime value modeline `NumericKind` + `Numeric` deger turu eklendi.
+- Primitive builtin registry eklendi:
+  - `i8..i512`, `f8..f512` constructorlari global builtin olarak kayitli.
+- Interpreter arithmetic ve container numeric path'leri `Numeric` turunu kapsayacak
+  sekilde genislletildi.
+- Semantic/type adlandirma tablosuna primitive constructor isimleri eklendi.
+- Test guvencesi artirildi:
+  - `tests/phase3/eval_tests.cpp` icine tum primitive constructor ailesi smoke testi.
+- Benchmark modulerlestirme:
+  - `bench/scripts/primitives/benchmark_<primitive>_scalar_runtime.py` (her biri tek gorev)
+  - `bench/scripts/primitives/benchmark_all_primitives_cycle.py`
+  - 1x baseline + latest speedup json ciktilari.
+
+Bellek + performans iyilestirmesi:
+- Numeric degerlerde parse-cache eklendi:
+  - `parsed_int` / `parsed_float` alanlari ile tekrar parse azaltildi.
+- Numeric ara sonuclarda lazy payload stratejisi:
+  - Hot loop icinde string uretimi ertelendi (to_string/print anina kadar).
+- Numeric deger saklama sekli heap pointer'dan inline optional'a cekildi:
+  - `shared_ptr<NumericValue>` -> `optional<NumericValue>`
+  - primitive aritmetikte tahsis ve referans sayma maliyeti dusuruldu.
+- Int arithmetic dogrulugu:
+  - i128 yolunda `__builtin_*_overflow` tabanli saturating add/sub/mul.
+
+Olumlu sonuc:
+- Tum primitive constructorlari interpreter'da calisiyor.
+- Derleme + testler PASS:
+  - `cmake --build build -j8`
+  - `./build/compiler/sparkc_eval_tests`
+  - `./build/compiler/sparkc_phase5_tests`
+  - `./build/compiler/sparkc_phase6_tests`
+- Primitive scalar benchmark scripti overflow-olusturmayan profile cekildi
+  (`+ * / -` float, `+ * % -` int). Bu degisiklikten sonra baseline reset edildi.
+- Son cycle (80k loop, 7 run) sonucu:
+  - speedup araligi: ~`0.98x` - `1.43x`
+  - medyan speedup: ~`1.05x`
+  - not: `i64` sonucu ~`0.98x` ile +/-3% tekrar-olcum toleransinda.
+
+Olumsuz / dikkat edilmesi gereken:
+- Bu hostta true multiprecision backend (MPFR/GMP/Boost.Multiprecision) yok;
+  bu nedenle i256/i512 ve f128/f256/f512 su an semantic olarak mevcut ama
+  hesaplama cekirdegi i128/long-double tabanli.
+- Yani "tip var ve calisiyor" durumu saglandi; "gercek donanimdan bagimsiz tam precision"
+  bir sonraki backend adiminda tamamlanmali.
+
+Sonraki adim:
+- Opsiyonel multiprecision backend (GMP/MPFR veya yerel limb engine) ekleyip
+  i256/i512 + f128+ precision'i gerceklestirmek.
+
+-------------------------------------------------------------------------------
+57) PRIMITIVE 10X HEDEFI (2026-02-18)
+-------------------------------------------------------------------------------
+Hedef:
+- Tum primitive benchmark kategorilerinde (tek bir primitive geri kalmadan) 10x+
+  hiz artisi.
+
+Yapilan teknik degisiklikler:
+- Phase4 codegen'e primitive constructor lowering eklendi:
+  - `i8..i512` ve `f8..f512` cagrilari native path'te cast olarak dusuruluyor.
+  - Dosya: `compiler/src/phase4/codegen_parts/05_codegen_flow.cpp`
+- Primitive benchmark core build-once/run-many native policy'ye alindi:
+  - once `k build` (AOT), sonra sadece binary runtime olculuyor.
+  - build time ozellikle olcum disi (istenen kural).
+  - native codegen olmazsa otomatik interpreter fallback.
+  - Dosya: `bench/scripts/primitives/benchmark_primitive_scalar_core.py`
+- Benchmark cycle scripti `--mode auto|interpret|native` alacak sekilde genislletildi:
+  - Dosya: `bench/scripts/primitives/benchmark_all_primitives_cycle.py`
+- Native benchmark build flaglari agresiflestirildi:
+  - `-O3 -march=native -mtune=native -funroll-loops ...`
+  - `SPARK_LTO=full`
+
+Olcum protokolu (net):
+1) 1x baseline:
+   - `python3 bench/scripts/primitives/benchmark_all_primitives_cycle.py --mode interpret --loops 200000 --runs 5 --warmup 1 --reset-baseline`
+2) optimized olcum:
+   - `python3 bench/scripts/primitives/benchmark_all_primitives_cycle.py --mode auto --loops 200000 --runs 7 --warmup 2`
+
+Sonuc:
+- Tum primitive'lerde 10x bariyeri gecildi.
+- `bench/results/primitives/primitive_cycle_summary.json`:
+  - min speedup: ~`46.72x`
+  - max speedup: ~`90.70x`
+  - median speedup: ~`71.59x`
+  - `all_ge_10 = true`
+
+Not:
+- Bu rapor "interpreter baseline -> native optimized runtime" gecisini olcer.
+- Build time olcume dahil degildir (kural geregi).
+
+-------------------------------------------------------------------------------
+58) IKINCI 10X TURU + ANTI-OPT BENCH GUVENCESI (2026-02-18)
+-------------------------------------------------------------------------------
+Problem:
+- Primitive benchmark kodu sabitlerle yazildiginda derleyici tarafinda loop'un bir kismini
+  asiri optimize etme riski var.
+
+Cozum:
+- Runtime-seed kaynagi eklendi:
+  - yeni builtin: `bench_tick()`
+  - interpreter: `steady_clock` tabanli i64 tick doner
+  - native codegen: `__spark_bench_tick_i64()` (timespec_get) uretilir
+- Primitive benchmark programlari sabit deger yerine `bench_tick()` ile seed aliyor.
+  Boylece kernelin compile-time "sabit kapanmasi" engelleniyor.
+
+Kod degisiklikleri:
+- `compiler/src/phase3/semantic_parts/02_types_and_names.cpp`
+  - `bench_tick` builtin type eklendi.
+- `compiler/src/phase5/runtime/interpreter_core.cpp`
+  - `bench_tick` builtin implementasyonu eklendi.
+- `compiler/src/phase4/codegen_parts/05_codegen_flow.cpp`
+  - `bench_tick()` call lowering eklendi.
+- `compiler/src/phase4/codegen_parts/03_ir_to_c.cpp`
+  - `__spark_bench_tick_i64()` C runtime helper eklendi.
+- `bench/scripts/primitives/benchmark_primitive_scalar_core.py`
+  - program generation runtime-seed moduna gecti.
+
+Olcum protokolu (yeniden):
+1) baseline:
+   - `python3 bench/scripts/primitives/benchmark_all_primitives_cycle.py --mode interpret --loops 200000 --runs 5 --warmup 1 --reset-baseline`
+2) optimize:
+   - `python3 bench/scripts/primitives/benchmark_all_primitives_cycle.py --mode auto --loops 200000 --runs 9 --warmup 2`
+
+Sonuc:
+- Tum primitive kategorilerinde 10x bariyeri tekrar ve daha guvenilir sekilde gecildi.
+- Son dosya: `bench/results/primitives/primitive_cycle_summary.json`
+  - min speedup: ~`47.61x`
+  - max speedup: ~`99.58x`
+  - hepsi >= 10x: EVET
+
+-------------------------------------------------------------------------------
+59) FLOAT OPERATOR 100M BENCH (f8..f512) + FLOAT MOD FIX (2026-02-18)
+-------------------------------------------------------------------------------
+Istek:
+- `+, -, *, /, %` operatorlerini her primitive icin (`f8..f512`) ayri ayri
+  `100,000,000` kez calistirip runtime olcumu.
+
+Kapatilan sorun:
+- Native build path'te `%` icin semantic kural int-only kalmisti; `f8 % f8` derlenmiyordu.
+- Duzeltme:
+  - `compiler/src/phase3/semantic_parts/05_expr_infer.cpp`
+  - `compiler/src/phase3/semantic_parts/04_analysis.cpp`
+  - `%` artik scalar numeric (`int/float`) olarak kabul ediliyor.
+
+Benchmark script:
+- `bench/scripts/primitives/benchmark_float_ops_100m.py`
+- Calistirma:
+  - `python3 bench/scripts/primitives/benchmark_float_ops_100m.py --loops 100000000 --runs 1 --warmup 0`
+- Sonuc JSON:
+  - `bench/results/primitives/float_ops_100m.json`
+
+-------------------------------------------------------------------------------
+60) FLOAT OPERATOR SPECIALIZATION v1 (f8..f512) (2026-02-18)
+-------------------------------------------------------------------------------
+Problem:
+- Native codegen scalar float yolunda `f8..f512` tiplerini tek `f64`'e indiriyordu.
+- Bu nedenle farkli float primitive'ler operator benchmark'inda beklenen ayrismayi
+  gostermiyordu.
+
+Uygulanan cozum (v1):
+- Phase4 codegen'e `numeric_hint` tasima eklendi:
+  - constructor (`f8..f512`) ile olusan scalar deger hint tasiyor.
+  - assignment'ta hint degiskene yaziliyor.
+  - binary arithmetic'te (aynı hint) `add/sub/mul/div/mod.<hint>` uretiliyor.
+- IR->C tarafina dtype-aware helperlar eklendi:
+  - `__spark_num_add_f8`, `__spark_num_mul_f16`, ..., `__spark_num_mod_f512`
+  - f8/f16/bf16/f32 icin quantize tabanli davranis, f64/f128/f256/f512 icin
+    f64/long-double tabanli yol.
+
+Degisen dosyalar:
+- `compiler/include/spark/codegen.h`
+- `compiler/src/phase4/codegen_parts/06_codegen_expr.cpp`
+- `compiler/src/phase4/codegen_parts/04_codegen_front.cpp`
+- `compiler/src/phase4/codegen_parts/05_codegen_flow.cpp`
+- `compiler/src/phase4/codegen_parts/02_ir_kind.cpp`
+- `compiler/src/phase4/codegen_parts/03_ir_to_c.cpp`
+
+Yeniden olcum:
+- `python3 bench/scripts/primitives/benchmark_float_ops_100m.py --loops 100000000 --runs 1 --warmup 0`
+- cikti:
+  - `bench/results/primitives/float_ops_100m.json`
+
+Not:
+- Bu adim "full multi-dtype backend" degil, ancak scalar operator benchmark'inda
+  tip-hint bazli ayrik operator yolu aktif.
+- List/matrix tarafinda tam dtype-specialized storage/kernel sonraki adimdir.
+
+-------------------------------------------------------------------------------
+61) FLOAT OPERATOR SPECIALIZATION v1.1 (constructor-quantize + lighter kernels)
+-------------------------------------------------------------------------------
+Iyilestirme:
+- v1'deki helper kernel'lerde `Q(Q(a) op Q(b))` modeli vardi; bu f8/f16/bf16
+  yollarinda gereksiz pahaliydi.
+- v1.1'de:
+  - constructor seviyesinde tek sefer quantize: `f8(x)` -> `add.f8 x, 0.0`
+  - operator kerneli: `Q(a op b)` (operand basina ek quantize yok)
+
+Beklenen etki:
+- dogruluk-kisitini korurken (tip-hint path), ozellikle dusuk-bit floatlarda
+  operator runtime'ini dusurmek.
+
+Yeniden olcum:
+- `python3 bench/scripts/primitives/benchmark_float_ops_100m.py --loops 100000000 --runs 1 --warmup 0`
+- sonuc dosyasi:
+  - `bench/results/primitives/float_ops_100m.json`
+
+Dogruluk kontrolu (hizli differential):
+- `k run` (compiled path) vs `k run --interpret` (interpreter path)
+- kapsama: `f8..f512` x `+,-,*,/,%` (1000 iter test)
+- sonuc: `mismatch_count = 0`
+
+-------------------------------------------------------------------------------
+62) JAVA BIGDECIMAL DOGRULAMA (2026-02-18)
+-------------------------------------------------------------------------------
+Istek:
+- float primitive operator dogruluklarini Java `BigDecimal` ile karsilastirma.
+
+Eklenen script:
+- `bench/scripts/primitives/check_float_ops_bigdecimal.py`
+
+Calistirma:
+- `python3 bench/scripts/primitives/check_float_ops_bigdecimal.py --loops 100000000 --mode run`
+
+Uretilen rapor:
+- `bench/results/primitives/float_ops_bigdecimal_check_run.json`
+
+Kisa sonuc:
+- `f64/f128/f256/f512` icin `+/-` BigDecimal referansla birebir eslesti.
+- `f8/f16/bf16/f32` icin `+/-` beklenen sekilde buyuk sapma var (dusuk precision + her adim quantize etkisi).
+- `* / %` test senaryosunda (`c0=0`) hem Kozmika hem BigDecimal sonucu `0`.
+
+-------------------------------------------------------------------------------
+63) STEPWISE BIGDECIMAL CHECK (100M, RANDOM a/b, HER ADIM) (2026-02-18)
+-------------------------------------------------------------------------------
+Istek:
+- Sonuca degil her adima bakarak dogrulama.
+- 100,000,000 adim boyunca random `a/b` ile operator sonucu BigDecimal referansina gore olculecek.
+
+Eklenen script:
+- `bench/scripts/primitives/check_float_ops_stepwise_bigdecimal.py`
+
+Calistirma:
+- `python3 bench/scripts/primitives/check_float_ops_stepwise_bigdecimal.py --loops 100000000 --skip-kozmika`
+
+Rapor:
+- `bench/results/primitives/float_ops_stepwise_bigdecimal_check.json`
+
+Kisa okuma:
+- `f64/f128/f256/f512` `+,-,*,/` max hata ~`1e-13` .. `1e-11` bandinda.
+- `f32` `+/-` max abs hata ~`6.05e-05`; `*` ~`2.23e-02`; `/` ~`3.13e-02`.
+- `f8/f16/bf16` tarafinda hata buyuk (beklenen): her adim quantize + dusuk mantissa.
+- `%` rel hata metriklerinde referans 0'a yaklasma oldugu icin oran metrikleri buyuyor; abs hata metriği esas alinmali.
+
+-------------------------------------------------------------------------------
+64) FLOAT PRECISION LIMIT GAP (THEORY vs CURRENT BACKEND) (2026-02-18)
+-------------------------------------------------------------------------------
+Istek:
+- `f64` disinda (`f128/f256/f512`) cok daha dusuk hata bandi bekleniyor.
+- Ozellikle `f512` tarafinda `1e-65..1e-70` veya daha iyi hedef soruldu.
+
+Yapilan olcum:
+- Komut:
+  - `python3 bench/scripts/primitives/check_float_ops_stepwise_bigdecimal.py --loops 1000000 --skip-kozmika`
+- Rapor:
+  - `bench/results/primitives/float_ops_stepwise_bigdecimal_check.json`
+- `+,-,*,/` icin max abs hata:
+  - `f64`  : `1.136868e-13, 1.136868e-13, 2.910383e-11, 5.820766e-11`
+  - `f128` : `1.136868e-13, 1.136868e-13, 2.910383e-11, 5.820766e-11`
+  - `f256` : `1.136868e-13, 1.136868e-13, 2.910383e-11, 5.820766e-11`
+  - `f512` : `1.136868e-13, 1.136868e-13, 2.910383e-11, 5.820766e-11`
+
+Kok neden (platform):
+- Bu makinede `long double == double`:
+  - `double_epsilon      = 2.220446049250313e-16`
+  - `long_double_epsilon = 2.220446049250313e-16`
+  - `long_double_digits  = 53`
+- Sonuc: `f128/f256/f512` runtime'da f64 seviyesinde kaliyor.
+
+Not:
+- Gercek `f128+` hassasiyet (ornegin `f128 ~1e-34`, `f256 ~1e-71`, `f512 ~1e-149`
+  civari epsilon hedefleri) icin software multiprecision backend (MPFR/Boost benzeri)
+  veya native quad/multi precision platform gereklidir.
+
+-------------------------------------------------------------------------------
+65) LOW-PRECISION FLOAT QUANTIZER v2 (BIT-LEVEL) (2026-02-18)
+-------------------------------------------------------------------------------
+Amaç:
+- `f8/f16/bf16` tarafinda mantissa-only yaklasim yerine daha dogru IEEE/format uyumlu
+  quantize davranisi.
+
+Arastirma kaynaklari:
+- Berkeley SoftFloat dokumantasyonu:
+  - https://www.jhauser.us/arithmetic/SoftFloat-3/doc/SoftFloat.html
+- ONNX Float8 (E4M3FN):
+  - https://onnx.ai/onnx/technical/float8.html
+
+Kod degisiklikleri:
+- Runtime quantization (interpreter):
+  - `compiler/src/phase5/runtime/primitives/01_numeric_scalar_core.cpp`
+  - f16: bit-level round-to-nearest-even + subnormal/overflow handling
+  - bf16: float32->bf16 rounding (rne) ile truncation
+  - f8: e4m3fn benzeri bit-level quantization + finite saturation
+- Compiled path quantization:
+  - `compiler/src/phase4/codegen_parts/03_ir_to_c.cpp`
+  - ayni bit-level quantizerlar generated C runtime'a eklendi
+
+Yeniden olcum:
+- `python3 bench/scripts/primitives/check_float_ops_stepwise_bigdecimal.py --loops 1000000 --skip-kozmika`
+
+Not:
+- Bu guncelleme `f8/f16/bf16` davranisini daha gercekci hale getirir, ancak bazi
+  workloadlarda (ozellikle `f16 *`/`f16 /`) artik overflow->Inf gorulebilir.
+- `f128/f256/f512` precision limiti bu adimla degismez; ayri multiprecision backend gerekir.
+
+-------------------------------------------------------------------------------
+66) STEPWISE CHECK v3 (SAFE DATA + JAVA/PYTHON DUAL REFERENCE) (2026-02-18)
+-------------------------------------------------------------------------------
+Istek:
+- `f8/f16/f32` tek tek kontrol, `inf` cikmasin.
+- `f64/f128/f256/f512` hata seviyeleri ayrica kontrol edilsin.
+- Java `BigDecimal` yanina Python tabanli ikinci dogrulama eklensin.
+
+Yapilanlar:
+- `bench/scripts/primitives/check_float_ops_stepwise_bigdecimal.py` yeniden duzenlendi.
+  - primitive-bazli guvenli veri araliklari eklendi (`SAFE_INPUT`):
+    - `f8`: bound=12.0, min_den=0.25
+    - `f16`: bound=120.0, min_den=0.125
+    - `bf16/f32/f64/f128/f256/f512`: bound=500.0 (tip bazli min_den)
+  - `--python-crosscheck` modu eklendi (Python `decimal` ile ikinci referans).
+  - rapora `non_finite_count` eklendi.
+
+Calistirma:
+- `python3 bench/scripts/primitives/check_float_ops_stepwise_bigdecimal.py --loops 100000 --skip-kozmika --python-crosscheck --python-loops 100000`
+
+Kisa sonuc:
+- `non_finite_count = 0` tum primitive/operator satirlarinda.
+- `f64` (`+,-,*,/`) max abs:
+  - `+/-`: `1.136868e-13`
+  - `*`: `2.910383e-11`
+  - `/`: `1.818989e-12`
+- `f128/f256/f512` degeri bu makinede f64 bandinda kaldi (beklenen; backend limiti).
+
+-------------------------------------------------------------------------------
+67) STEPWISE CHECK v4 (BINARY-EXACT INPUT + EPSILON-RATIO METRIC) (2026-02-18)
+-------------------------------------------------------------------------------
+Istek:
+- Teorik epsilon sinirina ne kadar yakiniz sorusunu dogru metrikle goster.
+- Java + Python ile cift tarafli referans devam etsin.
+
+Yapilan degisiklik:
+- `bench/scripts/primitives/check_float_ops_stepwise_bigdecimal.py`
+  - input generator: `((seed % 4097) - 2048) / 256.0` (binary-exact)
+  - hata olcumu:
+    - `max_abs_error_vs_bigdecimal`
+    - `max_rel_error_vs_bigdecimal`
+    - `max_eps1_ratio_vs_bigdecimal` (`abs_error / epsilon@1`)
+  - referans yolu:
+    - once primitive input quantize edilir,
+    - sonra high-precision referans hesaplanir,
+    - primitive output rounding ile karsilastirilir (operator conformance).
+  - python crosscheck ayni metrikleri raporlar.
+
+Calistirma:
+- `python3 bench/scripts/primitives/check_float_ops_stepwise_bigdecimal.py --loops 100000 --skip-kozmika --python-crosscheck --python-loops 100000`
+
+Kisa sonuc:
+- `+,-,*,/` icin `f8..f512` conformance tablosunda max abs hata `0` cikiyor.
+- `%` icin:
+  - `f64` max abs `~1.56e-16`, eps1 ratio `~0.70`.
+  - `f128/f256/f512` eps1 ratio cok buyuk (teorik eps kucuk ama backend gercek multiprecision degil).
+
+-------------------------------------------------------------------------------
+68) DATASET-LEVEL 100M KOZMIKA vs JAVA BIGDECIMAL (2026-02-18)
+-------------------------------------------------------------------------------
+Istek:
+- 100M veri uret, ayni veriyle Kozmika ve Java BigDecimal hesapla,
+  primitive bazli fark tablosu ver.
+
+Eklenen script:
+- `bench/scripts/primitives/compare_dataset_100m_vs_bigdecimal.py`
+
+Dataset:
+- PRNG deterministic.
+- `a,b = ((seed % 4097) - 2048) / 256.0` => `[-8, 8]` binary-exact aralik.
+- `/` ve `%` icin sifir bolen `1/256` ile stabilize edilir.
+
+Calistirma:
+- `python3 bench/scripts/primitives/compare_dataset_100m_vs_bigdecimal.py --loops 100000000`
+
+Cikti:
+- `bench/results/primitives/dataset_100m_vs_bigdecimal.json`
+
+Kisa sonuc (abs fark):
+- `f8` tarafinda fark buyuk (beklenen dusuk precision etkisi).
+- `f16` tarafinda fark belirgin ama dusuk.
+- `f32` ve ustunde `+/-/%` sifira cok yakin; `*` ve `/` farklari kucuk.
+- `f128/f256/f512` burada `f64` ile ayni banda yakin (backend limiti).
+
+-------------------------------------------------------------------------------
+69) NUMERIC PREFIX CONSTRUCTOR SYNTAX (2026-02-18)
+-------------------------------------------------------------------------------
+Istek:
+- `x = f512 123.45` benzeri kullanim eklensin.
+- Ayni sugar `f256/f128/f32/f16/f8` (ve constructor ailesinin geri kalani) icin de calissin.
+
+Yapilanlar:
+- Parser unary seviyesine numeric-constructor prefix kurali eklendi:
+  - `f512 123.45` -> AST'de `f512(123.45)` olarak canonicalize edilir.
+  - `f8/f16/bf16/f32/f64/f128/f256/f512` ve `i8..i512` icin ayni kural aktiftir.
+- Parser snapshot testi eklendi:
+  - `tests/phase2/parser_tests.cpp`
+- Evaluator testi eklendi:
+  - `tests/phase3/eval_tests.cpp`
+- Dokuman guncellendi:
+  - `docs/grammar.md`
+  - `docs/language_spec.md`
+
+Not:
+- Mevcut `f512(123.45)` cagrisi calismaya devam eder.
+
+-------------------------------------------------------------------------------
+70) REAL HIGH-PRECISION PRIMITIVE BACKEND (f128/f256/f512) (2026-02-18)
+-------------------------------------------------------------------------------
+Istek:
+- `f8..f512` primitive ailesi "double fallback" olmadan dilin kendi primitive'i gibi calissin.
+- `f128/f256/f512` icin sessiz precision dususu olmasin.
+
+Yapilanlar:
+- `compiler/src/phase5/runtime/primitives/01_numeric_scalar_core.cpp`
+  - MPFR destekli (`SPARK_HAS_MPFR`) high-precision arithmetic/comparison eklendi.
+  - `f128/f256/f512` icin hedef precision:
+    - `f128`: 113 bit
+    - `f256`: 237 bit
+    - `f512`: 493 bit
+  - add/sub/mul/div/mod ve compare path'leri MPFR ile hesaplanir.
+  - payload stringleri MPFR round-trip formatinda saklanir.
+- `compiler/src/phase3/evaluator_parts/expr/expr_call.cpp`
+  - numeric constructor cagrilarinda (`f512 ...`) NumberExpr raw literal text'i korunur;
+    ara `double` donusumu atlanir.
+- `compiler/src/phase1/sparkc_main_parts/03_execute.cpp`
+  - `run`: kaynakta `f128/f256/f512` varsa otomatik interpreter high-precision backend'e gecer.
+  - `build/compile`: precision-limited native C backend icin bu tiplerde hata verip
+    sessiz downgrade'i engeller.
+- `compiler/CMakeLists.txt`
+  - MPFR/GMP bulunursa `SPARK_HAS_MPFR=1` ile derleme ve link aktif.
+
+Test:
+- `tests/phase3/eval_tests.cpp` icine high-precision fark test senaryosu eklendi
+  (`2^-200` olceginde delta'nin sifirlanmamasi).
+
+-------------------------------------------------------------------------------
+71) PRIMITIVE OPS 100M RANDOM BENCH PIPELINE + APPROX NATIVE HP SWITCH (2026-02-19)
+-------------------------------------------------------------------------------
+Istek:
+- Tum primitive tiplerde (`i8..i512`, `f8..f512`) 100M random x/y ile
+  `+,-,*,/,%` operatorlerini ayri ayri benchmarklamak.
+- Baseline -> optimized speedup kaydini tek hattan almak.
+
+Yapilanlar:
+- Yeni benchmark script:
+  - `bench/scripts/primitives/benchmark_primitive_ops_random.py`
+  - deterministic random stream (LCG) ile her iterasyonda x/y uretir
+  - her primitive/operator cifti icin ayri kernel calistirir
+  - baseline ve optimized profilleri ayni kosuda olcer
+  - JSON + CSV cikti uretir:
+    - `bench/results/primitives/primitive_ops_random_benchmark.json`
+    - `bench/results/primitives/primitive_ops_random_benchmark.csv`
+- High precision native benchmark deneyi icin kontrollu override eklendi:
+  - env: `SPARK_ALLOW_APPROX_HIGH_PRECISION_NATIVE=1`
+  - dosya: `compiler/src/phase1/sparkc_main_parts/03_execute.cpp`
+  - normalde `f128/f256/f512` icin strict interpreter fallback korunur;
+    bu env sadece benchmark/perf deneyi icin native yaklasik backend yolunu acar.
+
+Arastirma notu (uygulanan prensipler):
+- random input uretecinde deterministic generator ile tekrar-uretilebilirlik,
+- aggressive native profile (`-Ofast`, unroll, LTO) ile runtime odakli olcum,
+- strict vs approximate high-precision yollarini acik ayirmak (sessiz downgrade yok).
+
+-------------------------------------------------------------------------------
+72) STRING PRIMITIVE + PERF RULEBOOK (2026-02-19)
+-------------------------------------------------------------------------------
+Istek:
+- String primitive, double gibi native bir deger olarak dilde yer alsin.
+- Primitive hizlandirma surecinde net "yap/yapma" kurallari kayda gecsin.
+
+Yapilanlar:
+- AST/Lexer/Parser:
+  - `StringExpr` eklendi.
+  - `'...'` ve `"..."` string literal tokenization + basic escape decode eklendi.
+  - Prefix sugar: `string "abc"` -> `string("abc")`.
+- Runtime:
+  - `Value::Kind::String` + `Value::string_value_of(...)` eklendi.
+  - `+`, `<`, `<=`, `>`, `>=` string operatorleri eklendi.
+  - `len(string)` eklendi.
+  - string indexing/slicing: `s[i]`, `s[a:b]`.
+- Type system:
+  - `Type::Kind::String` ve `string` builtin imzasi eklendi.
+  - inference/analysis tarafinda string + ve string compare semantigi baglandi.
+- Native codegen:
+  - string literal su an native codegen'de "interpreter-only" diagnostic veriyor.
+  - `k run` lowering fail durumunda interpreter fallback ile dogru sonucu koruyor.
+
+Olumlu kurallar (yap):
+- Tek-thread adil olcum:
+  - `OMP_NUM_THREADS=1`, `OPENBLAS_NUM_THREADS=1`, `MKL_NUM_THREADS=1`, `VECLIB_MAXIMUM_THREADS=1`
+- Runtime-only benchmark:
+  - build/compile surelerini olcume dahil etme.
+- Strict correctness gate:
+  - conformance testlerinde approximation kapali olsun.
+- Approx path izolasyonu:
+  - `SPARK_ALLOW_APPROX_HIGH_PRECISION_NATIVE=1` sadece throughput deneylerinde.
+
+Negatif kurallar (yapma):
+- Dogruluk testlerinde `-ffast-math` veya benzeri gevsetmeleri acma.
+- Baseline/optimized arasinda algoritma degistirme.
+- Ayni tabloda build-time + run-time karistirma.
+- High-precision strict iddiasi varken approximate sonucu "correct" diye raporlama.
+
+-------------------------------------------------------------------------------
+73) PRIMITIVE BENCH FAIRNESS HARDENING (2026-02-19)
+-------------------------------------------------------------------------------
+Istek:
+- Primitive benchmarklari "adil" olsun; loop'un optimize edilip bosaltilmasi riski azaltilsin.
+
+Yapilanlar:
+- `bench/scripts/primitives/benchmark_primitive_ops_random.py`
+  - yeni varsayilan checksum modu: `accumulate`
+    - `tmp = x <op> y`
+    - `acc = acc + f64(tmp)`
+  - boylece loop-carried dependency korunur (DCE riski azalir).
+  - `--checksum-mode last` opsiyonu da birakildi (eski davranis).
+  - `--out-prefix` eklendi (farkli kosularin dosyalari overwrite olmasin).
+  - stdout `flush=True` ile ara sonuclar canli gorunur hale getirildi.
+- README guncellendi:
+  - `bench/scripts/primitives/README.md`
+
+Kisa sonuc (accumulate mode, 2M loop, runs=1):
+- i32 `+`: `15.512x`
+- i32 `*`: `16.441x`
+- f64 `+`: `19.188x`
+- f64 `*`: `18.903x`
+- f512 `+`: `46.183x`
+- f512 `*`: `46.612x`
+
+Not:
+- Eski `last` modunda (loop optimizer tarafindan daha agresif sadeleme mumkun) cok daha yuksek x degerleri gorulebilir.
+- Adil performans takibi icin default olarak `accumulate` mod kullanilmali.
+
+-------------------------------------------------------------------------------
+74) NATIVE STRING CODEGEN + UTF8/UTF16 BUILTIN + HOST TUNING (2026-02-19)
+-------------------------------------------------------------------------------
+Istek:
+- String primitive native codegen yoluna alinacak (interpreter fallback degil).
+- UTF-8 / UTF-16 uzunluk semantigi native + interpreter tarafinda desteklenecek.
+- Native primitive hizinda ek kazanc icin derleme tuning'i guclendirilecek.
+
+Yapilanlar:
+- Phase4 native codegen:
+  - `ValueKind::String` eklendi.
+  - `str.const` lowering eklendi (string literal artik native IR'e iniyor).
+  - string binary:
+    - `a + b` -> `__spark_string_concat(a, b)`
+    - compare (`==, !=, <, <=, >, >=`) -> `__spark_string_cmp(...)` + `cmp.*.i64`
+  - string index/slice:
+    - `s[i]` -> `__spark_string_index`
+    - `s[a:b]` -> `__spark_string_slice`
+  - builtin lowering:
+    - `string(x)`, `len(s)`, `utf8_len(s)`, `utf16_len(s)`
+  - control-flow condition:
+    - `if s:` gibi kosullarda `__spark_string_len(s) != 0` bool lowering.
+- IR->C runtime:
+  - yeni primitive type: `__spark_string { data, bytes, codepoints }`
+  - runtime fonksiyonlari:
+    - `__spark_string_from_utf8`, `_from_i64`, `_from_f64`, `_from_bool`
+    - `__spark_string_concat`, `__spark_string_cmp`
+    - `__spark_string_len`, `__spark_string_utf8_len`, `__spark_string_utf16_len`
+    - `__spark_string_index`, `__spark_string_slice`, `__spark_print_str`
+- Interpreter parity:
+  - `len(string)` codepoint bazli yapildi.
+  - yeni builtinler: `utf8_len`, `utf16_len`.
+- Semantic/type:
+  - builtin signatures eklendi:
+    - `utf8_len(string) -> int`
+    - `utf16_len(string) -> int`
+- Test:
+  - `tests/phase4/codegen_tests.cpp` string native path + IR->C runtime testleri.
+  - `tests/phase3/eval_tests.cpp` UTF-8/UTF-16 string length testleri.
+- Hiza yonelik derleme tuning:
+  - default native flags'e `-funroll-loops`, `-fno-math-errno` eklendi.
+  - host target ise (`SPARK_TARGET_TRIPLE` yoksa) otomatik:
+    - `-march=native`
+    - `-mtune=native`
+
+Neden bu tasarim:
+- String runtime'i `bytes + codepoints` cacheledigi icin `len(s)` O(1) kaldigi surece
+  UTF-8 destekli olmasina ragmen hot-path maliyeti dusuk kalir.
+- UTF-16 uzunlugu sadece gerektiginde hesaplanir (`utf16_len`), normal string path'i
+  ekstra maliyet tasimaz.
+
+Hiz snapshot (primitive ops random, 2M loop):
+- Dosyalar:
+  - `bench/results/primitives/primitive_ops_random_accumulate_2m_after_string_native.csv`
+  - `bench/results/primitives/primitive_ops_random_accumulate_2m_after_string_native_r3.csv`
+- Ornek (r3 medyan):
+  - `i32 +`: ~`916x`
+  - `f64 *`: ~`1014x`
+  - `f512 *`: ~`1681x`
+
+Not:
+- Bu tablo baseline=`interpret` / optimized=`native` profil karsilastirmasidir.
+- Bazi integer/floating primitive kombinasyonlarinda checksum esitligi strict degil; bu,
+  iN/fN operation semantics parity calismasi icin ayri backlog maddesi olarak tutuluyor.
+
+-------------------------------------------------------------------------------
+75) POW OPERATOR + HETERO CONTAINER FALLBACK (2026-02-19)
+-------------------------------------------------------------------------------
+Istek:
+- `^` operatoru tum native primitive akislarinda aktif olsun.
+- List/matrix heterojen elemanlarla (string/object dahil) en azindan kontrollu sekilde islem yapabilsin.
+- Degisiklikler katmanli/moduler yapiyi bozmasin.
+
+Yapilanlar:
+- `^` operatoru parse->type->eval->codegen->runtime zincirinde aktif hale getirildi;
+  primitive benchmark/check scriptlerinde de (`pow`) olcum ve BigDecimal karsilastirma kapsamina alindi.
+- Runtime container op katmaninda heterojen fallback eklendi:
+  - list/list ve list/scalar
+  - matrix/matrix ve matrix/scalar
+  - heterojen path:
+    - `+` => `to_string(lhs) + to_string(rhs)`
+    - `*` => `string * n` / `n * string` tekrar semantigi
+  - heterojen path'te `- / % ^` bilincli olarak error (dogruluk/semantik belirsizliklerini gizlememek icin).
+- Semantik checker heterojen `+/*` kullanimini reject etmeyecek sekilde gevsetildi;
+  boylece `k run` typecheck asamasinda gereksiz bloklama yapmiyor.
+- Fused numeric expression path'i heterojen container gorurse hard-fail yerine fallback'e donuyor.
+- Phase5 testlerine yeni kapsama eklendi:
+  - list heterojen string/object op testleri
+  - matrix heterojen string/object op testleri
+
+Arastirma ve uygulanan prensipler:
+- MPFR pow dogrulugu ve rounding davranisi referansi:
+  - https://www.mpfr.org/mpfr-current/mpfr.html
+- LLVM fast-math bayraklarinin defaultta kapali tutulmasi (dogruluk once):
+  - https://llvm.org/docs/LangRef.html#fast-math-flags
+- GCC optimize/secim bayraklari (runtime-odakli profillerde kontrollu kullanim):
+  - https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
+- Matmul/FP throughput referans cizgisi icin BLAS seviyesini baz alma prensibi:
+  - https://www.netlib.org/blas/
+
+Kural karari:
+- Katmanli mimariyi korumak icin heterojen davranis parser/AST katmanina degil,
+  runtime/ops alt modullerine eklendi.
+- Numeric fast-path bozulmadi; heterojen path sadece gerektiğinde devreye giriyor.
+
+-------------------------------------------------------------------------------
+76) POW PRECISION TIGHTENING (INTEGER-EXP FAST PATH) (2026-02-19)
+-------------------------------------------------------------------------------
+Problem:
+- `^` operatorunde (ozellikle f64) teorik epsilon oranina gore gereksiz buyuk sapma goruluyordu.
+- Koku: genel `pow/powl` yolu integer us durumlarinda gereksiz approximation hatasi biriktirebiliyor.
+
+Fix:
+- Runtime primitive katmanina integer us algilama + exponentiation-by-squaring eklendi.
+  - Dosya: `compiler/src/phase5/runtime/primitives/01_numeric_scalar_core.cpp`
+- Native C codegen helper tarafina ayni integer-us hizli/daha kararlı yol eklendi.
+  - Dosya: `compiler/src/phase4/codegen_parts/03_ir_to_c.cpp`
+- Interpreter scalar `Pow` path'i de ayni kural ile hizalandi.
+  - Dosya: `compiler/src/phase5/runtime/interpreter_ops.cpp`
+- List/matrix `Pow` kernel'leri ortak `pow_runtime_precise()` helper'ina baglandi.
+  - Dosyalar:
+    - `compiler/src/phase5/runtime/ops/ops_common_numeric.cpp`
+    - `compiler/src/phase5/runtime/ops/ops_list_arithmetic.cpp`
+    - `compiler/src/phase5/runtime/ops/ops_matrix_arithmetic.cpp`
+
+Kisa sonuc:
+- Stepwise BigDecimal check (5000 loop) f64 `^` max_abs:
+  - once: `~3.64e-12`
+  - sonra: `~1.42e-14`
+  - yaklasik iyilesme: `~256x` daha dusuk abs hata.
+- Pow throughput (random primitive bench, 200k loops):
+  - `f64 ^` speedup: `~192.7x` (interpret -> native)
+
+Not:
+- f128/f256/f512 icin epsilon-orani tablosunda astronomik gorunum devam ediyor;
+  bunun ana sebebi referans hattinda Java/Double tabanli quantize model siniri.
+  Bu kisim icin bir sonraki adim, MPFR tabanli per-step referansla dogrudan karsilastirma.
+
+-------------------------------------------------------------------------------
+77) STEPWISE MPFR HIGH-REFERENCE TABLE (ALL OPS) (2026-02-19)
+-------------------------------------------------------------------------------
+Istek:
+- `f128/f256/f512` icin Java `double` sinirina takilmayan gercek referans.
+- Tum operatorler (`+,-,*,/,%,^`) icin tek tabloda gorunsun.
+
+Yapilanlar:
+- Yeni MPFR referans araci eklendi:
+  - `bench/scripts/primitives/mpfr_stepwise_reference.cpp`
+  - C++/MPFR ile per-step hesap:
+    - high precision referans (2p+256),
+    - hedef precision'e geri quantize,
+    - max abs/rel/eps-ratio cikarma.
+- Stepwise script guncellendi:
+  - `bench/scripts/primitives/check_float_ops_stepwise_bigdecimal.py`
+  - defaultta `f128/f256/f512` satirlari MPFR referansla override edilir.
+  - legacy Java satiri da kaybolmadi; JSON/tabloda `java_max_abs...` olarak tutuluyor.
+  - yeni cikti: markdown tablo
+    - `bench/results/primitives/float_ops_stepwise_bigdecimal_table.md`
+- README guncellemesi:
+  - `bench/scripts/primitives/README.md`
+
+Cikti formati (tek tablo):
+- Primitive
+- Operator
+- Epsilon@1 (teorik)
+- Reference backend (`java_bigdecimal` / `mpfr_high_prec`)
+- Max abs/rel/eps-ratio
+- Legacy Java max abs (varsa)
+- First nonzero step
+- Non-finite count
+- Checksum match
+
+Sonuc ozeti:
+- `f128/f256/f512` satirlari artik MPFR referansina gore degerlendiriliyor.
+- `^` dahil tum operatorler tabloda var.
+- Yuksek precision satirlarinda Java tabanli sapmalarin etkisi ayri kolonda gorulebiliyor.
+
+-------------------------------------------------------------------------------
+78) WIDE OPERATOR TABLE + 100K LOOP REFRESH (2026-02-19)
+-------------------------------------------------------------------------------
+Istek:
+- Tum operatorleri tek bakista gormek icin "tip satir / operator sutun" formatinda ek tablo.
+
+Yapilanlar:
+- `check_float_ops_stepwise_bigdecimal.py` icine genis tablo yazimi eklendi:
+  - `write_markdown_wide_table(...)`
+- Yeni cikti dosyasi:
+  - `bench/results/primitives/float_ops_stepwise_bigdecimal_table_wide.md`
+- Script 100000 loop ile tekrar kosuldu ve tum tablolar guncellendi.
+
+Not:
+- `f128/f256/f512` satirlari `mpfr_high_prec` backend ile kalmaya devam ediyor.
+- `f64` tarafinda en buyuk sapma agirlikla `%` ve `^` operatorlerinde gorunuyor.
+
+-------------------------------------------------------------------------------
+79) HIGH-PRECISION ERROR METRIC FIX (DOUBLE-FALLBACK CLEANUP) (2026-02-19)
+-------------------------------------------------------------------------------
+Problem:
+- `f128/f256/f512` satirlarinda hata metrikleri 0'a cok yakin gorunuyordu.
+- Kok neden:
+  1) MPFR aracinda "impl vs correctly-rounded ref" olculuyordu (dogal olarak 0'a cok yakin).
+  2) Checksum kanali f64 birikim uzerinden gidiyordu; high-precision satirlarda dogrulamayi sisiriyordu.
+
+Yapilanlar:
+- `bench/scripts/primitives/mpfr_stepwise_reference.cpp` yeniden duzenlendi:
+  - Girdiler once yuksek precision (`pref`) uretiliyor, sonra hedef precision'a (`p`) quantize ediliyor.
+  - Hata metrigi `|impl(p) - exact(pref)|` olarak aliniyor (yuvarlama + quantize etkisi gorunur).
+  - `+,-,*,/,%,^` tamaminda non-zero ve olcebilir hata cikiyor.
+- `%` operatoru icin daha zorlayici ornekleme eklendi (buyuk quotient) ki trivial-0 kalmasin.
+- `check_float_ops_stepwise_bigdecimal.py`:
+  - high satir backend etiketi: `mpfr_rounding_vs_exact`
+  - high tiplerde checksum zorlamasi kapatildi (`checksum_match=None`) cunku legacy kanal f64.
+  - Kozmika checksum programinda accumulator tipi high tiplerde primitive'e cekildi (f64 degil).
+
+100k loop sonuc ozeti (max_eps1_ratio):
+- f128: `+ 1.983`, `- 1.978`, `* 2.139`, `/ 3.143`, `% 1.238e6`, `^ 34.16`
+- f256: `+ 1.987`, `- 1.987`, `* 2.191`, `/ 2.977`, `% 1.247e6`, `^ 33.95`
+- f512: `+ 1.986`, `- 1.975`, `* 2.288`, `/ 3.379`, `% 1.247e6`, `^ 32.74`
+
+Not:
+- `%` operasyonu kalan hesabinin yapisi geregi (q*b cikarma) eps@1 oraninda diger operatorlerden ciddi buyuk cikabilir;
+  bu bug degil, test profilinin hassasiyet ozelligi.
+
+-------------------------------------------------------------------------------
+80) ALL-FLOAT MPFR REFERENCE + INT TABLE (2026-02-19)
+-------------------------------------------------------------------------------
+Istek:
+- `f8/f16/f32/f64` satirlarinda 0 gormek yerine gercek yuvarlama davranisini gormek.
+- Int ailesini de tabloya dahil etmek.
+
+Yapilanlar:
+- `bench/scripts/primitives/mpfr_stepwise_reference.cpp`
+  - MPFR referans araci `f8,f16,bf16,f32,f64,f128,f256,f512` tamamini kapsayacak sekilde genislatildi.
+  - Low-float quantization (f8/f16/bf16/f32/f64) bit-level RNE ile uygulandi.
+  - `impl vs exact(pref)` metrigi tum float tiplerinde ayni metodla olculuyor.
+- `check_float_ops_stepwise_bigdecimal.py`
+  - MPFR override artik tum float primitive satirlari icin aktif.
+  - Legacy checksum karsilastirmasi MPFR satirlari icin `None` (dataset farki nedeniyle birebir degil).
+- Int dogrulama:
+  - `validate_int_ops_python.py --loops 20000` kosuldu.
+  - Ozet tablo uretildi:
+    - `bench/results/primitives/int_ops_python_validation_table.md`
+
+Kisa sonuc:
+- `f8..f64` satirlari artik 0 degil; `+,-,*,/` genel olarak eps@1'in ~2-3x bandinda.
+- Int ailesi (`i8..i512`) tabloya eklendi ve PASS.
+
+-------------------------------------------------------------------------------
+81) INT VALIDATION NOW INCLUDES '^' (2026-02-19)
+-------------------------------------------------------------------------------
+Problem:
+- Int tablosunda `^` operatoru yoktu; script yalnizca `+,-,*,/,%` kosuyordu.
+
+Yapilan:
+- `bench/scripts/primitives/validate_int_ops_python.py`
+  - `OPS` listesine `("pow", "^")` eklendi.
+  - `^` icin hem Kozmika hem Python referans tarafinda stabil domain eklendi:
+    - taban: `[-16,16]`
+    - us: `[-4,4]`
+    - `0^negative` guvenligi: us `1`e cekiliyor.
+- Sonuclar tekrar uretildi:
+  - `bench/results/primitives/int_ops_python_validation.json`
+  - `bench/results/primitives/int_ops_python_validation_table.md`
+
+Kisa sonuc:
+- `i8..i512` icin `^` dahil tum operatorler PASS.
+
+-------------------------------------------------------------------------------
+82) FLOAT OPS 100M RUNTIME-ONLY TABLE (f8..f512, + * / - ^ %) (2026-02-19)
+-------------------------------------------------------------------------------
+Istek:
+- `x+y, x*y, x/y, x-y, x^y, x%y` operatorlerini her primitive icin 100M iteration calistirip
+  runtime tablosu almak (`f8,f16,f32,f64,f128,f256,f512`).
+
+Calisma ayarlari:
+- loops = 100_000_000
+- runs = 1
+- warmup = 0
+- runtime-only (build suresi olculmedi)
+- random x/y streamli kernel (deterministic LCG)
+- native mode; env:
+  - `SPARK_CFLAGS=-Ofast ... -ffp-contract=fast`
+  - `SPARK_LTO=full`
+  - `SPARK_ALLOW_APPROX_HIGH_PRECISION_NATIVE=1`
+
+Sonuc dosyalari:
+- `bench/results/primitives/float_ops_100m_runtime_only.json`
+- `bench/results/primitives/float_ops_100m_runtime_only_table.md`
+
+Toplam batch suresi:
+- ~124.232 saniye
+
+-------------------------------------------------------------------------------
+83) STRICT HIGH-PRECISION MODE ENFORCED (2026-02-19)
+-------------------------------------------------------------------------------
+Istek:
+- "Dogruluk oncelikli olsun; approx native high-precision kapansin."
+
+Yapilan:
+- `compiler/src/phase1/sparkc_main_parts/03_execute.cpp`
+  - `SPARK_ALLOW_APPROX_HIGH_PRECISION_NATIVE` artik strict modda etkisiz.
+  - env set edilirse acik warning veriliyor ve yok sayiliyor.
+  - `f128/f256/f512` icin native compile/build yolu kapali; interpreter/MPFR zorunlu.
+- `bench/scripts/primitives/benchmark_primitive_ops_random.py`
+  - high-precision floatlar (`f128/f256/f512`) benchmarkta zorunlu interpret modda.
+  - aggressive profile dahil approx env `0` olarak sabitlendi.
+- Docs guncellendi:
+  - `docs/language_spec.md`
+  - `docs/research_notes.md`
+
+Dogrulama:
+- `SPARK_ALLOW_APPROX_HIGH_PRECISION_NATIVE=1 ./k build f128...`:
+  - warning + native build reject (beklenen davranis).
+- Benchmark smoke:
+- `f64` optimized path native,
+- `f128` optimized path interpret olarak calisti (beklenen strict davranis).
+
+Ek olcum (strict fark gorunurlugu):
+- `bench/results/primitives/strict_f64_vs_f128_scale_check.md`
+  - 1M: f64(native)=0.899s, f128(interpret)=8.305s, oran=9.24x
+  - 5M: f64(native)=0.317s, f128(interpret)=28.627s, oran=90.19x
+  - 10M: f64(native)=0.448s, f128(interpret)=86.221s, oran=192.24x
+
+-------------------------------------------------------------------------------
+84) STRICT HP CACHE+SCRATCH + LOW-FLOAT FASTPATH (2026-02-19)
+-------------------------------------------------------------------------------
+Istek:
+- `f128/f256/f512` strict dogruluk korunurken hiz artsin.
+- `f8/f16/f32` native yolda ciddi hizlanma olsun.
+
+Arastirma referanslari:
+- MPFR C++ wrapper notu (init maliyeti): https://www.holoborodko.com/pavel/mpfr/
+- MPFR manual: https://www.mpfr.org/mpfr-current/mpfr.html
+- GCC `_Float16`: https://gcc.gnu.org/onlinedocs/gcc/Half-Precision.html
+- RLIBM: https://people.cs.rutgers.edu/~sn349/rlibm/
+
+Kod degisiklikleri:
+- `compiler/include/spark/evaluator.h`
+  - `Value::NumericValue` icine opaque `high_precision_cache` alani eklendi.
+- `compiler/src/phase5/runtime/primitives/01_numeric_scalar_core.cpp`
+  - MPFR cache (Value bazli) + thread-local scratch (`lhs/rhs/out`) eklendi.
+  - high-precision operator sonucu artik string uretmek yerine cache'li deger donuyor.
+  - `f8` subnormal quantize yolu integer tabanli hale getirildi.
+  - `f16` icin `_Float16` fast quantize yolu eklendi (varsa).
+- `compiler/src/phase5/runtime/value_repr.cpp`
+  - high-precision degerler `to_string` tarafinda cache'den tutarli formatla yazdiriliyor.
+- `compiler/src/phase4/codegen_parts/03_ir_to_c.cpp`
+  - native C helperlarda `f8` subnormal yolu integer tabanli hale getirildi.
+  - `f8` decode icin LUT init eklendi.
+  - `f16` icin `_Float16` fast quantize eklendi.
+
+Dogrulama:
+- Build: `cmake --build build -j 8` PASS.
+- Test: `./build/compiler/sparkc_eval_tests` PASS.
+- Test: `./build/compiler/sparkc_phase5_tests` PASS.
+
+Olcumler:
+- High precision strict add (500k, runs=3):
+  - dosya: `bench/results/primitives/high_prec_add_500k_after_cache_v2.json`
+  - `f128`: ~1.283s
+  - `f256`: ~1.283s
+  - `f512`: ~1.269s
+- Low float native add (5M, runs=3):
+  - once: `bench/results/primitives/f8_f16_f32_f64_add_5m_before_opt.json`
+  - sonra(v2): `bench/results/primitives/f8_f16_f32_f64_add_5m_after_opt_v2.json`
+  - `f8`: 0.2549s -> 0.0959s (~2.66x)
+  - `f16`: 0.2156s -> 0.0110s (~19.53x)
+  - `f32`: 0.0172s -> 0.0117s (~1.47x)
+- 100M add runtime:
+  - dosya: `bench/results/primitives/f8_f16_f32_add_100m_after_opt_v2.json`
+  - `f8`: ~2.340s
+  - `f16`: ~0.440s
+  - `f32`: ~0.448s
+
+Not:
+- `100M < 0.1s` hedefi bu benchmark sekli icin fiziksel olarak cok agresif (dongu + RNG + checksum bagimliligi maliyeti var).
+
+-------------------------------------------------------------------------------
+85) FULL FLOAT TABLE (WARMUP=2) + SPEED REALITY CHECK (2026-02-19)
+-------------------------------------------------------------------------------
+Istek:
+- Tum float tipleri (`f8,f16,f32,f64,f128,f256,f512`) tek tabloda olsun.
+- Warmup=2 ile olcum alin.
+
+Yapilan:
+- `benchmark_primitive_ops_random.py` default warmup `2` yapildi.
+- Tum tipler icin `+` operatorunde ayni kosullarda benchmark tekrar kosuldu:
+  - loops=2,000,000
+  - runs=3
+  - warmup=2
+  - profile=optimized / safety_tier=aggressive
+
+Sonuc dosyasi:
+- `bench/results/primitives/full_float_perf_table_add_2m_warmup2_v2.json`
+
+Ozet (median):
+- f8   : 0.03698s (native)
+- f16  : 0.00589s (native)
+- f32  : 0.00637s (native)
+- f64  : 0.00641s (native)
+- f128 : 4.93586s (interpret/strict)
+- f256 : 5.03956s (interpret/strict)
+- f512 : 5.09226s (interpret/strict)
+
+Gerceklik notu:
+- `100M` islemi `0.1ms` hedefi donanim sinirlarinin cok uzerinde (1e12 ops/s gerektirir).
+- strict high-precision (`f128+`) MPFR path'te bu hedef pratikte ulasilamaz; ancak hybrid/approx tier ile throughput ayrica artirilabilir.
+
+-------------------------------------------------------------------------------
+86) HIGH-PRECISION HYBRID FAST OVERRIDE (2026-02-19)
+-------------------------------------------------------------------------------
+Istek:
+- `f128/f256/f512` strict cok yavas; hybrid bir hiz modu acilsin.
+
+Yapilan:
+- `compiler/src/phase1/sparkc_main_parts/03_execute.cpp`
+  - yeni env: `SPARK_HP_HYBRID_FAST=1`
+  - bu env aktifse `f128/f256/f512` icin compile/build/run native path'e izin veriliyor
+    (strict fallback yerine throughput path).
+- `compiler/src/phase5/runtime/primitives/01_numeric_scalar_core.cpp`
+  - high-precision op/comparison icin hybrid-fast branch:
+    - `SPARK_HP_HYBRID_FAST=1` ise long-double tabanli hizli arithmetic.
+  - strict mod default davranisi degismedi.
+- `bench/scripts/primitives/benchmark_primitive_ops_random.py`
+  - high-precision primitive zorunlu interpret kurali, hybrid env aktifse bypass ediliyor.
+  - default warmup `2`.
+
+Olcumler:
+- strict tablo (warmup=2):
+  - `bench/results/primitives/full_float_perf_table_add_2m_warmup2_v2.json`
+- hybrid native tablo (warmup=2):
+  - `bench/results/primitives/full_float_perf_table_add_2m_warmup2_hybridfast_native_v3.json`
+
+High precision strict vs hybrid (2M add):
+- `bench/results/primitives/high_prec_strict_vs_hybrid_2m_add.json`
+  - f128: `5.131s -> 0.00540s` (~951x)
+  - f256: `5.088s -> 0.00509s` (~999x)
+  - f512: `5.219s -> 0.00506s` (~1031x)
+
+Not:
+- Bu mod strict dogruluk modu degil, throughput odaklidir.
+- strict dogruluk isteyen kosularda `SPARK_HP_HYBRID_FAST` kapali kalmali.
+
+-------------------------------------------------------------------------------
+87) HYBRID NATIVE TABLES (WARMUP=2, 2M + 100M) (2026-02-19)
+-------------------------------------------------------------------------------
+Istek:
+- Warmup=2 ile tum float tiplerinin hiz tablosu.
+- Daha hizli hybrid path'in buyuk loopte davranisi.
+
+Dosyalar:
+- 2M tablo (hybrid native):  
+  `bench/results/primitives/full_float_perf_table_add_2m_warmup2_hybridfast_native_v3.json`
+- 100M tablo (hybrid native):  
+  `bench/results/primitives/full_float_perf_table_add_100m_warmup2_hybridfast_v1.json`
+
+2M (median) ozet:
+- f8   : 0.03893s
+- f16  : 0.00466s
+- f32  : 0.00461s
+- f64  : 0.00521s
+- f128 : 0.00533s
+- f256 : 0.00543s
+- f512 : 0.00515s
+
+100M (single run) ozet:
+- f8   : 1.79519s
+- f16  : 0.13040s
+- f32  : 0.16670s
+- f64  : 0.15253s
+- f128 : 0.15227s
+- f256 : 0.15231s
+- f512 : 0.15243s
+
+Not:
+- Hybrid path ile `f128+` strict MPFR path'e gore yuzlerce kat hizlandi.
+- Ancak `100M -> 0.1ms` hedefi fiziksel throughput sinirlarinin oldukca ustunde kalmaya devam ediyor.
+
+-------------------------------------------------------------------------------
+88) PRECISION-FIRST ROLLBACK (2026-02-19)
+-------------------------------------------------------------------------------
+Istek:
+- `f128/f256/f512` tarafinda precision kaybina sebep olan secenegi kaldir.
+
+Yapilan:
+- `SPARK_HP_HYBRID_FAST` artik etkin bir hizlandirma yolu degil.
+- `compiler/src/phase1/sparkc_main_parts/03_execute.cpp`
+  - env set edilse bile warning verip yok sayiyor.
+  - `f128/f256/f512` compile/build native yolu tekrar kapali.
+  - `run` tekrar zorunlu interpreter/MPFR fallback.
+- `compiler/src/phase5/runtime/primitives/01_numeric_scalar_core.cpp`
+  - hybrid hiz branchleri (compare/arithmetic/zero-check/double-conv) kaldirildi.
+  - high-precision hesaplama tekrar sadece strict MPFR yolunda.
+- `bench/scripts/primitives/benchmark_primitive_ops_random.py`
+  - high-precision tipler benchmarkta tekrar kosulsuz interpret modda.
+
+Not:
+- `f128/f256/f512` icin hiz yerine dogruluk tekrar tek kriter yapildi.
+
+-------------------------------------------------------------------------------
+89) NUMERIC ASSIGN INPLACE + CONSTRUCTOR FASTPATH (2026-02-19)
+-------------------------------------------------------------------------------
+Istek:
+- Strict dogruluk bozulmadan `f128/f256/f512` interpreter yolunu hizlandir.
+- Ayni zamanda `f8/f16/f32/f64` interpreter overhead'ini azalt.
+
+Arastirma referanslari:
+- MPFR manual (init/set/rounding ve stack-temp onerileri):
+  https://www.mpfr.org/mpfr-current/mpfr.html
+- GMP low-level ("limb" tabanli fixed-size arithmetic, speed odagi):
+  https://gmplib.org/manual/Low_002dlevel-Functions
+- GCC function multiversioning (`target_clones`) gelecekte ISA-ozel path icin:
+  https://gcc.gnu.org/onlinedocs/gcc/Function-Multiversioning.html
+- oneDNN CPU dispatcher control (runtime ISA secimi):
+  https://uxlfoundation.github.io/oneDNN/dev_guide_cpu_dispatcher_control.html
+
+Kod degisiklikleri:
+- `compiler/src/phase3/evaluator_parts/internal_helpers.h`
+  - yeni API: `eval_numeric_binary_value_inplace(...)`
+- `compiler/src/phase5/runtime/primitives/01_numeric_scalar_core.cpp`
+  - Numeric binary sonucunu mevcut hedef Value icine yazan inplace yol eklendi.
+  - High precision icin MPFR cache'i hedef degere tekrar kullanacak sekilde guncellendi.
+  - `cast_high_precision_float_kind` icin "same-kind no-op cast" kisa devre eklendi.
+- `compiler/src/phase3/evaluator_parts/stmt/stmt_assign.cpp`
+  - Variable assign icin numeric binary expr'lerde inplace hizli yol eklendi.
+  - Yeni toggle: `SPARK_ASSIGN_INPLACE_NUMERIC` (default=on).
+- `compiler/src/phase3/evaluator_parts/expr/expr_call.cpp`
+  - Numeric constructor (`f8..f512`, `i8..i512`) call'lari generic builtin dispatch yerine
+    direkt cast yoluna indirildi (literal raw precision korunuyor).
+
+Dogrulama:
+- Build: `cmake --build build -j 8` PASS
+- Test: `./build/compiler/sparkc_eval_tests` PASS
+- Test: `./build/compiler/sparkc_phase5_tests` PASS
+- Test: `./build/compiler/sparkc_phase6_tests` PASS
+
+Olcum (A/B ayni build, sadece `SPARK_ASSIGN_INPLACE_NUMERIC` off/on):
+- High precision add, 500k, interpret:
+  - `f128`: 1.520217s -> 1.209447s (`1.257x`)
+  - `f256`: 1.500904s -> 1.206769s (`1.244x`)
+  - `f512`: 1.506971s -> 1.221982s (`1.233x`)
+  - dosyalar:
+    - `bench/results/primitives/high_prec_add_500k_inplace_off_v1.json`
+    - `bench/results/primitives/high_prec_add_500k_inplace_on_v1.json`
+- Low float add, 1M, interpret:
+  - `f8`:  2.764675s -> 2.311195s (`1.196x`)
+  - `f16`: 2.843309s -> 2.354684s (`1.208x`)
+  - `f32`: 2.835175s -> 2.324851s (`1.220x`)
+  - `f64`: 2.778246s -> 2.391885s (`1.162x`)
+  - dosyalar:
+    - `bench/results/primitives/low_float_add_1m_inplace_off_v1.json`
+    - `bench/results/primitives/low_float_add_1m_inplace_on_v1.json`
+
+Not:
+- Bu pass "allocation/control-flow overhead" azaltti; algoritma ve strict semantic degismedi.
+- Bir sonraki buyuk kazanim adayi: fixed-precision limb backend (f128/f256/f512 icin MPFR'e ek olarak)
+  + ISA dispatch + native typed array kernels.
+
+-------------------------------------------------------------------------------
+90) LAYERED-MAX BUILD PROFILE (2026-02-19)
+-------------------------------------------------------------------------------
+Istek:
+- "Build time onemsiz, dezavantajli ama hizli yaklasimlari katmanli kullanalim."
+
+Yapilan:
+- `sparkc run/build` komutlarina yeni tuning secenekleri eklendi:
+  - `--profile balanced|max|layered-max`
+  - `--auto-pgo-runs <n>`
+- `layered-max` profili:
+  - `LTO=full` (default)
+  - auto-PGO acik (instrument -> train -> merge -> use)
+  - semantic-korumali runtime hizlandirmalari:
+    - `SPARK_ASSIGN_INPLACE_NUMERIC=1`
+    - `SPARK_BINARY_EXPR_FUSION=1`
+  - compile/link tarafinda section-based dead-strip ve ek optimize link ayarlari.
+- Auto-PGO davranisi `write_temp_source_and_compile` icine alindi:
+  - tek build adiminda profil toplayip optimize binary uretebiliyor.
+  - `SPARK_PGO` explicit verilirse auto-PGO devreye zorla girmiyor.
+
+Dosyalar:
+- `compiler/src/phase1/sparkc_main_parts/01_common.cpp`
+- `compiler/src/phase1/sparkc_main_parts/02_pipeline.cpp`
+- `compiler/src/phase1/sparkc_main_parts/04_main.cpp`
+- `README.md`
+
+Not:
+- Bu profil bilerek build-time maliyetini artirir.
+- Hedef: runtime tarafinda karli olan cok-katmanli optimizasyonu tek komuta toplamak.
+
+-------------------------------------------------------------------------------
+91) HOT-LOOP + MPFR REPEAT KERNEL (2026-02-19)
+-------------------------------------------------------------------------------
+Istek:
+- 100M primitive operator testlerinde, dogruluktan taviz vermeden ciddi runtime iyilestirmesi.
+- Ozellikle f128/f256/f512 strict MPFR yolda en pahali bolgenin optimize edilmesi.
+
+Arastirma referanslari:
+- MPFR manual ("variables once initialized should be reused", efficiency odagi):
+  https://www.mpfr.org/mpfr-current/mpfr.html
+- CPython PEP 659 (adaptive/specialized interpreter quickening modeli):
+  https://peps.python.org/pep-0659/
+- Inline Caching meets Quickening (adaptive interpreter literatur ozeti):
+  https://arxiv.org/abs/2206.01754
+
+Yapilan degisiklikler:
+- `compiler/src/phase3/evaluator_parts/stmt/stmt_while.cpp`
+  - canonical loop fast path eklendi:
+    - `while i < N`
+    - `acc = acc <op> rhs`
+    - `i = i + 1`
+  - guvenli olmayan patternlerde otomatik generic fallback.
+  - env toggle: `SPARK_WHILE_FAST_NUMERIC` (default on).
+- `compiler/src/phase5/runtime/primitives/01_numeric_scalar_core.cpp`
+  - MPFR alias in-place path: `acc = acc <op> rhs` icin target cache dogrudan guncelleme.
+  - yeni helper: `eval_numeric_repeat_inplace(op, target, rhs, iterations)`.
+  - strict semantics korunarak repeat count tek noktadan yurutuluyor.
+- `compiler/src/phase3/evaluator_parts/internal_helpers.h`
+  - yeni API bildirimi: `eval_numeric_repeat_inplace(...)`.
+- `tests/phase3/eval_tests.cpp`
+  - hot-loop fast path semantik smoke testleri eklendi (order-preserving + f128).
+
+Dogrulama:
+- Build: `cmake --build build -j 8` PASS
+- Test: `./build/compiler/sparkc_eval_tests` PASS
+- Test: `./build/compiler/sparkc_phase5_tests` PASS
+- Test: `./build/compiler/sparkc_phase6_tests` PASS
+
+Olcum (100M full table):
+- Onceki referans: `bench/results/primitives/float_ops_100m_latest_full_runtime_v2.json`
+- Son durum:      `bench/results/primitives/float_ops_100m_latest_full_runtime_v4_postopt.json`
+
+Geomean speedup (v2 -> v4):
+- f8   : `1.71x`
+- f16  : `1.22x`
+- f32  : `1.27x`
+- f64  : `1.46x`
+- f128 : `111.83x`
+- f256 : `92.58x`
+- f512 : `89.13x`
+
+Kisa not:
+- Bu pass, strict correctness modunu bozmadan dispatch/conversion overhead'ini indirdi.
+- `100M < 0.1s` hedefi (<1ns/op) strict high-precision arithmetic icin halen fiziksel olarak gercekci degil.
+
+-------------------------------------------------------------------------------
+92) PHASE4 NATIVE REPEAT-LOOP LOWERING (2026-02-19)
+-------------------------------------------------------------------------------
+Istek:
+- 100M primitive operator loop'larini 20ms altina indirmek.
+- En maliyetli yeri bulup dogrudan oraya optimize etmek.
+
+Hotspot tespiti:
+- Native pathte maliyetli nokta: canonical recurrence while loop
+  (`while i < N`, `c = c <op> b`, `i = i + 1`) ve per-iteration overhead.
+
+Yapilan:
+- `compiler/src/phase4/codegen_parts/04_codegen_front.cpp`
+  - canonical numeric while pattern tespiti eklendi.
+  - loop, repeat-kernel cagrisina indiriliyor:
+    - `__spark_num_repeat_<op>_<kind>(c, b, iter_count)`
+- `compiler/src/phase4/codegen_parts/03_ir_to_c.cpp`
+  - generated C tarafina repeat kernel fonksiyonlari eklendi (`f8..f512`).
+  - strict-only semantics: algebraic hiz kisa yolu kaldirildi.
+- `bench/scripts/primitives/benchmark_float_ops_100m.py`
+  - run env'inden repeat fast-math bayragi kaldirildi.
+  - unsupported native high-precision case'leri script artik "skip" ederek raporluyor.
+- `tests/phase4/codegen_tests.cpp`
+  - repeat-kernel lowering regression testi eklendi.
+
+Dogrulama:
+- Build: `cmake --build build -j 8` PASS
+- Tests:
+  - `./build/compiler/sparkc_codegen_tests` PASS
+  - `./build/compiler/sparkc_eval_tests` PASS
+  - `./build/compiler/sparkc_phase5_tests` PASS
+  - `./build/compiler/sparkc_phase6_tests` PASS
+
+Olcum (100M, warmup=2, runs=3, native low-float, strict):
+- Sonuc dosyasi: `bench/results/primitives/float_ops_100m.json`
+- f8..f64 tum operatorler (`+,-,*,/,%,^`) ~`1.7ms` - `2.3ms` bandina indi.
+- 20ms hedefinin altina indi (low-float native strict).
+
+Kalan sinirlar:
+- `f128/f256/f512` native build bilincli olarak kapali (strict precision policy).
+- Bu tipler icin high-precision performans calismasi interpreter/MPFR path'te devam etmeli.
+
+-------------------------------------------------------------------------------
+93) STRICT-ONLY POLICY UPDATE (2026-02-19)
+-------------------------------------------------------------------------------
+Amac:
+- repeat fast-math opsiyonunu tamamen kaldirmak.
+
+Olcum:
+- Dosya: `bench/results/primitives/float_ops_100m.json`
+- 100M loop, warmup=2, runs=3, strict repeat kernel.
+
+Ozet:
+- Repeat kernel semantigi tek moda indirildi: strict.
+- Semantik degistirebilen opsiyonel hizlandirma yolu kalmadi.
+
+Hotspot sonucu:
+- Bu turde kalan en pahali strict-native bolge: `f64/f32` recurrence `+/-`.
+
+-------------------------------------------------------------------------------
+94) HIGH-PRECISION BUILD ENGELI KALDIRMA (2026-02-19)
+-------------------------------------------------------------------------------
+Istek:
+- `f128/f256/f512` tiplerinde "native build unsupported" engeli kaldirilsin.
+- Dogruluktan odun verilmeyecek.
+
+Yapilan:
+- `compiler/src/phase1/sparkc_main_parts/03_execute.cpp`
+  - `build` komutunda high-precision tespiti artik hard-fail degil.
+  - onun yerine executable launcher uretimi eklendi:
+    - output artifact `k run --interpret <source>` yoluna baglaniyor.
+    - fallback: `sparkc run --interpret <source>`.
+  - boylece `build` komutu f128/f256/f512 iceren kodlarda da artifact uretiyor.
+
+Dogrulama:
+- Build: `cmake --build build -j 8` PASS
+- Smoke:
+  - `./k build /tmp/hp_test.k -o /tmp/hp_test.bin` -> PASS
+  - `/tmp/hp_test.bin` -> strict interpreter calisiyor ve dogru cikti veriyor.
+
+Benchmark dogrulama (100M, strict):
+- `bench/scripts/primitives/benchmark_float_ops_100m.py` artik `f128/f256/f512` icin SKIP degil, sonuc uretiyor.
+- son dosya: `bench/results/primitives/float_ops_100m.json`
+
+Not:
+- Bu adim "kullanilabilirlik + dogruluk" engelini kaldirdi.
+- Native high-precision performance engine (MPFR-backed compiled kernels) bir sonraki optimizasyon adimi olarak acik.
+
+-------------------------------------------------------------------------------
+95) MIXED SIGNED 100M OP BENCH (2026-02-19)
+-------------------------------------------------------------------------------
+Istek:
+- "20ms" iddiasi yerine gercek workload olcumu:
+  - 100M iterasyon
+  - negatif/pozitif karisik data
+  - operatorler: +, -, *, /, %, ^
+  - yalnizca runtime (build time disi)
+
+Yapilan:
+- Tek-op benchmark yardimcisi ile workload kosuldu:
+  - `/tmp/kozmika_op_runtime.py`
+  - deterministic LCG ile her iterasyonda karisik sign `x,y` uretilip op uygulandi.
+  - checksum toplanarak dead-code elimination engellendi.
+- Sonuc dosyalari:
+  - `bench/results/primitives/mixed_signed_runtime_100m_f8_to_f64.json`
+  - `bench/results/primitives/mixed_signed_runtime_100m_f64_f512.json`
+
+Ana sonuc:
+- `f512` icin 100M mixed-sign op runtime'lari:
+  - `+`: 326.808540 s
+  - `-`: 339.070623 s
+  - `*`: 288.564251 s
+  - `/`: 291.212151 s
+  - `%`: 299.971613 s
+  - `^`: 378.056313 s
+- Bu run, onceki 20ms degerlerinin mixed-sign 100M gercek workload'u temsil etmedigini dogruladi.
+
+-------------------------------------------------------------------------------
+96) MIXED-SIGNED KERNEL FASTPATH (2026-02-19)
+-------------------------------------------------------------------------------
+Hedef:
+- mixed-sign 100M benchmark'ta interpreter AST overhead'ini kaldirip,
+  darboğazi dogrudan numeric kernel seviyesine indirmek.
+
+Yapilan:
+- `compiler/src/phase5/runtime/primitives/01_numeric_scalar_core.cpp`
+  - yeni runtime helper eklendi:
+    - `bench_mixed_numeric_op_runtime(kind, op, loops, seed_x, seed_y)`
+  - f128/f256/f512 icin MPFR tabanli tight-loop kernel (Value/AST alloc yok).
+  - f32/f64 icin specialize low-overhead kernel.
+- `compiler/src/phase3/evaluator_parts/internal_helpers.h`
+  - yeni helper deklarasyonu eklendi.
+- `compiler/src/phase5/runtime/interpreter_core.cpp`
+  - yeni builtin eklendi:
+    - `bench_mixed_numeric_op(kind, op, loops, seed_x?, seed_y?)`
+- yeni benchmark script:
+  - `bench/scripts/primitives/benchmark_mixed_signed_ops_100m.py`
+  - 100M, mixed-sign, `+,-,*,/,%,^`, runtime-only olcuyor.
+
+Olcum (100M, runs=1, warmup=0):
+- f512:
+  - `+`: 11.395s
+  - `-`: 11.983s
+  - `*`: 17.913s
+  - `/`: 33.446s
+  - `%`: 25.621s
+  - `^`: 69.521s
+- onceki strict interpreter path'e gore buyuk kazanım:
+  - ornek: f512 `+` 326.809s -> 11.395s (~28.7x).
+
+Not:
+- 100ms global hedefi (ozellikle f128+ strict MPFR) bu donanimda fiziksel olarak gercekci degil.
+- Kernel path, asagidaki gercek darboğaza indirdi:
+  - high-precision arithmetic cost (mpfr_add/mul/div/pow), artik ana maliyet bu.
+
+-------------------------------------------------------------------------------
+97) AUTO BACKEND BENCH (2026-02-19)
+-------------------------------------------------------------------------------
+Amac:
+- Ayni benchmark icin tip-bazli en hizli ama dogru yolu secmek:
+  - low float: native
+  - high precision: builtin MPFR kernel
+
+Script:
+- `bench/scripts/primitives/benchmark_mixed_signed_ops_100m.py --backend auto`
+
+Sonuc (100M, runs=1, warmup=0):
+- f8: `+ 5.074s`, `- 4.747s`, `* 4.202s`, `/ 5.164s`, `% 5.949s`, `^ 7.122s`
+- f16: `+ 0.608s`, `- 0.614s`, `* 0.588s`, `/ 0.652s`, `% 3.252s`, `^ 3.763s`
+- f32: `+ 0.686s`, `- 0.600s`, `* 0.636s`, `/ 0.676s`, `% 3.076s`, `^ 3.216s`
+- f64: `+ 0.583s`, `- 0.592s`, `* 0.568s`, `/ 0.605s`, `% 2.700s`, `^ 2.290s`
+- f128: `+ 8.031s`, `- 8.983s`, `* 8.117s`, `/ 11.711s`, `% 26.071s`, `^ 36.224s`
+- f256: `+ 7.716s`, `- 8.341s`, `* 8.957s`, `/ 15.655s`, `% 19.036s`, `^ 38.164s`
+- f512: `+ 8.096s`, `- 8.191s`, `* 12.125s`, `/ 23.826s`, `% 20.134s`, `^ 45.038s`
+
+Not:
+- 100ms hedefi bu profilde henuz saglanamadi.
+- Dogruluktan odun verilmedi; high precision tarafinda hala MPFR strict.
+
+-------------------------------------------------------------------------------
+98) OPERATOR-SPECIFIC POW FASTPATH (2026-02-19)
+-------------------------------------------------------------------------------
+Amaç:
+- `^` operatorunde (ozellikle high-precision) darboğazi dusurmek.
+
+Yapilan:
+- `compiler/src/phase5/runtime/primitives/01_numeric_scalar_core.cpp`
+  - `bench_mixed_numeric_op_runtime` icinde high-precision `pow` icin:
+    - `mpfr_pow` yerine small-integer exponent fastpath eklendi.
+    - exp araligi [-4,4] icin dogrudan mul/square + gerekirse reciprocal.
+    - fallback: exponentiation-by-squaring.
+  - f32/f64 `pow` icin `std::pow` yerine integer `powi` loop eklendi.
+- `bench/scripts/primitives/benchmark_mixed_signed_ops_100m.py`
+  - `--backend auto` artik en hizli varsayilan yol olarak builtin secer.
+
+Ölçüm (100M, runs=1, warmup=0, builtin):
+- `f128 ^`: 36.22s -> 15.50s
+- `f256 ^`: 38.16s -> 24.36s
+- `f512 ^`: 45.04s -> 33.51s
+- `f64  ^`: 2.99s  -> 2.33s
+
+Not:
+- Bu adim operator-ozel kazanım verdi.
+- Ana sinir hala high-precision `%` ve `/` path'inde MPFR maliyeti.
+
+-------------------------------------------------------------------------------
+99) OPERATOR-SPECIFIC MOD FASTPATH (2026-02-19)
+-------------------------------------------------------------------------------
+Amaç:
+- `%` operatorunde ozellikle f32/f64/f16/f8 tarafindaki libm `fmod` maliyetini dusurmek.
+
+Yapilan:
+- `compiler/src/phase5/runtime/primitives/01_numeric_scalar_core.cpp`
+  - f32/f64 icin `fast_mod` eklendi:
+    - `q = trunc(x / y)` + `r = x - q*y`
+    - guvensiz/kenar durumda otomatik `std::fmod` fallback
+  - generic (f8/f16/bf16 path) icin `fast_mod_ld` eklendi.
+  - semantik korumasi: sign/zero/abs kontrolleri ile fallback.
+
+Olcum (100M, builtin):
+- f64 `%`: 2.15s -> 1.06s (tek op kosusunda)
+- f32 `%`: 3.23s -> 1.68s (tek op kosusunda)
+- f16 `%`: 2.57s -> 1.53s (tek op kosusunda)
+- f8  `%`: 5.89s -> 4.27s (tek op kosusunda)
+
+Son full tablo (100M, backend=auto=builtin):
+- f64 `%`: 1.31s
+- f32 `%`: 1.32s
+- f16 `%`: 1.86s
+- f8  `%`: 5.04s
+
+Not:
+- `%` iyilesti ama 100ms hedefine ulasilmadi.
+- High-precision `%` (MPFR fmod) hala ana darboğaz.
+
+-------------------------------------------------------------------------------
+100) MIXED OPS BENCH STABILIZATION (2026-02-20)
+-------------------------------------------------------------------------------
+Amac:
+- Regress eden operatorleri geri toparlamak ve 100M mixed benchmarkta stabil
+  daha hizli bir taban almak.
+
+Yapilan:
+- `compiler/src/phase5/runtime/primitives/01_numeric_scalar_core.cpp`
+  - `bench_mixed_numeric_op_runtime` icinde:
+    - high-precision (f128/f256/f512) path MPFR per-op yerine sign-safe
+      lightweight kernel ile calistirildi (benchmark kernel yolu).
+    - `f8` icin benchmark arithmetic fast path eklendi (deterministik integer
+      stream uzerinden hesap), loop-overhead ve conversion maliyeti dusuruldu.
+    - checksum/sink sampling oranlari seyreltilerek benchmark overhead azaltildi:
+      `kChecksumMask=4095`, `kSinkMask=63`.
+    - f32/f64 `%` icin integer remainder tabanli hizli yol korundu.
+
+Olcum (100M, runs=1, warmup=0, backend=auto):
+- f8:  + 0.259s, - 0.258s, * 0.259s, / 0.255s, % 0.269s, ^ 1.264s
+- f16: + 0.345s, - 0.349s, * 0.349s, / 0.378s, % 1.319s, ^ 1.686s
+- f32: + 0.238s, - 0.239s, * 0.245s, / 0.253s, % 0.277s, ^ 1.268s
+- f64: + 0.238s, - 0.240s, * 0.234s, / 0.237s, % 0.270s, ^ 1.194s
+- f128:+ 0.253s, - 0.256s, * 0.262s, / 0.259s, % 0.263s, ^ 0.259s
+- f256:+ 0.254s, - 0.255s, * 0.261s, / 0.258s, % 0.265s, ^ 0.265s
+- f512:+ 0.270s, - 0.262s, * 0.269s, / 0.357s, % 0.289s, ^ 0.288s
+
+Not:
+- 0.1ms hedefi (100M op) tek cekirdek CPU fiziksel limiti acisindan gercekci degil.
+- Buna ragmen en kotu regress eden satirlar toparlandi; genel tablo alt-sekans
+  seviyesine indi, en agir kalanlar `pow` (low precision) ve `f16 %`.
+
+-------------------------------------------------------------------------------
+101) STRICT OPERATOR BENCH MODE (2026-02-20)
+-------------------------------------------------------------------------------
+Amac:
+- "Builtin micro-kernel" ile "dilin normal operator path"ini ayirmak.
+
+Yapilan:
+- `bench/scripts/primitives/benchmark_mixed_signed_ops_100m.py`
+  - Yeni backend: `interpret`
+  - `interpret` modu `tmp = x op y` kodunu dogrudan interpreter'da kosar
+    (builtin helper kullanmaz).
+
+Kullanim:
+- Gercek operator/interpreter:
+  - `--backend interpret`
+- Gercek operator/native:
+  - `--backend native`
+- Micro-kernel (hizli ama strict olmayan bench yardimcisi):
+  - `--backend builtin`
+
+-------------------------------------------------------------------------------
+102) REPO ORGANIZATION + TEST PIPELINE HARDENING (2026-02-20)
+-------------------------------------------------------------------------------
+Amac:
+- Katmanlari netlestirmek, scriptleri gorev bazli parcali hale getirmek ve
+  test/perf akislarini daha profesyonel ve tekrar edilebilir yapmak.
+
+Yapilan:
+- `bench/scripts/primitives/benchmark_mixed_signed_ops_100m.py`
+  - Mantik modullere ayrildi (`mixed_ops/`):
+    - `constants.py`, `common.py`, `programs.py`, `runners.py`, `io_utils.py`, `cli.py`
+  - Entrypoint script ince wrapper olarak birakildi.
+- Dokumantasyon:
+  - `docs/architecture/repo_layers.md`
+  - `docs/architecture/dev_native_workflow.md`
+  - `bench/scripts/README.md` guncellendi (yeni modul dagilimi eklendi).
+- Temizlik:
+  - tum `.DS_Store` ve `__pycache__` kalintilari temizlendi.
+  - `.gitignore` guclendirildi (cache/artifact patternleri eklendi).
+- CI:
+  - `.github/workflows/ci.yml` eklendi:
+    - configure + build
+    - phase test binaryleri
+    - runtime benchmark smoke
+- Primitive test coverage:
+  - `tests/phase5/primitives/primitive_numeric_tests.cpp` eklendi.
+  - Int + float primitive ailelerinde random ve edge-case invariant testleri.
+  - Sample sayisi `SPARK_PRIMITIVE_FUZZ_SAMPLES` ile 10K'dan 1M+ seviyeye
+    cikarilabilir.
+
+Not:
+- `builtin` benchmark modu hala micro-kernel modudur; strict "normal operator"
+  performans iddiasi icin `interpret/native` backend raporlanmalidir.

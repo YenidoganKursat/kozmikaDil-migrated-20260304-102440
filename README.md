@@ -16,6 +16,10 @@ bash scripts/bootstrap_phase1.sh
 - `bench/`
 - `docs/`
 
+Architecture docs:
+- `docs/architecture/repo_layers.md`
+- `docs/architecture/dev_native_workflow.md`
+
 ## Available Phase 1 Commands
 
 ```bash
@@ -57,6 +61,8 @@ cmake --build build -j4
 ./k run examples/main.k
 ./k run --interpret examples/main.k
 ./k build examples/main.k -o build/main.bin
+./k build examples/main.k -o build/main.max.bin --profile layered-max --auto-pgo-runs 3
+./k run examples/main.k --profile layered-max --auto-pgo-runs 2
 ./bench/scripts/run_phase4_benchmarks.sh
 ./bench/scripts/run_phase4_benchmarks.sh --runs 7 --warmup-runs 2 --native-cflags "-O3 -march=native -flto"
 ./bench/scripts/run_phase4_benchmarks.sh --native-lto thin --native-pgo instrument --native-profile aggressive
@@ -96,6 +102,10 @@ Faz 4’de ayrıca:
 - `--require-reproducible` adds a strict reproducibility gate to `pass`.
 - Native compiler profile can also be driven directly with:
   - `SPARK_CXX`, `SPARK_CXXFLAGS`, `SPARK_LDFLAGS`.
+- `k run/build` için yeni katmanlı profil:
+  - `--profile balanced|max|layered-max`
+  - `--auto-pgo-runs <n>` (`layered-max` ile auto-PGO eğitim turu sayısı)
+  - `layered-max`: build-time pahalı, runtime odaklı (`LTO=full`, auto-PGO, in-place numeric assign, binary expression fusion).
 
 Tests:
 
@@ -114,6 +124,11 @@ cmake --build build -j4
 ./build/compiler/sparkc_phase9_tests
 ./build/compiler/sparkc_phase10_tests
 ```
+
+Execution modes:
+- `interpret`: correctness/debug path (`k run --interpret ...`)
+- `native`: compiled runtime path (`k build ... && ./binary`)
+- `builtin` benchmark helpers: micro-kernel measurement path only
 
 ## Phase 7 Commands
 

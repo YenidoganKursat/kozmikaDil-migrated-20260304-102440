@@ -16,6 +16,16 @@ target_include_directories(spark_compiler
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
+# Optional high-precision numeric backend (f128/f256/f512) via MPFR/GMP.
+find_path(SPARK_MPFR_INCLUDE_DIR mpfr.h)
+find_library(SPARK_MPFR_LIBRARY mpfr)
+find_library(SPARK_GMP_LIBRARY gmp)
+if(SPARK_MPFR_INCLUDE_DIR AND SPARK_MPFR_LIBRARY AND SPARK_GMP_LIBRARY)
+  target_compile_definitions(spark_compiler PRIVATE SPARK_HAS_MPFR=1)
+  target_include_directories(spark_compiler PRIVATE ${SPARK_MPFR_INCLUDE_DIR})
+  target_link_libraries(spark_compiler PRIVATE ${SPARK_MPFR_LIBRARY} ${SPARK_GMP_LIBRARY})
+endif()
+
 add_executable(sparkc src/phase1/sparkc_main.cpp)
 target_include_directories(sparkc
   PRIVATE
@@ -35,14 +45,17 @@ if(SPARK_BUILD_TESTS)
   add_executable(sparkc_smoke_test ${SPARK_TEST_SOURCE_DIR}/phase1/smoke_test.cpp)
   target_link_libraries(sparkc_smoke_test PRIVATE spark_compiler)
   spark_enable_test_assertions(sparkc_smoke_test)
+  add_test(NAME sparkc_smoke_test COMMAND sparkc_smoke_test)
 
   add_executable(sparkc_parser_tests ${SPARK_TEST_SOURCE_DIR}/phase2/parser_tests.cpp)
   target_link_libraries(sparkc_parser_tests PRIVATE spark_compiler)
   spark_enable_test_assertions(sparkc_parser_tests)
+  add_test(NAME sparkc_parser_tests COMMAND sparkc_parser_tests)
 
   add_executable(sparkc_eval_tests ${SPARK_TEST_SOURCE_DIR}/phase3/eval_tests.cpp)
   target_link_libraries(sparkc_eval_tests PRIVATE spark_compiler)
   spark_enable_test_assertions(sparkc_eval_tests)
+  add_test(NAME sparkc_eval_tests COMMAND sparkc_eval_tests)
 
   add_executable(sparkc_typecheck_tests
     ${SPARK_TEST_SOURCE_DIR}/phase3/typecheck_main.cpp
@@ -54,14 +67,17 @@ if(SPARK_BUILD_TESTS)
   target_include_directories(sparkc_typecheck_tests PRIVATE ${SPARK_TEST_SOURCE_DIR})
   target_link_libraries(sparkc_typecheck_tests PRIVATE spark_compiler)
   spark_enable_test_assertions(sparkc_typecheck_tests)
+  add_test(NAME sparkc_typecheck_tests COMMAND sparkc_typecheck_tests)
 
   add_executable(sparkc_codegen_tests ${SPARK_TEST_SOURCE_DIR}/phase4/codegen_tests.cpp)
   target_link_libraries(sparkc_codegen_tests PRIVATE spark_compiler)
   spark_enable_test_assertions(sparkc_codegen_tests)
+  add_test(NAME sparkc_codegen_tests COMMAND sparkc_codegen_tests)
 
   add_executable(sparkc_phase5_tests
     ${SPARK_TEST_SOURCE_DIR}/phase5/list/list_container_tests.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase5/matrix/matrix_container_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase5/primitives/primitive_numeric_tests.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase5/phase5_main.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase5/phase5_support.cpp
   )
@@ -69,6 +85,7 @@ if(SPARK_BUILD_TESTS)
                                                    ${SPARK_TEST_SOURCE_DIR}/phase5)
   target_link_libraries(sparkc_phase5_tests PRIVATE spark_compiler)
   spark_enable_test_assertions(sparkc_phase5_tests)
+  add_test(NAME sparkc_phase5_tests COMMAND sparkc_phase5_tests)
 
   add_executable(sparkc_phase6_tests
     ${SPARK_TEST_SOURCE_DIR}/phase6/list/phase6_list_tests.cpp
@@ -80,6 +97,7 @@ if(SPARK_BUILD_TESTS)
                                                    ${SPARK_TEST_SOURCE_DIR}/phase6)
   target_link_libraries(sparkc_phase6_tests PRIVATE spark_compiler)
   spark_enable_test_assertions(sparkc_phase6_tests)
+  add_test(NAME sparkc_phase6_tests COMMAND sparkc_phase6_tests)
 
   add_executable(sparkc_phase7_tests
     ${SPARK_TEST_SOURCE_DIR}/phase7/list/pipeline_list_tests.cpp
@@ -92,6 +110,7 @@ if(SPARK_BUILD_TESTS)
                                                    ${SPARK_TEST_SOURCE_DIR}/phase7)
   target_link_libraries(sparkc_phase7_tests PRIVATE spark_compiler)
   spark_enable_test_assertions(sparkc_phase7_tests)
+  add_test(NAME sparkc_phase7_tests COMMAND sparkc_phase7_tests)
 
   add_executable(sparkc_phase8_tests
     ${SPARK_TEST_SOURCE_DIR}/phase8/matmul/matmul_tests.cpp
@@ -103,6 +122,7 @@ if(SPARK_BUILD_TESTS)
                                                    ${SPARK_TEST_SOURCE_DIR}/phase8)
   target_link_libraries(sparkc_phase8_tests PRIVATE spark_compiler)
   spark_enable_test_assertions(sparkc_phase8_tests)
+  add_test(NAME sparkc_phase8_tests COMMAND sparkc_phase8_tests)
 
   add_executable(sparkc_phase9_tests
     ${SPARK_TEST_SOURCE_DIR}/phase9/runtime/async_task_tests.cpp
@@ -116,6 +136,7 @@ if(SPARK_BUILD_TESTS)
                                                    ${SPARK_TEST_SOURCE_DIR}/phase9)
   target_link_libraries(sparkc_phase9_tests PRIVATE spark_compiler)
   spark_enable_test_assertions(sparkc_phase9_tests)
+  add_test(NAME sparkc_phase9_tests COMMAND sparkc_phase9_tests)
 
   add_executable(sparkc_phase10_tests
     ${SPARK_TEST_SOURCE_DIR}/phase10/dispatch/cpu_dispatch_tests.cpp
@@ -125,4 +146,5 @@ if(SPARK_BUILD_TESTS)
                                                     ${SPARK_TEST_SOURCE_DIR}/phase10)
   target_link_libraries(sparkc_phase10_tests PRIVATE spark_compiler)
   spark_enable_test_assertions(sparkc_phase10_tests)
+  add_test(NAME sparkc_phase10_tests COMMAND sparkc_phase10_tests)
 endif()

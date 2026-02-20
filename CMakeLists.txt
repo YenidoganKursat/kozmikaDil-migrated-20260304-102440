@@ -11,6 +11,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(SPARK_BUILD_TESTS "Build test targets" OFF)
 option(SPARK_BUILD_BENCHMARKS "Build benchmark targets" OFF)
 
+if(SPARK_BUILD_TESTS)
+  enable_testing()
+endif()
+
 add_subdirectory(compiler)
 add_subdirectory(runtime)
 add_subdirectory(stdlib)

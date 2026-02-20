@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [ "master", "main", "codex/**" ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build clang g++ make python3 python3-pip libmpfr-dev libgmp-dev
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSPARK_BUILD_TESTS=ON
+
+      - name: Build
+        run: cmake --build build -j 4
+
+      - name: Run unit test binaries
+        run: |
+          ./build/compiler/sparkc_smoke_test
+          ./build/compiler/sparkc_parser_tests
+          ./build/compiler/sparkc_eval_tests
+          ./build/compiler/sparkc_typecheck_tests
+          ./build/compiler/sparkc_codegen_tests
+          ./build/compiler/sparkc_phase5_tests
+          ./build/compiler/sparkc_phase6_tests
+          ./build/compiler/sparkc_phase7_tests
+          ./build/compiler/sparkc_phase8_tests
+          ./build/compiler/sparkc_phase9_tests
+          ./build/compiler/sparkc_phase10_tests
+
+      - name: Runtime benchmark smoke (no build-time measurement)
+        run: |
+          ./bench/scripts/primitives/benchmark_mixed_signed_ops_100m.py \
+            --backend native \
+            --loops 10000 \
+            --runs 1 \
+            --warmup 0 \
+            --primitives f32,f64 \
+            --ops add,mul,div
+
