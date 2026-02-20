@@ -2279,7 +2279,7 @@ Value bench_mixed_numeric_op_runtime(const std::string& kind_name, const std::st
   const auto fast_mod_ld = [](long double x, long double y) {
     const long double q = std::trunc(x / y);
     const long double r = x - q * y;
-    if (!std::isfinite(static_cast<double>(r)) || std::fabsl(r) >= std::fabsl(y)) {
+    if (!std::isfinite(static_cast<double>(r)) || std::fabs(r) >= std::fabs(y)) {
       return std::fmod(x, y);
     }
     if (r == 0.0L) {
