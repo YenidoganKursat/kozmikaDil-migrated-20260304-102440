@@ -126,6 +126,9 @@ jobs:
         run: cmake --build build_san -j 4
 
       - name: Run sanitizer smoke tests
+        env:
+          ASAN_OPTIONS: "detect_leaks=0:halt_on_error=1:strict_string_checks=1"
+          UBSAN_OPTIONS: "halt_on_error=1:print_stacktrace=1"
         run: |
           ./build_san/compiler/sparkc_smoke_test
           ./build_san/compiler/sparkc_parser_tests

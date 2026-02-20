@@ -3821,3 +3821,8 @@ Eklenenler:
 Amac:
 - CI kaynak tuketimini azaltmak, asili kalan job'lari sinirlamak, concurrency/data-race
   bug'larini daha erken yakalamak ve PR seviyesinde bagimlilik riski denetimi eklemek.
+
+106) SANITIZER GATE STABILIZATION (2026-02-20)
+- CI `sanitizer` job icin `ASAN_OPTIONS` ve `UBSAN_OPTIONS` eklendi.
+- `detect_leaks=0` ile leak sanitizer kaynakli flaky/fail durumlari ayrildi;
+  ASan/UBSan bellek guvenligi ve UB yakalama davranisi korunuyor.
