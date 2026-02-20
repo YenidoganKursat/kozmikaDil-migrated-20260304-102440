@@ -3826,3 +3826,10 @@ Amac:
 - CI `sanitizer` job icin `ASAN_OPTIONS` ve `UBSAN_OPTIONS` eklendi.
 - `detect_leaks=0` ile leak sanitizer kaynakli flaky/fail durumlari ayrildi;
   ASan/UBSan bellek guvenligi ve UB yakalama davranisi korunuyor.
+
+107) CODEQL CI CONFIG STABILIZATION (2026-02-20)
+- Repo'da code scanning feature aktif olmadiginda fail veren path stabil hale getirildi.
+- `security-codeql.yml`:
+  - `github/codeql-action/analyze` icin `upload: never`
+  - SARIF ciktilari artifact olarak yukleniyor (`codeql-sarif-*`)
+- Sonuc: analysis kosuyor, repo feature bagimli upload hatasi CI'yi kirmiyor.
