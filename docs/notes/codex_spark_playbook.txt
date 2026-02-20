@@ -3796,3 +3796,28 @@ Eklenen kritik guardlar:
 Not:
 - Perf gate thresholdlari ilk asamada konservatif tutuldu (flaky false-positive'i azaltmak)
   ve ilerleyen commitlerde daraltilabilir.
+
+-------------------------------------------------------------------------------
+105) CI/CD HARDENING V2 (2026-02-20)
+-------------------------------------------------------------------------------
+Eklenenler:
+- `ci.yml` guclendirildi:
+  - global `permissions: contents: read`
+  - workflow-level `concurrency` (aynı branch eski run iptali)
+  - job-level `timeout-minutes` (hung run / deadlock riskini sinirlar)
+  - yeni `thread-sanitizer` gate (TSan) eklendi:
+    - `sparkc_smoke_test`
+    - `sparkc_phase9_tests`
+- Yeni workflow:
+  - `.github/workflows/workflow-lint.yml`
+    - GitHub Actions YAML lint (`actionlint`) gate
+- Yeni workflow:
+  - `.github/workflows/dependency-review.yml`
+    - PR icin dependency-risk gate (`fail-on-severity: high`)
+- `security-codeql.yml` guclendirildi:
+  - workflow-level `concurrency`
+  - job-level `timeout-minutes`
+
+Amac:
+- CI kaynak tuketimini azaltmak, asili kalan job'lari sinirlamak, concurrency/data-race
+  bug'larini daha erken yakalamak ve PR seviyesinde bagimlilik riski denetimi eklemek.

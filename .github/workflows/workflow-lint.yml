@@ -1,0 +1,28 @@
+name: Workflow Lint
+
+on:
+  push:
+    branches: [ "master", "main", "codex/**" ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: workflow-lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Lint GitHub workflows
+        uses: reviewdog/action-actionlint@v1
+        with:
+          fail_level: error
+

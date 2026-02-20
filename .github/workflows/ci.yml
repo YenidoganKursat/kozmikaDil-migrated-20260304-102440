@@ -6,9 +6,17 @@ on:
   pull_request:
     branches: [ "master", "main" ]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -54,6 +62,7 @@ jobs:
   compiler-matrix-build:
     name: Compiler Matrix Build (${{ matrix.name }})
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
@@ -91,6 +100,7 @@ jobs:
   sanitizer:
     name: Sanitizer (ASan + UBSan)
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -122,9 +132,45 @@ jobs:
           ./build_san/compiler/sparkc_eval_tests
           ./build_san/compiler/sparkc_phase5_tests
 
+  thread-sanitizer:
+    name: Thread Sanitizer (TSan)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build clang g++ make python3 libmpfr-dev libgmp-dev
+
+      - name: Configure (TSan)
+        run: |
+          cmake -S . -B build_tsan -G Ninja \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DSPARK_BUILD_TESTS=ON \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_C_FLAGS="-fsanitize=thread -fno-omit-frame-pointer -O1" \
+            -DCMAKE_CXX_FLAGS="-fsanitize=thread -fno-omit-frame-pointer -O1" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=thread" \
+            -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=thread"
+
+      - name: Build
+        run: cmake --build build_tsan -j 4
+
+      - name: Run concurrency sanitizer tests
+        env:
+          TSAN_OPTIONS: "halt_on_error=1 history_size=7 second_deadlock_stack=1"
+        run: |
+          ./build_tsan/compiler/sparkc_smoke_test
+          ./build_tsan/compiler/sparkc_phase9_tests
+
   perf-regression:
     name: Performance Regression Gate
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
