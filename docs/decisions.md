@@ -410,3 +410,12 @@
   - emit executable wrapper script at requested output path,
   - wrapper executes `k run --interpret <source>` (fallback: `sparkc run --interpret`),
   - no silent downcast to native approximate path.
+
+## Decision 52: Release-Merge CI Gate Requires Fresh Green Rerun
+- Decision: merge/finalize to `master` requires a fresh validation cycle (local suite + GitHub workflows) even if previous push set is already green.
+- Why: avoid stale-green merges and guarantee the exact branch head is reproducibly healthy at integration time.
+- Implementation rule:
+  - local gate: `ctest --test-dir build_local_full --output-on-failure` must be fully green,
+  - GitHub gate: `CI`, `Workflow Lint`, `Security (CodeQL)` latest cycle must all pass,
+  - run IDs and outcomes are recorded in `docs/ci_cd_run_log.txt`,
+  - if workflow_dispatch is unavailable, rerun uses `gh run rerun <id>`.

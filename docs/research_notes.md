@@ -627,3 +627,25 @@ Applied takeaway:
   - hardware-native fast path for low precision (`f8..f64`),
   - software multiprecision path (MPFR/decimal backends) for strict high precision.
 - This change removes the "cannot build" usability wall while keeping strict numeric guarantees intact.
+
+## CI/CD Reliability Re-Verification Addendum (2026-02-22)
+
+### Trigger
+
+- Branch integration requested with strict condition: no merge/finalization unless all CI/CD checks are clean in a fresh cycle.
+
+### Executed validation
+
+- Local:
+  - `ctest --test-dir build_local_full --output-on-failure` -> 12/12 PASS.
+  - `python3 tests/phase5/primitives/crosslang_native_primitives_tests.py` -> PASS.
+- GitHub:
+  - `CI` dispatched run `22268014651` -> success.
+  - `Workflow Lint` rerun `22267929371` -> success.
+  - `Security (CodeQL)` rerun `22267929376` -> success.
+
+### Notes
+
+- Current workflow configuration exposes `workflow_dispatch` for `CI` only.
+- `Workflow Lint` and `Security (CodeQL)` were verified via rerun (`gh run rerun`).
+- `dependency-review` is PR-triggered and remains intentionally outside push-only merge gate.

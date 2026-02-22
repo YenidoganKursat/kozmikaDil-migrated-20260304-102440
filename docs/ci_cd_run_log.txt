@@ -3,47 +3,40 @@ Updated: 2026-02-22
 
 Branch context
 - Active branch: master
-- Head commit: 3005e858d6e2d2f2d9077d87b605ce83dbb1c07d
+- Head commit (before this log update): 38b78bb8d3b4b5e3ec4d8c47ebeb1e392219f8ca
+- Remote: origin https://github.com/YenidoganKursat/kozmikaDil.git
 
 Recent commit chain (latest first)
+- 38b78bb  docs: record CI hardening, run history, and reliability decisions
 - 3005e85  ci: harden workflows and add dependabot maintenance
 - 0ad3136  fix: deflake float extreme modulo validation in CI
 - a4b163d  fix: make x86 avx2 fast-path portable across CI toolchains
 - 724b14c  chore: stabilize CI and prune non-library artifacts
 
-Executed validation runs (latest stable set)
-- Workflow Lint: run 22267531689 -> success
-- CI: run 22267531705 -> success
-- Security (CodeQL): run 22267531702 -> success
+Latest verification cycle (this pass)
+1) Local verification
+   - ctest --test-dir build_local_full --output-on-failure
+   - Result: 12/12 tests passed, 0 failed
+   - Extra correctness pass:
+     - python3 tests/phase5/primitives/crosslang_native_primitives_tests.py
+     - Result: pass (int + float validation outputs generated under bench/results/primitives/)
 
-Historical stabilization runs
-- Workflow Lint: run 22267310896 -> success
-- CI: run 22267310890 -> success
-- Security (CodeQL): run 22267310888 -> success
+2) GitHub workflow rerun/dispatch
+   - CI (workflow_dispatch): run 22268014651 -> success
+   - Workflow Lint (rerun): run 22267929371 -> success
+   - Security (CodeQL) (rerun): run 22267929376 -> success
 
-Key fixes recorded
-1) Flaky primitive validation fix
-   - File: bench/scripts/primitives/validate_float_extreme_bigdecimal.py
-   - Why: intermittent f32 modulo mismatch in CI
-   - How:
-     - deterministic seed function replaced hash()-dependent seed
-     - guarded low-float modulo boundary equivalence check
+3) Previous push-based green set (reference)
+   - CI: run 22267929377 -> success
+   - Workflow Lint: run 22267929371 -> success
+   - Security (CodeQL): run 22267929376 -> success
 
-2) CI hardening pass
-   - Files:
-     - .github/workflows/ci.yml
-     - .github/workflows/security-codeql.yml
-     - .github/workflows/stability-nightly.yml
-     - .github/workflows/workflow-lint.yml
-     - .github/dependabot.yml
-   - Why: reduce transient failures, improve diagnostics, keep security tooling current
-   - How:
-     - apt retries (Acquire::Retries=3)
-     - CodeQL v4 migration
-     - CTest JUnit artifact outputs
-     - actionlint SHA pin
-     - weekly Dependabot updates for actions
+Execution notes
+- Workflow Lint and Security (CodeQL) do not expose workflow_dispatch in current YAML;
+  rerun was executed with `gh run rerun <run_id>`.
+- dependency-review workflow is PR-triggered only; no push/manual run in this branch-only pass.
+- Remote default branch is `main`, but active delivery/integration branch for this cycle is `master`.
 
-Notes
-- dependency-review workflow is PR-triggered only; not runnable from push-only branch context.
-- default remote branch is main; active delivery branch here is master.
+Why this cycle was executed
+- User requested full CI/CD re-run gate before merge/finalization.
+- Merge gate policy used here: no integration finalization unless local suite + GitHub CI/CD are fully green.

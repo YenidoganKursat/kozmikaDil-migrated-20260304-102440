@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.10.0-rc3] - 2026-02-22
+
+### Changed
+- Re-ran full CI/CD gate on `master` and recorded complete evidence set before integration finalize.
+- Added latest run-log snapshot to `docs/ci_cd_run_log.txt`:
+  - local 12/12 test pass + cross-language primitive validation pass,
+  - GitHub rerun/dispatch pass set:
+    - `CI` run `22268014651` (success),
+    - `Workflow Lint` run `22267929371` (success),
+    - `Security (CodeQL)` run `22267929376` (success).
+
+### Notes
+- `Workflow Lint` and `Security (CodeQL)` are rerun-only in current config (no `workflow_dispatch` trigger).
+- `dependency-review` remains PR-only and intentionally out of push/manual branch gate.
+
 ## [0.10.0-rc2] - 2026-02-22
 
 ### Fixed
