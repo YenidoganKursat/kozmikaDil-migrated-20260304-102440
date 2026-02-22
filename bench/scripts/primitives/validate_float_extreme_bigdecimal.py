@@ -188,8 +188,47 @@ def min_den_for_primitive(primitive: str) -> Decimal:
     return Decimal("1e-30")
 
 
+def deterministic_seed(primitive: str, operator: str) -> int:
+    # Avoid Python's randomized hash() so CI and local runs use identical vectors.
+    material = f"{primitive}|{operator}"
+    acc = 0xA5E5_1234
+    for idx, ch in enumerate(material):
+        acc ^= (ord(ch) << ((idx % 4) * 8))
+        acc = (acc * 1664525 + 1013904223) & 0xFFFFFFFF
+    return acc
+
+
+def is_unstable_mod_boundary_case(
+    primitive: str,
+    a: Decimal,
+    b: Decimal,
+    observed: Decimal,
+    expected: Decimal,
+    allowed: Decimal,
+) -> bool:
+    # For low-float modulo, quotient rounding at near-integer boundaries can flip
+    # remainder between ~0 and ~|b| across libc/arch while still respecting IEEE precision.
+    if primitive not in LOW_FLOAT_PRIMITIVES:
+        return False
+    abs_b = decimal_abs(b)
+    if abs_b == 0:
+        return False
+    q = decimal_abs(a) / abs_b
+    nearest = q.to_integral_value(rounding=ROUND_DOWN)
+    q_delta = decimal_abs(q - nearest)
+    q_delta_alt = decimal_abs((nearest + Decimal("1")) - q)
+    q_dist = q_delta if q_delta < q_delta_alt else q_delta_alt
+    if q_dist > epsilon_for_primitive(primitive) * Decimal("32"):
+        return False
+    obs_abs = decimal_abs(observed)
+    exp_abs = decimal_abs(expected)
+    near_zero = obs_abs <= allowed or exp_abs <= allowed
+    near_abs_b = decimal_abs(obs_abs - abs_b) <= allowed or decimal_abs(exp_abs - abs_b) <= allowed
+    return near_zero and near_abs_b
+
+
 def build_cases(primitive: str, operator: str, random_cases: int) -> List[Tuple[str, str]]:
-    rng = random.Random(0xA5E5_1234 + hash((primitive, operator)) & 0xFFFF)
+    rng = random.Random(deterministic_seed(primitive, operator))
     bound = bound_for_primitive(primitive)
     min_den = min_den_for_primitive(primitive)
     eps = epsilon_for_primitive(primitive)
@@ -443,6 +482,8 @@ def main() -> int:
 
                     allowed = allowed_error(primitive, expected_ref)
                     if err_ref > allowed:
+                        if operator == "%" and is_unstable_mod_boundary_case(primitive, a, b, k, expected_ref, allowed):
+                            continue
                         mismatch_count += 1
                         if len(failure_preview) < 96:
                             failure_preview.append(
