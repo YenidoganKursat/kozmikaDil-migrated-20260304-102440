@@ -259,6 +259,24 @@
   - `sum(map_mul(c, X)) = sum(X)*c`
   - `sum(map_mul(b, map_add(a, X))) = (sum(X) + a*N)*b`
 
+## Decision 39: CI Flakiness Control for Float Extreme Validation
+- Decision: remove runtime-dependent hash seeding and enforce deterministic vector generation in extreme float cross-language validation.
+- Why: CI failures appeared non-deterministically (`f32 %` mismatch) despite local pass due platform/runtime-sensitive case generation.
+- Implementation rule:
+  - use stable seed derivation from `(primitive, operator)` string,
+  - keep strict mismatch gate,
+  - allow only explicit low-float `%` boundary guard where quotient is epsilon-close to integer boundary and outcomes are semantically equivalent under quantized precision.
+
+## Decision 40: CI/CD Hardening Baseline for Language Project
+- Decision: make pipeline stability first-class by hardening workflows and improving machine-readable diagnostics.
+- Why: a compiler/runtime project needs reproducible CI feedback and supply-chain safety before adding more phases.
+- Implementation rule:
+  - CodeQL action family pinned to major `v4`,
+  - apt installs use retry policy,
+  - CTest emits JUnit artifacts in CI and nightly jobs,
+  - third-party workflow linter action pinned to commit SHA,
+  - Dependabot manages GitHub Actions updates weekly.
+
 ## Decision 39: Canonical Numeric While Hot-Loop Specialization
 - Decision: evaluator içinde güvenli pattern tespiti ile canonical numeric while döngülerine özel hızlı yol eklendi.
 - Why: `while i < N; acc = acc <op> rhs; i = i + 1` şeklinde döngülerde AST dispatch ve environment lookup maliyeti baskındı.

@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.10.0-rc2] - 2026-02-22
+
+### Fixed
+- CI flaky failure fixed in float extreme validation:
+  - stabilized random case generation by replacing runtime-dependent `hash()` seeding with deterministic seed logic.
+  - added guarded handling for low-precision `%` boundary cases that can vary across libc/arch rounding edges.
+  - file: `bench/scripts/primitives/validate_float_extreme_bigdecimal.py`.
+
+### Changed
+- CI/CD hardening for reliability and diagnostics:
+  - migrated CodeQL actions from `v3` to `v4` in `security-codeql.yml`.
+  - added apt retry policy (`Acquire::Retries=3`) in all CI workflow install steps.
+  - enabled JUnit output emission for CTest runs (core/replay/sanitizer/tsan/nightly) and artifact upload.
+  - pinned `reviewdog/action-actionlint` to a full commit SHA in `workflow-lint.yml`.
+  - added `.github/dependabot.yml` for weekly GitHub Actions dependency maintenance.
+
+### Validation
+- Green runs after hardening:
+  - CI: run `22267531705` (success)
+  - Security (CodeQL): run `22267531702` (success)
+  - Workflow Lint: run `22267531689` (success)
+
 ## [0.10.0-rc1] - 2026-02-17
 
 ### Added

@@ -259,6 +259,42 @@
 - PGO gains are more stable when profiling run count is explicit (`>=3`) and median timing is used.
 - BOLT integration must be optional; many machines lack a full `perf/perf2bolt/llvm-bolt` stack.
 
+## CI/CD Reliability Addendum (2026-02-22)
+
+### External references checked
+
+- GitHub Actions security hardening guidance (pinning actions, least privilege):
+  - <https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions>
+- CodeQL v3 deprecation notice and migration target:
+  - <https://github.blog/changelog/2025-10-28-upcoming-deprecation-of-codeql-action-v3/>
+- Dependabot updates for GitHub Actions:
+  - <https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file>
+- CTest JUnit output for CI diagnostics:
+  - <https://cmake.org/cmake/help/latest/manual/ctest.1.html>
+
+### What we observed
+
+- A flaky CI failure appeared only in one lane (`f32 %`) under cross-language primitive correctness with strict mismatch mode.
+- Root cause combined two factors:
+  - non-deterministic Python `hash()` seed behavior,
+  - low-precision `%` boundary sensitivity around near-integer quotient edges across runtime/library implementations.
+
+### What we changed
+
+- Deterministic case generation in `validate_float_extreme_bigdecimal.py`.
+- Explicit low-float `%` boundary guard to prevent false-negative mismatches only in epsilon-close equivalent cases.
+- Workflow hardening:
+  - CodeQL `v4`,
+  - apt retry policy for transient package mirror/network failures,
+  - JUnit output emission and upload for CTest jobs,
+  - pinned `actionlint` action SHA,
+  - Dependabot config added for actions maintenance.
+
+### Result
+
+- Local full replay and CI profile re-run: pass.
+- GitHub runs after hardening: all success (`CI`, `Security (CodeQL)`, `Workflow Lint`).
+
 ## Primitive Runtime Optimization Addendum (2026-02-19)
 
 ### External references reviewed for this pass
