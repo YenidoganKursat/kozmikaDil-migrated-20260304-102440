@@ -1,0 +1,84 @@
+name: Stability Nightly
+
+on:
+  schedule:
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stability-nightly-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  stability-stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build clang g++ make python3 python3-pip libmpfr-dev libgmp-dev default-jdk
+
+      - name: Architecture and coverage guard
+        run: python3 ./.github/scripts/architecture_guard.py --max-lines 1800
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSPARK_BUILD_TESTS=ON
+
+      - name: Build
+        run: cmake --build build -j 4
+
+      - name: Full CTest
+        run: |
+          ctest --test-dir build \
+            --parallel 4 \
+            --output-on-failure \
+            --timeout 1800 \
+            -E "sparkc_phase5_crosslang_primitives" \
+            --output-log ./build/nightly_ctest_full.log
+
+      - name: Critical replay (flake detection)
+        run: |
+          ctest --test-dir build \
+            --output-on-failure \
+            --timeout 1800 \
+            --repeat until-fail:10 \
+            -R "sparkc_typecheck_tests|sparkc_codegen_tests|sparkc_phase(5|6|7|8|9|10)_tests" \
+            --output-log ./build/nightly_ctest_replay.log
+
+      - name: Cross-language primitive stress profile
+        run: |
+          python3 ./tests/phase5/primitives/crosslang_native_primitives_tests.py \
+            --int-loops 80000 \
+            --int-extreme-random 128 \
+            --float-loops 1500 \
+            --float-python-loops 1500 \
+            --float-extreme-random 64 \
+            --single-op-loops 250000 \
+            --single-op-runs 3
+
+      - name: All primitive perf cycle (nightly smoke)
+        run: |
+          python3 ./bench/scripts/primitives/benchmark_all_primitives_cycle.py \
+            --loops 8000 \
+            --warmup 0 \
+            --runs 1 \
+            --mode auto
+
+      - name: Upload nightly logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-stability-logs
+          path: |
+            build/nightly_ctest_full.log
+            build/nightly_ctest_replay.log
+            build/Testing/Temporary/LastTest.log
+            bench/results/primitives
+          if-no-files-found: warn

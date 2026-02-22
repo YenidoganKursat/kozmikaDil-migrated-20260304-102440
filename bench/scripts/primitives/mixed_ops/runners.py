@@ -61,7 +61,6 @@ def benchmark_native(
                             "-fomit-frame-pointer -fstrict-aliasing -funroll-loops "
                             "-fno-math-errno -fno-trapping-math",
             "SPARK_LTO": "off",
-            "SPARK_ALLOW_APPROX_HIGH_PRECISION_NATIVE": "0",
         }
         run_checked(repo_root, ["./k", "build", str(program), "-o", str(binary)], env=native_env)
 
@@ -132,4 +131,3 @@ def _result_row(
         "max_sec": max(samples),
         "checksum": checksum,
     }
-

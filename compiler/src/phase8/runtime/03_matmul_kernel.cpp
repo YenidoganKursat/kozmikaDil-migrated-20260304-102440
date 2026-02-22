@@ -39,20 +39,7 @@ std::optional<std::size_t> env_size_t(const char* name) {
   return static_cast<std::size_t>(parsed);
 }
 
-bool env_bool_enabled(const char* name, bool fallback) {
-  const auto* value = std::getenv(name);
-  if (!value || *value == '\0') {
-    return fallback;
-  }
-  const std::string text = value;
-  if (text == "0" || text == "false" || text == "False" || text == "off" || text == "OFF" ||
-      text == "no" || text == "NO") {
-    return false;
-  }
-  return true;
-}
-
-bool strict_fp_enabled() { return env_bool_enabled("SPARK_MATMUL_STRICT_FP", false); }
+bool strict_fp_enabled() { return env_flag_enabled("SPARK_MATMUL_STRICT_FP", false); }
 
 std::size_t saturating_volume3(std::size_t a, std::size_t b, std::size_t c) {
   constexpr auto kMax = std::numeric_limits<std::size_t>::max();

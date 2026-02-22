@@ -31,19 +31,22 @@ std::string vr_i128_to_string(I128 value) {
 }
 
 std::string vr_trim_decimal_string(std::string value) {
-  if (value.find('.') == std::string::npos) {
+  const auto exp_pos = value.find_first_of("eE");
+  std::string mantissa = exp_pos == std::string::npos ? value : value.substr(0, exp_pos);
+  const std::string exponent = exp_pos == std::string::npos ? std::string() : value.substr(exp_pos);
+  if (mantissa.find('.') == std::string::npos) {
     return value;
   }
-  while (!value.empty() && value.back() == '0') {
-    value.pop_back();
+  while (!mantissa.empty() && mantissa.back() == '0') {
+    mantissa.pop_back();
   }
-  if (!value.empty() && value.back() == '.') {
-    value.pop_back();
+  if (!mantissa.empty() && mantissa.back() == '.') {
+    mantissa.pop_back();
   }
-  if (value.empty() || value == "-0") {
+  if (mantissa.empty() || mantissa == "-0") {
     return "0";
   }
-  return value;
+  return mantissa + exponent;
 }
 
 std::string vr_long_double_to_string(long double value) {

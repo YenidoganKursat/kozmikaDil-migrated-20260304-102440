@@ -176,6 +176,25 @@ m[1, 2] = 7
 m[0, 1] = 5
 value = m[1, 2] + m[0, 1]
 )", "value", spark::Value::int_value_of(12));
+
+  run_program(R"(
+m = matrix_f64(2, 2)
+m[0, 0] = 1.5
+m[1, 1] = 2.5
+value = m[0, 0] + m[1, 1]
+)", "value", spark::Value::double_value_of(4.0));
+}
+
+void run_affine_fill_builtin_constructor() {
+  run_program(R"(
+xs = list_fill_affine(6, 3, 1, 7, 0.5)
+s = xs[0] + xs[1] + xs[2] + xs[3] + xs[4] + xs[5]
+)", "s", spark::Value::int_value_of(8));
+
+  run_program(R"(
+m = matrix_fill_affine(2, 2, 3, 1, 7, 0.25)
+v = m[0, 0] + m[1, 1]
+)", "v", spark::Value::int_value_of(1));
 }
 
 void run_numeric_primitive_builtins() {
@@ -269,6 +288,28 @@ while i < 5:
   i = i + 1
   x = x + i
 )", "x", spark::Value::int_value_of(15));
+
+  run_program(R"(
+i = 0
+s = 0
+p = 1
+step = 3
+while i < 12:
+  s = s + i
+  p = p * 2
+  i = i + step
+)", "s", spark::Value::int_value_of(18));
+
+  run_program(R"(
+i = 0
+x = f512 1
+y = f512 2
+delta = f512 0.5
+while i < 4:
+  i = i + 1
+  x = x + delta
+  y = y * x
+)", "y", spark::Value::numeric_value_of(spark::Value::NumericKind::F512, "45"));
 }
 
 void run_numeric_constructor_family_smoke() {
@@ -326,6 +367,22 @@ u16 = utf16_len(t)
 )", "u16", spark::Value::int_value_of(6));
 }
 
+void run_bench_tick_family_smoke() {
+  run_program(R"(
+n = bench_tick_scale_num()
+d = bench_tick_scale_den()
+t1 = bench_tick_raw()
+t2 = bench_tick_raw()
+ok = n > 0 and d > 0 and t2 >= t1
+)", "ok", spark::Value::bool_value_of(true));
+
+  run_program(R"(
+t1 = bench_tick()
+t2 = bench_tick()
+ok = t2 >= t1
+)", "ok", spark::Value::bool_value_of(true));
+}
+
 }  // namespace
 
 int main() {
@@ -342,9 +399,11 @@ int main() {
   run_return_and_nested();
   run_list_addition();
   run_matrix_builtin_constructor();
+  run_affine_fill_builtin_constructor();
   run_numeric_primitive_builtins();
   run_while_hotloop_numeric_fastpath_smoke();
   run_numeric_constructor_family_smoke();
   run_string_primitive_programs();
+  run_bench_tick_family_smoke();
   return 0;
 }

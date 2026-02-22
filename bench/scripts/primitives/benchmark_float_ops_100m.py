@@ -80,7 +80,15 @@ def make_program(path: pathlib.Path, primitive: str, operator: str, loops: int) 
     path.write_text(source, encoding="utf-8")
 
 
-def benchmark_one(primitive: str, op_name: str, operator: str, loops: int, warmup: int, runs: int) -> OpBenchResult:
+def benchmark_one(
+    primitive: str,
+    op_name: str,
+    operator: str,
+    loops: int,
+    warmup: int,
+    runs: int,
+    perf_layer: str,
+) -> OpBenchResult:
     with tempfile.TemporaryDirectory(prefix=f"kozmika-{primitive}-{op_name}-") as tmp:
         program = pathlib.Path(tmp) / f"{primitive}_{op_name}.k"
         binary = pathlib.Path(tmp) / f"{primitive}_{op_name}.bin"
@@ -92,6 +100,11 @@ def benchmark_one(primitive: str, op_name: str, operator: str, loops: int, warmu
                             "-fvectorize -fslp-vectorize -ftree-vectorize",
             "SPARK_LTO": "full",
         }
+        if perf_layer == "tier-max":
+            # Layered performance mode: expensive build, faster repeat kernels.
+            native_env["SPARK_OPT_PROFILE"] = "layered-max"
+            native_env["SPARK_CFLAGS"] += " -DSPARK_REPEAT_AGGREGATE=1 -DSPARK_REPEAT_STABILITY_GUARD=1"
+            native_env["SPARK_HP_REPEAT_AGGREGATE"] = "1"
         run_checked(["./k", "build", str(program), "-o", str(binary)], env=native_env)
 
         for _ in range(warmup):
@@ -125,6 +138,7 @@ def main() -> int:
     parser.add_argument("--loops", type=int, default=100_000_000)
     parser.add_argument("--runs", type=int, default=3)
     parser.add_argument("--warmup", type=int, default=1)
+    parser.add_argument("--perf-layer", choices=["strict", "tier-max"], default="strict")
     args = parser.parse_args()
 
     RESULT_DIR.mkdir(parents=True, exist_ok=True)
@@ -140,6 +154,7 @@ def main() -> int:
                     loops=args.loops,
                     warmup=args.warmup,
                     runs=args.runs,
+                    perf_layer=args.perf_layer,
                 )
             except subprocess.CalledProcessError as exc:
                 skipped.append(
@@ -164,6 +179,7 @@ def main() -> int:
         "loops": args.loops,
         "runs": args.runs,
         "warmup": args.warmup,
+        "perf_layer": args.perf_layer,
         "results": [asdict(r) for r in results],
         "skipped": skipped,
     }

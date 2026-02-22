@@ -36,18 +36,24 @@ Value apply_list_list_op(const Value& left, const Value& right, BinaryOp op) {
     std::vector<double> out(lhs.size(), 0.0);
     switch (op) {
       case BinaryOp::Add:
-        for (std::size_t i = 0; i < lhs.size(); ++i) {
-          out[i] = lhs[i] + rhs[i];
+        if (!simd_apply_binary_f64(BinaryOp::Add, lhs.data(), rhs.data(), out.data(), lhs.size())) {
+          for (std::size_t i = 0; i < lhs.size(); ++i) {
+            out[i] = lhs[i] + rhs[i];
+          }
         }
         break;
       case BinaryOp::Sub:
-        for (std::size_t i = 0; i < lhs.size(); ++i) {
-          out[i] = lhs[i] - rhs[i];
+        if (!simd_apply_binary_f64(BinaryOp::Sub, lhs.data(), rhs.data(), out.data(), lhs.size())) {
+          for (std::size_t i = 0; i < lhs.size(); ++i) {
+            out[i] = lhs[i] - rhs[i];
+          }
         }
         break;
       case BinaryOp::Mul:
-        for (std::size_t i = 0; i < lhs.size(); ++i) {
-          out[i] = lhs[i] * rhs[i];
+        if (!simd_apply_binary_f64(BinaryOp::Mul, lhs.data(), rhs.data(), out.data(), lhs.size())) {
+          for (std::size_t i = 0; i < lhs.size(); ++i) {
+            out[i] = lhs[i] * rhs[i];
+          }
         }
         break;
       case BinaryOp::Div:
@@ -55,7 +61,11 @@ Value apply_list_list_op(const Value& left, const Value& right, BinaryOp op) {
           if (rhs[i] == 0.0) {
             throw EvalException("division by zero");
           }
-          out[i] = lhs[i] / rhs[i];
+        }
+        if (!simd_apply_binary_f64(BinaryOp::Div, lhs.data(), rhs.data(), out.data(), lhs.size())) {
+          for (std::size_t i = 0; i < lhs.size(); ++i) {
+            out[i] = lhs[i] / rhs[i];
+          }
         }
         break;
       case BinaryOp::Mod:
@@ -97,20 +107,29 @@ Value apply_list_scalar_op(const Value& list, const Value& scalar, BinaryOp op, 
     std::vector<double> out(values.size(), 0.0);
     switch (op) {
       case BinaryOp::Add:
-        for (std::size_t i = 0; i < values.size(); ++i) {
-          const auto lhs = values[i];
-          out[i] = list_on_left ? lhs + rhs : rhs + lhs;
+        if (!simd_apply_binary_f64_scalar(BinaryOp::Add, values.data(), rhs, out.data(),
+                                          values.size(), list_on_left)) {
+          for (std::size_t i = 0; i < values.size(); ++i) {
+            const auto lhs = values[i];
+            out[i] = list_on_left ? lhs + rhs : rhs + lhs;
+          }
         }
         break;
       case BinaryOp::Sub:
-        for (std::size_t i = 0; i < values.size(); ++i) {
-          const auto lhs = values[i];
-          out[i] = list_on_left ? lhs - rhs : rhs - lhs;
+        if (!simd_apply_binary_f64_scalar(BinaryOp::Sub, values.data(), rhs, out.data(),
+                                          values.size(), list_on_left)) {
+          for (std::size_t i = 0; i < values.size(); ++i) {
+            const auto lhs = values[i];
+            out[i] = list_on_left ? lhs - rhs : rhs - lhs;
+          }
         }
         break;
       case BinaryOp::Mul:
-        for (std::size_t i = 0; i < values.size(); ++i) {
-          out[i] = values[i] * rhs;
+        if (!simd_apply_binary_f64_scalar(BinaryOp::Mul, values.data(), rhs, out.data(),
+                                          values.size(), list_on_left)) {
+          for (std::size_t i = 0; i < values.size(); ++i) {
+            out[i] = values[i] * rhs;
+          }
         }
         break;
       case BinaryOp::Div:
@@ -118,8 +137,11 @@ Value apply_list_scalar_op(const Value& list, const Value& scalar, BinaryOp op, 
           if (rhs == 0.0) {
             throw EvalException("division by zero");
           }
-          for (std::size_t i = 0; i < values.size(); ++i) {
-            out[i] = values[i] / rhs;
+          if (!simd_apply_binary_f64_scalar(BinaryOp::Div, values.data(), rhs, out.data(),
+                                            values.size(), true)) {
+            for (std::size_t i = 0; i < values.size(); ++i) {
+              out[i] = values[i] / rhs;
+            }
           }
         } else {
           for (std::size_t i = 0; i < values.size(); ++i) {
@@ -127,7 +149,12 @@ Value apply_list_scalar_op(const Value& list, const Value& scalar, BinaryOp op, 
             if (lhs == 0.0) {
               throw EvalException("division by zero");
             }
-            out[i] = rhs / lhs;
+          }
+          if (!simd_apply_binary_f64_scalar(BinaryOp::Div, values.data(), rhs, out.data(),
+                                            values.size(), false)) {
+            for (std::size_t i = 0; i < values.size(); ++i) {
+              out[i] = rhs / values[i];
+            }
           }
         }
         break;

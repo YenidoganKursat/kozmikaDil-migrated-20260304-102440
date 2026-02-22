@@ -2,11 +2,15 @@
 #include <iostream>
 #include <cstdlib>
 #include <chrono>
+#include <ctime>
 #include <limits>
 #include <cstdint>
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#if defined(__APPLE__)
+#include <mach/mach_time.h>
+#endif
 
 #include "../../phase3/evaluator_parts/internal_helpers.h"
 
@@ -170,10 +174,98 @@ void Interpreter::reset() {
     if (!args.empty()) {
       throw EvalException("bench_tick() expects no arguments");
     }
+#if defined(__APPLE__)
+    static const mach_timebase_info_data_t timebase = [] {
+      mach_timebase_info_data_t info{};
+      mach_timebase_info(&info);
+      if (info.denom == 0U) {
+        info.numer = 1U;
+        info.denom = 1U;
+      }
+      return info;
+    }();
+    static const bool one_to_one = (timebase.numer == 1U && timebase.denom == 1U);
+    static const long double tick_to_ns =
+        static_cast<long double>(timebase.numer) / static_cast<long double>(timebase.denom);
+    const std::uint64_t ticks = mach_absolute_time();
+    if (one_to_one) {
+      return Value::int_value_of(static_cast<long long>(ticks));
+    }
+    const auto ns = static_cast<long long>(static_cast<long double>(ticks) * tick_to_ns);
+    return Value::int_value_of(ns);
+#elif defined(CLOCK_MONOTONIC_RAW)
+    struct timespec ts {};
+    clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+    const auto ns =
+        static_cast<long long>(ts.tv_sec) * 1000000000LL + static_cast<long long>(ts.tv_nsec);
+    return Value::int_value_of(ns);
+#else
     const auto now = std::chrono::steady_clock::now().time_since_epoch();
     const auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
     return Value::int_value_of(static_cast<long long>(ns));
+#endif
   });
+
+  auto bench_tick_raw_fn = Value::builtin("bench_tick_raw", [](const std::vector<Value>& args) -> Value {
+    if (!args.empty()) {
+      throw EvalException("bench_tick_raw() expects no arguments");
+    }
+#if defined(__APPLE__)
+    return Value::int_value_of(static_cast<long long>(mach_absolute_time()));
+#elif defined(CLOCK_MONOTONIC_RAW)
+    struct timespec ts {};
+    clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+    const auto ns =
+        static_cast<long long>(ts.tv_sec) * 1000000000LL + static_cast<long long>(ts.tv_nsec);
+    return Value::int_value_of(ns);
+#else
+    const auto now = std::chrono::steady_clock::now().time_since_epoch();
+    const auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
+    return Value::int_value_of(static_cast<long long>(ns));
+#endif
+  });
+
+  auto bench_tick_scale_num_fn =
+      Value::builtin("bench_tick_scale_num", [](const std::vector<Value>& args) -> Value {
+        if (!args.empty()) {
+          throw EvalException("bench_tick_scale_num() expects no arguments");
+        }
+#if defined(__APPLE__)
+        static const mach_timebase_info_data_t timebase = [] {
+          mach_timebase_info_data_t info{};
+          mach_timebase_info(&info);
+          if (info.denom == 0U) {
+            info.numer = 1U;
+            info.denom = 1U;
+          }
+          return info;
+        }();
+        return Value::int_value_of(static_cast<long long>(timebase.numer));
+#else
+        return Value::int_value_of(1);
+#endif
+      });
+
+  auto bench_tick_scale_den_fn =
+      Value::builtin("bench_tick_scale_den", [](const std::vector<Value>& args) -> Value {
+        if (!args.empty()) {
+          throw EvalException("bench_tick_scale_den() expects no arguments");
+        }
+#if defined(__APPLE__)
+        static const mach_timebase_info_data_t timebase = [] {
+          mach_timebase_info_data_t info{};
+          mach_timebase_info(&info);
+          if (info.denom == 0U) {
+            info.numer = 1U;
+            info.denom = 1U;
+          }
+          return info;
+        }();
+        return Value::int_value_of(static_cast<long long>(timebase.denom));
+#else
+        return Value::int_value_of(1);
+#endif
+      });
 
   auto bench_mixed_numeric_op_fn =
       Value::builtin("bench_mixed_numeric_op", [](const std::vector<Value>& args) -> Value {
@@ -267,20 +359,10 @@ void Interpreter::reset() {
     const auto n = static_cast<std::size_t>(n_raw);
     const bool eager_dense_cache = n >= (128u * 1024u);
 
-    const auto env_bool_enabled = [](const char* name, bool fallback) {
-      const auto* value = std::getenv(name);
-      if (!value || *value == '\0') {
-        return fallback;
-      }
-      const std::string text = value;
-      if (text == "0" || text == "false" || text == "False" || text == "off" || text == "OFF" ||
-          text == "no" || text == "NO") {
-        return false;
-      }
-      return true;
-    };
+    // Dense-only mode is opt-in and only meaningful after cache threshold is reached.
+    // env_flag_enabled() is the canonical parser to keep flag semantics consistent.
     const bool dense_only =
-        env_bool_enabled("SPARK_LIST_FILL_DENSE_ONLY", false) && eager_dense_cache;
+        env_flag_enabled("SPARK_LIST_FILL_DENSE_ONLY", false) && eager_dense_cache;
 
     std::vector<Value> data;
     if (!dense_only) {
@@ -372,20 +454,9 @@ void Interpreter::reset() {
     const auto total = rows * cols;
     const bool eager_dense_cache = total >= (128u * 128u);
 
-    const auto env_bool_enabled = [](const char* name, bool fallback) {
-      const auto* value = std::getenv(name);
-      if (!value || *value == '\0') {
-        return fallback;
-      }
-      const std::string text = value;
-      if (text == "0" || text == "false" || text == "False" || text == "off" || text == "OFF" ||
-          text == "no" || text == "NO") {
-        return false;
-      }
-      return true;
-    };
+    // Same flag parser path as list_fill_affine to avoid diverging config behavior.
     const bool dense_only =
-        env_bool_enabled("SPARK_MATRIX_FILL_DENSE_ONLY", false) && eager_dense_cache;
+        env_flag_enabled("SPARK_MATRIX_FILL_DENSE_ONLY", false) && eager_dense_cache;
 
     std::vector<Value> data;
     if (!dense_only) {
@@ -788,6 +859,9 @@ void Interpreter::reset() {
   globals->define("utf16_len", utf16_len_fn);
   globals->define("string", string_fn);
   globals->define("bench_tick", bench_tick_fn);
+  globals->define("bench_tick_raw", bench_tick_raw_fn);
+  globals->define("bench_tick_scale_num", bench_tick_scale_num_fn);
+  globals->define("bench_tick_scale_den", bench_tick_scale_den_fn);
   globals->define("bench_mixed_numeric_op", bench_mixed_numeric_op_fn);
   globals->define("cols", cols_fn);
   globals->define("matrix_i64", matrix_i64_fn);
@@ -816,6 +890,7 @@ void Interpreter::reset() {
   globals->define("stream", stream_fn);
   globals->define("anext", anext_fn);
   register_numeric_primitive_builtins(globals);
+  prewarm_numeric_runtime();
   globals->define("None", Value::nil());
 }
 

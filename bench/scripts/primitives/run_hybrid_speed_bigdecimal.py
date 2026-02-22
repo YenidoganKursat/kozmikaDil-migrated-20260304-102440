@@ -85,12 +85,12 @@ def main() -> int:
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument("--bigdecimal-loops", type=int, default=20_000)
     parser.add_argument("--python-loops", type=int, default=20_000)
-    parser.add_argument("--safety-tier", choices=["strict", "hybrid", "aggressive"], default="hybrid")
+    parser.add_argument("--safety-tier", choices=["strict", "hybrid"], default="hybrid")
     parser.add_argument(
         "--strategy",
         choices=["single", "layered"],
         default="single",
-        help="single: run one tier; layered: run hybrid+aggressive and choose faster row when checksum passes.",
+        help="single: run one tier; layered: run strict+hybrid and choose faster row when checksum passes.",
     )
     parser.add_argument("--out-prefix", type=str, default="hybrid_speed_bigdecimal")
     parser.add_argument("--primitives", type=str, default="")
@@ -118,8 +118,18 @@ def main() -> int:
         bench_rows = list(bench_payload.get("records", []))
         selected_by_tier = {args.safety_tier: len(bench_rows)}
     else:
+        strict_prefix = f"{args.out_prefix}_bench_strict"
         hybrid_prefix = f"{args.out_prefix}_bench_hybrid"
-        aggressive_prefix = f"{args.out_prefix}_bench_aggressive"
+        strict_json = run_bench(
+            loops=args.loops,
+            runs=args.runs,
+            warmup=args.warmup,
+            safety_tier="strict",
+            out_prefix=strict_prefix,
+            primitives=args.primitives,
+            ops=args.ops,
+            fail_on_mismatch=True,
+        )
         hybrid_json = run_bench(
             loops=args.loops,
             runs=args.runs,
@@ -130,36 +140,26 @@ def main() -> int:
             ops=args.ops,
             fail_on_mismatch=True,
         )
-        aggressive_json = run_bench(
-            loops=args.loops,
-            runs=args.runs,
-            warmup=args.warmup,
-            safety_tier="aggressive",
-            out_prefix=aggressive_prefix,
-            primitives=args.primitives,
-            ops=args.ops,
-            fail_on_mismatch=False,
-        )
+        strict_payload = json.loads(strict_json.read_text(encoding="utf-8"))
         hybrid_payload = json.loads(hybrid_json.read_text(encoding="utf-8"))
-        aggressive_payload = json.loads(aggressive_json.read_text(encoding="utf-8"))
+        strict_rows = list(strict_payload.get("records", []))
         hybrid_rows = list(hybrid_payload.get("records", []))
-        aggressive_rows = list(aggressive_payload.get("records", []))
+        strict_map = {row_key(row): row for row in strict_rows}
         hybrid_map = {row_key(row): row for row in hybrid_rows}
-        aggressive_map = {row_key(row): row for row in aggressive_rows}
 
         merged: List[Dict[str, object]] = []
-        selected_by_tier = {"hybrid": 0, "aggressive": 0}
-        for key, h_row in hybrid_map.items():
-            best_row = dict(h_row)
-            best_row["source_tier"] = "hybrid"
-            a_row = aggressive_map.get(key)
-            if a_row is not None:
-                a_ok = str(a_row.get("checksums_match_tolerant")) == "True"
-                a_speed = float(a_row.get("speedup_vs_baseline", 0.0))
+        selected_by_tier = {"strict": 0, "hybrid": 0}
+        for key, s_row in strict_map.items():
+            best_row = dict(s_row)
+            best_row["source_tier"] = "strict"
+            h_row = hybrid_map.get(key)
+            if h_row is not None:
+                h_ok = str(h_row.get("checksums_match_tolerant")) == "True"
                 h_speed = float(h_row.get("speedup_vs_baseline", 0.0))
-                if a_ok and a_speed > h_speed:
-                    best_row = dict(a_row)
-                    best_row["source_tier"] = "aggressive"
+                s_speed = float(s_row.get("speedup_vs_baseline", 0.0))
+                if h_ok and h_speed > s_speed:
+                    best_row = dict(h_row)
+                    best_row["source_tier"] = "hybrid"
             selected_by_tier[str(best_row["source_tier"])] += 1
             merged.append(best_row)
 
@@ -172,8 +172,8 @@ def main() -> int:
             "optimized_exec": "auto",
             "records": merged,
             "source": {
+                "strict_json": str(strict_json),
                 "hybrid_json": str(hybrid_json),
-                "aggressive_json": str(aggressive_json),
             },
         }
         bench_json = RESULT_DIR / f"{bench_prefix}.json"

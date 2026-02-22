@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cmath>
+#include <cstdio>
 #include <string>
 
 #include "phase5_support.h"
@@ -16,6 +17,13 @@ spark::Value run_and_get(std::string_view source, std::string_view name) {
 
 void expect_global_int(std::string_view source, std::string_view name, long long expected) {
   const auto actual = run_and_get(source, name);
+  if (actual.kind != spark::Value::Kind::Int) {
+    std::fprintf(stderr,
+                 "phase5 int assert failed: name=%.*s expected=%lld kind=%d value=%s\\nsource:\\n%.*s\\n",
+                 static_cast<int>(name.size()), name.data(), expected,
+                 static_cast<int>(actual.kind), actual.to_string().c_str(),
+                 static_cast<int>(source.size()), source.data());
+  }
   assert(actual.kind == spark::Value::Kind::Int);
   assert(actual.int_value == expected);
 }

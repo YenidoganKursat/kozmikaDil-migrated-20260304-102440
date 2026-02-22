@@ -145,7 +145,9 @@ bool CodeGenerator::infer_top_level(const Program& program) {
         const auto& call = static_cast<const CallExpr&>(expr);
         if (call.callee->kind == Expr::Kind::Variable) {
           const auto& name = static_cast<const VariableExpr&>(*call.callee).name;
-          if (name == "len" || name == "utf8_len" || name == "utf16_len" || name == "bench_tick") {
+          if (name == "len" || name == "utf8_len" || name == "utf16_len" || name == "bench_tick" ||
+              name == "bench_tick_raw" || name == "bench_tick_scale_num" ||
+              name == "bench_tick_scale_den") {
             return ValueKind::Int;
           }
           if (name == "string") {

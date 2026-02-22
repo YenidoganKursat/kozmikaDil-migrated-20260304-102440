@@ -18,8 +18,7 @@ This repository follows a strict layered architecture so each concern is isolate
   - `bench/scripts/`: task-scoped benchmark orchestration scripts.
   - `bench/results/`: generated runtime measurement artifacts.
 - `docs/`
-  - `docs/phase*/`: phase decisions, reports, constraints.
-  - `docs/notes/`: running implementation log and experiment history.
+  - language/runtime specifications and architecture notes only.
 
 ## Separation Rules
 
@@ -27,15 +26,19 @@ This repository follows a strict layered architecture so each concern is isolate
 2. Scripts must be task-focused:
    - one primary benchmark/test task per script.
    - wrappers only delegate, no embedded logic.
-3. Test and benchmark outputs are generated artifacts; source files remain deterministic and reviewable.
+3. Test and benchmark outputs are generated artifacts and should not be treated as source of truth.
 4. Performance-sensitive changes must document:
    - affected layer,
    - correctness impact,
    - runtime-only measurement evidence.
+5. CI architecture guard (`.github/scripts/architecture_guard.py`) enforces:
+   - required layer/test directory presence,
+   - primitive family coverage markers (`i8..i512`, `f8..f512`, `+,-,*,/,%,^`),
+   - workflow wiring for ctest + cross-language + perf gates,
+   - implementation file line budget (`--max-lines`).
 
 ## Runtime Execution Modes
 
 - `interpret`: direct interpreter execution for correctness/debug.
 - `native`: ahead-of-time compiled binary for performance.
 - `builtin` benchmark helpers: micro-kernel mode for synthetic stress; not a direct replacement for full-language operator measurements.
-

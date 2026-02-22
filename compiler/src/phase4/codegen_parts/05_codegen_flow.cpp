@@ -1070,6 +1070,36 @@ Code CodeGenerator::emit_function_call(const CallExpr& call, FunctionContext& ct
     return {out, ScalarKind::Int, true};
   }
 
+  if (callee.name == "bench_tick_raw") {
+    if (!call.args.empty()) {
+      add_error("bench_tick_raw() expects no arguments");
+      return {"", ScalarKind::Invalid, false};
+    }
+    const auto out = next_temp();
+    emit_line(out + " = call @__spark_bench_tick_raw_i64()");
+    return {out, ScalarKind::Int, true};
+  }
+
+  if (callee.name == "bench_tick_scale_num") {
+    if (!call.args.empty()) {
+      add_error("bench_tick_scale_num() expects no arguments");
+      return {"", ScalarKind::Invalid, false};
+    }
+    const auto out = next_temp();
+    emit_line(out + " = call @__spark_bench_tick_scale_num_i64()");
+    return {out, ScalarKind::Int, true};
+  }
+
+  if (callee.name == "bench_tick_scale_den") {
+    if (!call.args.empty()) {
+      add_error("bench_tick_scale_den() expects no arguments");
+      return {"", ScalarKind::Invalid, false};
+    }
+    const auto out = next_temp();
+    emit_line(out + " = call @__spark_bench_tick_scale_den_i64()");
+    return {out, ScalarKind::Int, true};
+  }
+
   const auto is_int_ctor = [](const std::string& name) {
     return name == "i8" || name == "i16" || name == "i32" || name == "i64" || name == "i128" ||
            name == "i256" || name == "i512";

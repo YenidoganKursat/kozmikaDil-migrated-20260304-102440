@@ -31,6 +31,11 @@ const std::vector<double>* dense_list_f64_if_materialized(const Value& list);
 const std::vector<double>& matrix_as_dense_numeric(const Value& matrix, std::vector<double>& scratch);
 const std::vector<double>& list_as_dense_numeric(const Value& list, std::vector<double>& scratch);
 
+// Adaptive SIMD helpers: return true when operation is handled by vector path.
+bool simd_apply_binary_f64(BinaryOp op, const double* lhs, const double* rhs, double* out, std::size_t count);
+bool simd_apply_binary_f64_scalar(BinaryOp op, const double* values, double scalar, double* out,
+                                  std::size_t count, bool values_on_left);
+
 Value matrix_from_dense_f64(std::size_t rows, std::size_t cols, std::vector<double>&& dense,
                             std::optional<double> precomputed_sum = std::nullopt);
 Value list_from_dense_f64(std::vector<double>&& dense);

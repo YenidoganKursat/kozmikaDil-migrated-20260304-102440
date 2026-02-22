@@ -6,6 +6,7 @@ void print_usage() {
             << "            [--target <triple>] [--sysroot <path>] [--lto <mode>]\n"
             << "            [--pgo <instrument|use>] [--pgo-profile <path>]\n"
             << "            [--profile <balanced|max|layered-max>] [--auto-pgo-runs <n>] <file.k>\n"
+            << "            (default: adaptive native run-cache + safe interpreter fallback)\n"
             << "  sparkc build <file.k> [--allow-t5] [-o <out_binary>]\n"
             << "              [--target <triple>] [--sysroot <path>] [--lto <mode>]\n"
             << "              [--pgo <instrument|use>] [--pgo-profile <path>]\n"

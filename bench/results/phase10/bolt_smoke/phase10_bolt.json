@@ -1,6 +1,0 @@
-{
-  "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10/pgo/native_pgo.bin",
-  "profile_cmd": "bench/results/phase10/pgo/native_pgo.bin",
-  "skipped": true,
-  "reason": "perf/perf2bolt/llvm-bolt toolchain not available"
-}

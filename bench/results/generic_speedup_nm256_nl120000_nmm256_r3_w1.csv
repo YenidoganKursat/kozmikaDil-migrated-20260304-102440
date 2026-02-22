@@ -1,4 +1,0 @@
-case,baseline_median_sec,optimized_median_sec,speedup_x,checksum_baseline,checksum_optimized,checksum_abs_diff,runs,warmup
-matrix_generic_ops,0.244832042,0.021886000,11.187,318792.84896166774,318792.84896166774,0.000e+00,3,1
-list_hetero_ops,0.215979125,0.208236167,1.037,32400720000,32400720000,0.000e+00,3,1
-matmul4_sum_ops,0.042911292,0.014417209,2.976,655808968970.51868,655808968970.51099,7.690e-03,3,1

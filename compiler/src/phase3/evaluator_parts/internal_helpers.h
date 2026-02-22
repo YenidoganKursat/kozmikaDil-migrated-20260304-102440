@@ -1,8 +1,11 @@
 #pragma once
 
 #include <functional>
+#include <cstdint>
+#include <cstdlib>
 #include <memory>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include "spark/evaluator.h"
@@ -11,6 +14,24 @@
 namespace spark {
 
 using ExprEvaluator = std::function<Value(const Expr&, const std::shared_ptr<Environment>&)>;
+
+// Canonical env-flag parser used across phases (5-9). Keeping this in one place
+// prevents behavioral drift between runtime/config toggles.
+inline bool parse_env_flag_value(const char* raw, bool fallback) {
+  if (!raw || *raw == '\0') {
+    return fallback;
+  }
+  const std::string value(raw);
+  if (value == "0" || value == "false" || value == "False" || value == "off" ||
+      value == "OFF" || value == "no" || value == "NO") {
+    return false;
+  }
+  return true;
+}
+
+inline bool env_flag_enabled(const char* name, bool fallback) {
+  return parse_env_flag_value(std::getenv(name), fallback);
+}
 
 std::string double_to_string(double value);
 bool is_numeric_kind(const Value& value);
@@ -23,14 +44,19 @@ Value::NumericKind numeric_kind_from_name(const std::string& name);
 bool numeric_kind_is_int(Value::NumericKind kind);
 bool numeric_kind_is_float(Value::NumericKind kind);
 bool numeric_kind_is_high_precision_float(Value::NumericKind kind);
+long double normalize_numeric_float_value(Value::NumericKind kind, long double value);
 std::string high_precision_numeric_to_string(const Value::NumericValue& numeric);
 double numeric_value_to_double(const Value& value);
 long long numeric_value_to_i64(const Value& value);
 bool numeric_value_is_zero(const Value& value);
 Value cast_numeric_to_kind(Value::NumericKind kind, const Value& input);
+bool cast_numeric_to_kind_inplace(Value::NumericKind kind, const Value& input, Value& target);
 Value eval_numeric_binary_value(BinaryOp op, const Value& left, const Value& right);
 bool eval_numeric_binary_value_inplace(BinaryOp op, const Value& left, const Value& right, Value& target);
 bool eval_numeric_repeat_inplace(BinaryOp op, Value& target, const Value& rhs, long long iterations);
+bool copy_numeric_value_inplace(Value& target, const Value& source);
+void prewarm_numeric_runtime();
+void initialize_high_precision_numeric_cache(Value& value);
 Value bench_mixed_numeric_op_runtime(const std::string& kind_name, const std::string& op_name,
                                      long long loops, long long seed_x, long long seed_y);
 void register_numeric_primitive_builtins(const std::shared_ptr<Environment>& globals);

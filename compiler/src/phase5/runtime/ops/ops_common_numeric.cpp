@@ -7,6 +7,12 @@
 #include <string>
 #include <vector>
 
+#if defined(__x86_64__) || defined(__i386__) || defined(_M_X64) || defined(_M_IX86)
+#include <immintrin.h>
+#elif defined(__aarch64__)
+#include <arm_neon.h>
+#endif
+
 #include "phase3/evaluator_parts/internal_helpers.h"
 
 namespace spark::runtime_ops {
@@ -161,16 +167,305 @@ bool has_matrix_operand(const Value& left, const Value& right) {
 }
 
 bool env_bool_enabled(const char* name, bool fallback) {
-  const auto* value = std::getenv(name);
-  if (!value || *value == '\0') {
+  // Delegate to shared parser so all runtime flags interpret values identically.
+  return env_flag_enabled(name, fallback);
+}
+
+namespace {
+
+bool simd_allowed_runtime() {
+  static const bool allowed = []() {
+    if (!env_bool_enabled("SPARK_SIMD_ENABLE", true)) {
+      return false;
+    }
+#if defined(__x86_64__) || defined(__i386__) || defined(_M_X64) || defined(_M_IX86)
+#if defined(__GNUC__) || defined(__clang__)
+    return __builtin_cpu_supports("avx2");
+#else
+    return false;
+#endif
+#elif defined(__aarch64__)
+    // Advanced SIMD (NEON) is mandatory in AArch64.
+    return true;
+#else
+    return false;
+#endif
+  }();
+  return allowed;
+}
+
+std::size_t simd_min_count_runtime() {
+  static const std::size_t threshold = []() -> std::size_t {
+    // Adaptive default: avoid SIMD setup cost on small loops.
+    // This default targets dense list/matrix kernels, not scalar per-op loops.
+    std::size_t fallback = 8192;
+#if defined(__aarch64__)
+    // Apple/ARM scalar auto-vectorization can beat manual NEON for medium sizes.
+    // Keep a high default and allow forcing lower via SPARK_SIMD_MIN_COUNT.
+    fallback = 8'388'608;
+#endif
+    if (const auto* raw = std::getenv("SPARK_SIMD_MIN_COUNT")) {
+      const auto parsed = std::strtoull(raw, nullptr, 10);
+      if (parsed > 0) {
+        fallback = static_cast<std::size_t>(parsed);
+      }
+    }
     return fallback;
-  }
-  const std::string text = value;
-  if (text == "0" || text == "false" || text == "False" || text == "off" || text == "OFF" ||
-      text == "no" || text == "NO") {
+  }();
+  return threshold;
+}
+
+}  // namespace
+
+bool simd_apply_binary_f64(BinaryOp op, const double* lhs, const double* rhs, double* out, std::size_t count) {
+  if (!lhs || !rhs || !out || count < simd_min_count_runtime() || !simd_allowed_runtime()) {
     return false;
   }
+#if defined(__x86_64__) || defined(__i386__) || defined(_M_X64) || defined(_M_IX86)
+#if defined(__GNUC__) || defined(__clang__)
+  if (op != BinaryOp::Add && op != BinaryOp::Sub && op != BinaryOp::Mul) {
+    return false;
+  }
+  const auto has_avx2 = __builtin_cpu_supports("avx2");
+  if (!has_avx2) {
+    return false;
+  }
+  // Compile AVX2 kernels irrespective of global target flags.
+  __attribute__((target("avx2"))) static auto run = [](BinaryOp op_inner,
+                                                        const double* lhs_inner,
+                                                        const double* rhs_inner,
+                                                        double* out_inner,
+                                                        std::size_t count_inner) {
+    std::size_t i = 0;
+    const std::size_t vec_end = count_inner & ~static_cast<std::size_t>(3);
+    for (; i < vec_end; i += 4) {
+      const __m256d a = _mm256_loadu_pd(lhs_inner + i);
+      const __m256d b = _mm256_loadu_pd(rhs_inner + i);
+      __m256d r;
+      switch (op_inner) {
+        case BinaryOp::Add:
+          r = _mm256_add_pd(a, b);
+          break;
+        case BinaryOp::Sub:
+          r = _mm256_sub_pd(a, b);
+          break;
+        case BinaryOp::Mul:
+          r = _mm256_mul_pd(a, b);
+          break;
+        case BinaryOp::Div:
+          r = _mm256_div_pd(a, b);
+          break;
+        default:
+          return;
+      }
+      _mm256_storeu_pd(out_inner + i, r);
+    }
+    for (; i < count_inner; ++i) {
+      switch (op_inner) {
+        case BinaryOp::Add:
+          out_inner[i] = lhs_inner[i] + rhs_inner[i];
+          break;
+        case BinaryOp::Sub:
+          out_inner[i] = lhs_inner[i] - rhs_inner[i];
+          break;
+        case BinaryOp::Mul:
+          out_inner[i] = lhs_inner[i] * rhs_inner[i];
+          break;
+        case BinaryOp::Div:
+          out_inner[i] = lhs_inner[i] / rhs_inner[i];
+          break;
+        default:
+          return;
+      }
+    }
+  };
+  run(op, lhs, rhs, out, count);
   return true;
+#else
+  (void)op;
+  (void)lhs;
+  (void)rhs;
+  (void)out;
+  (void)count;
+  return false;
+#endif
+#elif defined(__aarch64__)
+  if (op != BinaryOp::Add && op != BinaryOp::Sub && op != BinaryOp::Mul && op != BinaryOp::Div) {
+    return false;
+  }
+  std::size_t i = 0;
+  const std::size_t vec_end = count & ~static_cast<std::size_t>(1);
+  for (; i < vec_end; i += 2) {
+    const float64x2_t a = vld1q_f64(lhs + i);
+    const float64x2_t b = vld1q_f64(rhs + i);
+    float64x2_t r;
+    switch (op) {
+      case BinaryOp::Add:
+        r = vaddq_f64(a, b);
+        break;
+      case BinaryOp::Sub:
+        r = vsubq_f64(a, b);
+        break;
+      case BinaryOp::Mul:
+        r = vmulq_f64(a, b);
+        break;
+      default:
+        return false;
+    }
+    vst1q_f64(out + i, r);
+  }
+  for (; i < count; ++i) {
+    switch (op) {
+      case BinaryOp::Add:
+        out[i] = lhs[i] + rhs[i];
+        break;
+      case BinaryOp::Sub:
+        out[i] = lhs[i] - rhs[i];
+        break;
+      case BinaryOp::Mul:
+        out[i] = lhs[i] * rhs[i];
+        break;
+      default:
+        return false;
+    }
+  }
+  return true;
+#else
+  (void)op;
+  (void)lhs;
+  (void)rhs;
+  (void)out;
+  (void)count;
+  return false;
+#endif
+}
+
+bool simd_apply_binary_f64_scalar(BinaryOp op, const double* values, double scalar, double* out,
+                                  std::size_t count, bool values_on_left) {
+  if (!values || !out || count < simd_min_count_runtime() || !simd_allowed_runtime()) {
+    return false;
+  }
+#if defined(__x86_64__) || defined(__i386__) || defined(_M_X64) || defined(_M_IX86)
+#if defined(__GNUC__) || defined(__clang__)
+  if (op != BinaryOp::Add && op != BinaryOp::Sub && op != BinaryOp::Mul) {
+    return false;
+  }
+  const auto has_avx2 = __builtin_cpu_supports("avx2");
+  if (!has_avx2) {
+    return false;
+  }
+  __attribute__((target("avx2"))) static auto run = [](BinaryOp op_inner,
+                                                        const double* values_inner,
+                                                        double scalar_inner,
+                                                        double* out_inner,
+                                                        std::size_t count_inner,
+                                                        bool values_on_left_inner) {
+    std::size_t i = 0;
+    const std::size_t vec_end = count_inner & ~static_cast<std::size_t>(3);
+    const __m256d s = _mm256_set1_pd(scalar_inner);
+    for (; i < vec_end; i += 4) {
+      const __m256d v = _mm256_loadu_pd(values_inner + i);
+      __m256d r;
+      switch (op_inner) {
+        case BinaryOp::Add:
+          r = _mm256_add_pd(v, s);
+          break;
+        case BinaryOp::Sub:
+          r = values_on_left_inner ? _mm256_sub_pd(v, s) : _mm256_sub_pd(s, v);
+          break;
+        case BinaryOp::Mul:
+          r = _mm256_mul_pd(v, s);
+          break;
+        case BinaryOp::Div:
+          r = values_on_left_inner ? _mm256_div_pd(v, s) : _mm256_div_pd(s, v);
+          break;
+        default:
+          return;
+      }
+      _mm256_storeu_pd(out_inner + i, r);
+    }
+    for (; i < count_inner; ++i) {
+      const auto lhs = values_inner[i];
+      switch (op_inner) {
+        case BinaryOp::Add:
+          out_inner[i] = lhs + scalar_inner;
+          break;
+        case BinaryOp::Sub:
+          out_inner[i] = values_on_left_inner ? (lhs - scalar_inner) : (scalar_inner - lhs);
+          break;
+        case BinaryOp::Mul:
+          out_inner[i] = lhs * scalar_inner;
+          break;
+        case BinaryOp::Div:
+          out_inner[i] = values_on_left_inner ? (lhs / scalar_inner) : (scalar_inner / lhs);
+          break;
+        default:
+          return;
+      }
+    }
+  };
+  run(op, values, scalar, out, count, values_on_left);
+  return true;
+#else
+  (void)op;
+  (void)values;
+  (void)scalar;
+  (void)out;
+  (void)count;
+  (void)values_on_left;
+  return false;
+#endif
+#elif defined(__aarch64__)
+  if (op != BinaryOp::Add && op != BinaryOp::Sub && op != BinaryOp::Mul && op != BinaryOp::Div) {
+    return false;
+  }
+  std::size_t i = 0;
+  const std::size_t vec_end = count & ~static_cast<std::size_t>(1);
+  const float64x2_t s = vdupq_n_f64(scalar);
+  for (; i < vec_end; i += 2) {
+    const float64x2_t v = vld1q_f64(values + i);
+    float64x2_t r;
+    switch (op) {
+      case BinaryOp::Add:
+        r = vaddq_f64(v, s);
+        break;
+      case BinaryOp::Sub:
+        r = values_on_left ? vsubq_f64(v, s) : vsubq_f64(s, v);
+        break;
+      case BinaryOp::Mul:
+        r = vmulq_f64(v, s);
+        break;
+      default:
+        return false;
+    }
+    vst1q_f64(out + i, r);
+  }
+  for (; i < count; ++i) {
+    const auto lhs = values[i];
+    switch (op) {
+      case BinaryOp::Add:
+        out[i] = lhs + scalar;
+        break;
+      case BinaryOp::Sub:
+        out[i] = values_on_left ? (lhs - scalar) : (scalar - lhs);
+        break;
+      case BinaryOp::Mul:
+        out[i] = lhs * scalar;
+        break;
+      default:
+        return false;
+    }
+  }
+  return true;
+#else
+  (void)op;
+  (void)values;
+  (void)scalar;
+  (void)out;
+  (void)count;
+  (void)values_on_left;
+  return false;
+#endif
 }
 
 double mod_runtime_safe(double lhs, double rhs) {

@@ -60,19 +60,6 @@ struct TunedFileCache {
   MatmulSchedule schedule = {};
 };
 
-bool env_bool_enabled(const char* name, bool fallback) {
-  const auto* value = std::getenv(name);
-  if (!value || *value == '\0') {
-    return fallback;
-  }
-  const std::string text = value;
-  if (text == "0" || text == "false" || text == "False" || text == "off" || text == "OFF" ||
-      text == "no" || text == "NO") {
-    return false;
-  }
-  return true;
-}
-
 std::optional<std::size_t> env_size(const char* name) {
   const auto* value = std::getenv(name);
   if (!value || *value == '\0') {
@@ -225,7 +212,7 @@ TunedFileCache& tuned_file_cache() {
 }
 
 void maybe_apply_tuned_file(MatmulSchedule& schedule) {
-  const bool use_tuned = env_bool_enabled("SPARK_MATMUL_USE_TUNED", true);
+  const bool use_tuned = env_flag_enabled("SPARK_MATMUL_USE_TUNED", true);
   std::string path = "bench/results/matmul_tuned_schedule.json";
   if (const auto* env_path = std::getenv("SPARK_MATMUL_TUNED_CONFIG")) {
     if (*env_path != '\0') {
@@ -279,7 +266,7 @@ MatmulSchedule resolve_schedule(const MatmulKernelIR& ir) {
 
   // Keep tuned/default schedule adaptive by size: 128 prefers wider tiles,
   // while 256/512 benefit from shorter cache-friendly tiles.
-  if (!env_bool_enabled("SPARK_MATMUL_DISABLE_DIM_ADAPTIVE", false)) {
+  if (!env_flag_enabled("SPARK_MATMUL_DISABLE_DIM_ADAPTIVE", false)) {
     if (!ir.use_f32) {
       if (max_dim <= 160) {
         schedule.tile_m = 96;
@@ -316,7 +303,7 @@ MatmulSchedule resolve_schedule(const MatmulKernelIR& ir) {
     schedule.source = has_blas_backend() ? "env_blas" : "env_blas_fallback";
   } else {
     const bool respect_tuned_backend =
-        env_bool_enabled("SPARK_MATMUL_AUTO_RESPECT_TUNED_BACKEND", false);
+        env_flag_enabled("SPARK_MATMUL_AUTO_RESPECT_TUNED_BACKEND", false);
     if (!(respect_tuned_backend && schedule.source == "tuned_file")) {
       const auto dim_threshold = env_size("SPARK_MATMUL_AUTO_DIM_THRESHOLD").value_or(224ull);
       const auto small_dim_blas_threshold =

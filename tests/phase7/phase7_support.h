@@ -15,7 +15,9 @@ std::vector<double> as_number_list(const spark::Value& value);
 std::string analyze_dump(std::string_view source, std::string_view which);
 
 void run_phase7_list_tests();
+void run_phase7_list_extreme_tests();
 void run_phase7_matrix_tests();
+void run_phase7_matrix_extreme_tests();
 void run_phase7_analyze_tests();
 
 }  // namespace phase7_test

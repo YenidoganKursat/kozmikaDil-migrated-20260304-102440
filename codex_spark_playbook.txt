@@ -1,1 +1,0 @@
-docs/notes/codex_spark_playbook.txt

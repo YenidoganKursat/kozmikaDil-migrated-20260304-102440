@@ -36,6 +36,7 @@ target_link_libraries(sparkc PRIVATE spark_compiler spark_runtime spark_stdlib)
 
 if(SPARK_BUILD_TESTS)
   set(SPARK_TEST_SOURCE_DIR ${CMAKE_SOURCE_DIR}/tests)
+  find_package(Python3 COMPONENTS Interpreter)
   function(spark_enable_test_assertions TARGET_NAME)
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
       target_compile_options(${TARGET_NAME} PRIVATE -UNDEBUG)
@@ -76,8 +77,11 @@ if(SPARK_BUILD_TESTS)
 
   add_executable(sparkc_phase5_tests
     ${SPARK_TEST_SOURCE_DIR}/phase5/list/list_container_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase5/list/list_container_extreme_tests.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase5/matrix/matrix_container_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase5/matrix/matrix_container_extreme_tests.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase5/primitives/primitive_numeric_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase5/primitives/primitive_numeric_extreme_tests.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase5/phase5_main.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase5/phase5_support.cpp
   )
@@ -86,10 +90,19 @@ if(SPARK_BUILD_TESTS)
   target_link_libraries(sparkc_phase5_tests PRIVATE spark_compiler)
   spark_enable_test_assertions(sparkc_phase5_tests)
   add_test(NAME sparkc_phase5_tests COMMAND sparkc_phase5_tests)
+  if(Python3_Interpreter_FOUND)
+    add_test(
+      NAME sparkc_phase5_crosslang_primitives
+      COMMAND ${Python3_EXECUTABLE} ${SPARK_TEST_SOURCE_DIR}/phase5/primitives/crosslang_native_primitives_tests.py
+    )
+    set_tests_properties(sparkc_phase5_crosslang_primitives PROPERTIES TIMEOUT 1800)
+  endif()
 
   add_executable(sparkc_phase6_tests
     ${SPARK_TEST_SOURCE_DIR}/phase6/list/phase6_list_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase6/list/phase6_list_extreme_tests.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase6/matrix/phase6_matrix_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase6/matrix/phase6_matrix_extreme_tests.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase6/phase6_main.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase6/phase6_support.cpp
   )
@@ -101,7 +114,9 @@ if(SPARK_BUILD_TESTS)
 
   add_executable(sparkc_phase7_tests
     ${SPARK_TEST_SOURCE_DIR}/phase7/list/pipeline_list_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase7/list/pipeline_list_extreme_tests.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase7/matrix/pipeline_matrix_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase7/matrix/pipeline_matrix_extreme_tests.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase7/analyze/pipeline_analyze_tests.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase7/phase7_main.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase7/phase7_support.cpp
@@ -114,6 +129,7 @@ if(SPARK_BUILD_TESTS)
 
   add_executable(sparkc_phase8_tests
     ${SPARK_TEST_SOURCE_DIR}/phase8/matmul/matmul_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase8/matmul/matmul_extreme_tests.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase8/analyze/matmul_analyze_tests.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase8/phase8_main.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase8/phase8_support.cpp
@@ -126,8 +142,11 @@ if(SPARK_BUILD_TESTS)
 
   add_executable(sparkc_phase9_tests
     ${SPARK_TEST_SOURCE_DIR}/phase9/runtime/async_task_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase9/runtime/async_task_extreme_tests.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase9/runtime/channel_stream_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase9/runtime/channel_stream_extreme_tests.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase9/runtime/parallel_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase9/runtime/parallel_extreme_tests.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase9/analyze/safety_diagnostics_tests.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase9/phase9_main.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase9/phase9_support.cpp
@@ -140,6 +159,7 @@ if(SPARK_BUILD_TESTS)
 
   add_executable(sparkc_phase10_tests
     ${SPARK_TEST_SOURCE_DIR}/phase10/dispatch/cpu_dispatch_tests.cpp
+    ${SPARK_TEST_SOURCE_DIR}/phase10/dispatch/cpu_dispatch_extreme_tests.cpp
     ${SPARK_TEST_SOURCE_DIR}/phase10/phase10_main.cpp
   )
   target_include_directories(sparkc_phase10_tests PRIVATE ${SPARK_TEST_SOURCE_DIR}

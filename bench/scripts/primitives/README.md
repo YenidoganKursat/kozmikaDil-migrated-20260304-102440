@@ -2,6 +2,25 @@
 
 Rule: one script = one primitive benchmark task.
 
+Modular controller layout:
+- `benchmark_primitive_ops_random.py`
+  - thin entrypoint only
+  - runtime/controller modules:
+    - `random_ops/cli.py` (argument parsing + orchestration)
+    - `random_ops/runtime.py` (baseline/optimized profile runners)
+    - `random_ops/program.py` (Kozmika benchmark program generator)
+    - `random_ops/checksum.py` (tolerance/checksum policy)
+    - `random_ops/io_utils.py` (subprocess + csv/json helpers)
+- `benchmark_single_op_window_crosslang.py`
+  - thin entrypoint only
+  - cross-language controller modules:
+    - `single_op_window/cli.py`
+    - `single_op_window/kozmika_runner.py`
+    - `single_op_window/c_family_runner.py`
+    - `single_op_window/csharp_runner.py`
+    - `single_op_window/builders.py`
+    - `single_op_window/common.py`
+
 - `benchmark_primitive_scalar_core.py`
   - Shared helper for timing and JSON output.
   - Runs one scalar loop benchmark for one primitive.
@@ -29,8 +48,14 @@ Per-primitive wrappers (single responsibility):
 
 Matrix-free operator sweep:
 - `benchmark_float_ops_100m.py`
-  - runs `+, -, *, /, %` separately for `f8..f512`
+  - runs `+, -, *, /, %, ^` separately for `f8..f512`
   - default loop count: `100_000_000`
+  - performance layers:
+    - `--perf-layer strict`: strict repeat semantics, no aggregate shortcut
+    - `--perf-layer tier-max`: layered perf mode
+      - native codegen: `SPARK_REPEAT_AGGREGATE=1`
+      - high precision interpreter fallback: `SPARK_HP_REPEAT_AGGREGATE=1`
+      - build profile: `SPARK_OPT_PROFILE=layered-max`
   - outputs JSON: `bench/results/primitives/float_ops_100m.json`
 
 All-primitive random operator sweep (baseline vs optimized):
@@ -51,7 +76,6 @@ All-primitive random operator sweep (baseline vs optimized):
   - safety tiers:
     - `--safety-tier strict`: correctness-first (`-O3`, no approximate high-precision native)
     - `--safety-tier hybrid` (default): low-width types native fast path, wide/high-precision types interpreter strict path
-    - `--safety-tier aggressive`: max throughput (`-Ofast`, LTO full, approximate high-precision native enabled)
   - tolerant checksum policy fields are emitted per row:
     - `checksums_match_tolerant`
     - `checksum_abs_diff`
@@ -93,7 +117,7 @@ Hybrid one-shot speed + BigDecimal pipeline:
   - runs `benchmark_primitive_ops_random.py` with:
     - baseline: `interpret`
     - optimized: `auto`
-    - configurable `--safety-tier strict|hybrid|aggressive`
+    - configurable `--safety-tier strict|hybrid`
   - then runs `check_float_ops_stepwise_bigdecimal.py`
   - produces:
     - `bench/results/primitives/<out-prefix>_report.json`
@@ -101,9 +125,21 @@ Hybrid one-shot speed + BigDecimal pipeline:
 
 Integer correctness checks (Python reference):
 - `validate_int_ops_python.py`
-  - validates `i8..i512` operators (`+,-,*,/,%`) on deterministic random streams.
+  - validates `i8..i512` operators (`+,-,*,/,%,^`) on deterministic random streams.
   - mirrors current runtime semantics (signed saturating arithmetic, C-style remainder).
+  - optional `--include-extremes`:
+    - deterministic boundary vectors (min/max/near-boundary/zero/sign flips),
+    - plus extra seeded edge-random vectors per primitive/operator.
   - outputs JSON: `bench/results/primitives/int_ops_python_validation.json`
+
+Float extreme-case cross-language checks:
+- `validate_float_extreme_bigdecimal.py`
+  - validates `f8..f512` operators (`+,-,*,/,%,^`) on deterministic extreme vectors.
+  - reference backends:
+    - low families (`f8/f16/f32/f64`): Java `BigDecimal` primary, Python `decimal` cross-check,
+    - high families (`f128/f256/f512`): MPFR strict primary, Java/Python informational cross-check.
+  - applies primitive-aware strict tolerance gates and reports per primitive/operator max errors.
+  - outputs JSON: `bench/results/primitives/float_extreme_bigdecimal_validation.json`
 
 Baseline convention:
 - Use `benchmark_all_primitives_cycle.py --reset-baseline` once to set the 1x baseline for all primitives.

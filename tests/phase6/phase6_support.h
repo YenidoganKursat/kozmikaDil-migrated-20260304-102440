@@ -16,6 +16,8 @@ std::vector<long long> as_int_list(const spark::Value& value);
 void expect_type(std::string_view source, std::string_view name, const std::string& expected);
 
 void run_list_phase6_tests();
+void run_list_phase6_extreme_tests();
 void run_matrix_phase6_tests();
+void run_matrix_phase6_extreme_tests();
 
 }  // namespace phase6_test

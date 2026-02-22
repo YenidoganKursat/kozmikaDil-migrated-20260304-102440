@@ -114,6 +114,28 @@ Value Interpreter::eval_binary(BinaryOp op, const Value& left, const Value& righ
                                            (truthy(left) || truthy(right)));
   }
 
+  // Primitive numeric fast-path: avoid list/matrix/string dispatch when both
+  // operands are explicit numeric primitives (f8..f512, i8..i512).
+  if (left.kind == Value::Kind::Numeric && right.kind == Value::Kind::Numeric) {
+    switch (op) {
+      case BinaryOp::Add:
+      case BinaryOp::Sub:
+      case BinaryOp::Mul:
+      case BinaryOp::Div:
+      case BinaryOp::Mod:
+      case BinaryOp::Pow:
+      case BinaryOp::Eq:
+      case BinaryOp::Ne:
+      case BinaryOp::Lt:
+      case BinaryOp::Lte:
+      case BinaryOp::Gt:
+      case BinaryOp::Gte:
+        return eval_numeric_binary_value(op, left, right);
+      default:
+        break;
+    }
+  }
+
   if (is_numeric_kind(left) && is_numeric_kind(right) &&
       (op == BinaryOp::Eq || op == BinaryOp::Ne || op == BinaryOp::Lt || op == BinaryOp::Lte ||
        op == BinaryOp::Gt || op == BinaryOp::Gte)) {

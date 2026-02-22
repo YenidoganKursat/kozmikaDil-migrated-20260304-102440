@@ -1,4 +1,5 @@
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "../../phase3/evaluator_parts/internal_helpers.h"
@@ -158,7 +159,10 @@ Value evaluate_indexed_expression(const ExprEvaluator& evaluator, const Value& t
     if (normalized < 0 || static_cast<std::size_t>(normalized) >= current.list_value.size()) {
       throw EvalException("index out of range");
     }
-    current = current.list_value[static_cast<std::size_t>(normalized)];
+    // Copy through a temporary to avoid assigning from a subobject of `current`
+    // back into `current` (self-aliasing UB under sanitizers).
+    Value next = current.list_value[static_cast<std::size_t>(normalized)];
+    current = std::move(next);
   }
   return current;
 }

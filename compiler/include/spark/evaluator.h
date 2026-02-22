@@ -147,6 +147,7 @@ struct Value {
 
   struct NumericValue {
     NumericKind kind = NumericKind::F64;
+    std::uint64_t revision = 1;
     std::string payload;
     bool parsed_int_valid = false;
     __int128_t parsed_int = 0;
@@ -199,7 +200,11 @@ struct Environment {
 
   std::shared_ptr<Environment> parent;
   bool frozen = false;
+  std::uint64_t stable_id = 0;
   std::unordered_map<std::string, Value> values;
+  // Positive owner-cache for lexical name resolution. This reduces repeated
+  // parent-chain walks in hot loops while preserving strict semantics.
+  mutable std::unordered_map<std::string, const Environment*> lookup_owner_cache;
 };
 
 struct EvalException : public std::runtime_error {

@@ -143,6 +143,7 @@ Value Value::numeric_value_of(NumericKind kind, std::string payload) {
     if (high_precision_kind) {
       value.numeric_value =
           make_numeric_payload(kind, std::move(payload), false, 0, false, 0.0L);
+      initialize_high_precision_numeric_cache(value);
     } else {
       const auto parsed = vc_parse_long_double(payload);
       value.numeric_value =

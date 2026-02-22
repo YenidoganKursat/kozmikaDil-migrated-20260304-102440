@@ -31,7 +31,10 @@ void expect_global_matrix_string(std::string_view source, std::string_view name,
 void expect_type(std::string_view source, std::string_view name, const std::string& expected);
 
 void run_list_container_tests();
+void run_list_container_extreme_tests();
 void run_matrix_container_tests();
+void run_matrix_container_extreme_tests();
 void run_primitive_numeric_tests();
+void run_primitive_numeric_extreme_tests();
 
 }  // namespace phase5_test

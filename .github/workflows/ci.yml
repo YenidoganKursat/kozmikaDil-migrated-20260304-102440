@@ -5,6 +5,7 @@ on:
     branches: [ "master", "main", "codex/**" ]
   pull_request:
     branches: [ "master", "main" ]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -26,38 +27,57 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build clang g++ make python3 python3-pip libmpfr-dev libgmp-dev default-jdk
 
+      - name: Architecture and coverage guard
+        run: python3 ./.github/scripts/architecture_guard.py --max-lines 1800
+
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSPARK_BUILD_TESTS=ON
 
       - name: Build
         run: cmake --build build -j 4
 
-      - name: Run unit test binaries
-        run: |
-          ./build/compiler/sparkc_smoke_test
-          ./build/compiler/sparkc_parser_tests
-          ./build/compiler/sparkc_eval_tests
-          ./build/compiler/sparkc_typecheck_tests
-          ./build/compiler/sparkc_codegen_tests
-          ./build/compiler/sparkc_phase5_tests
-          ./build/compiler/sparkc_phase6_tests
-          ./build/compiler/sparkc_phase7_tests
-          ./build/compiler/sparkc_phase8_tests
-          ./build/compiler/sparkc_phase9_tests
-          ./build/compiler/sparkc_phase10_tests
+      - name: Discover CTest entries
+        run: ctest --test-dir build -N
 
-      - name: Runtime benchmark smoke (no build-time measurement)
-        env:
-          SPARK_PRIMITIVE_FUZZ_SAMPLES: 50000
-        run: ./build/compiler/sparkc_phase5_tests
-
-      - name: Primitive float reference smoke (Java BigDecimal + MPFR)
+      - name: Run CTest suite (core)
         run: |
-          python3 ./bench/scripts/primitives/check_float_ops_stepwise_bigdecimal.py \
-            --loops 300 \
-            --python-crosscheck \
-            --python-loops 300 \
-            --fail-on-nonfinite
+          ctest --test-dir build \
+            --parallel 4 \
+            --output-on-failure \
+            --timeout 1800 \
+            -E "sparkc_phase5_crosslang_primitives" \
+            --output-log ./build/ctest_core.log
+
+      - name: Cross-language primitive correctness (CI profile)
+        run: |
+          python3 ./tests/phase5/primitives/crosslang_native_primitives_tests.py \
+            --int-loops 25000 \
+            --int-extreme-random 64 \
+            --float-loops 500 \
+            --float-python-loops 500 \
+            --float-extreme-random 32 \
+            --single-op-loops 120000 \
+            --single-op-runs 2
+
+      - name: Stability replay (critical phases)
+        run: |
+          ctest --test-dir build \
+            --output-on-failure \
+            --timeout 1800 \
+            --repeat until-fail:3 \
+            -R "sparkc_typecheck_tests|sparkc_codegen_tests|sparkc_phase(5|6|7|8|9|10)_tests" \
+            --output-log ./build/ctest_replay.log
+
+      - name: Upload CTest logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-ctest-logs
+          path: |
+            build/ctest_core.log
+            build/ctest_replay.log
+            build/Testing/Temporary/LastTest.log
+          if-no-files-found: warn
 
   compiler-matrix-build:
     name: Compiler Matrix Build (${{ matrix.name }})
@@ -91,11 +111,12 @@ jobs:
       - name: Build
         run: cmake --build build_${{ matrix.name }} -j 4
 
-      - name: Smoke tests
+      - name: CTest smoke set
         run: |
-          ./build_${{ matrix.name }}/compiler/sparkc_smoke_test
-          ./build_${{ matrix.name }}/compiler/sparkc_parser_tests
-          ./build_${{ matrix.name }}/compiler/sparkc_eval_tests
+          ctest --test-dir build_${{ matrix.name }} \
+            --output-on-failure \
+            --timeout 1200 \
+            -R "sparkc_smoke_test|sparkc_parser_tests|sparkc_eval_tests|sparkc_typecheck_tests|sparkc_codegen_tests"
 
   sanitizer:
     name: Sanitizer (ASan + UBSan)
@@ -130,10 +151,10 @@ jobs:
           ASAN_OPTIONS: "detect_leaks=0:halt_on_error=1:strict_string_checks=1"
           UBSAN_OPTIONS: "halt_on_error=1:print_stacktrace=1"
         run: |
-          ./build_san/compiler/sparkc_smoke_test
-          ./build_san/compiler/sparkc_parser_tests
-          ./build_san/compiler/sparkc_eval_tests
-          ./build_san/compiler/sparkc_phase5_tests
+          ctest --test-dir build_san \
+            --output-on-failure \
+            --timeout 1800 \
+            -R "sparkc_smoke_test|sparkc_parser_tests|sparkc_eval_tests|sparkc_typecheck_tests|sparkc_codegen_tests|sparkc_phase5_tests"
 
   thread-sanitizer:
     name: Thread Sanitizer (TSan)
@@ -167,8 +188,11 @@ jobs:
         env:
           TSAN_OPTIONS: "halt_on_error=1 history_size=7 second_deadlock_stack=1"
         run: |
-          ./build_tsan/compiler/sparkc_smoke_test
-          ./build_tsan/compiler/sparkc_phase9_tests
+          ctest --test-dir build_tsan \
+            --output-on-failure \
+            --timeout 1800 \
+            --parallel 1 \
+            -R "sparkc_smoke_test|sparkc_phase9_tests"
 
   perf-regression:
     name: Performance Regression Gate

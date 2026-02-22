@@ -1,4 +1,7 @@
+#include <array>
 #include <cmath>
+#include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <limits>
 #include <optional>
@@ -13,16 +16,602 @@ namespace spark {
 namespace {
 
 bool env_bool_enabled_binary_expr(const char* name, bool fallback) {
-  const auto* value = std::getenv(name);
-  if (!value || *value == '\0') {
-    return fallback;
-  }
-  const std::string text = value;
-  if (text == "0" || text == "false" || text == "False" || text == "off" || text == "OFF" ||
-      text == "no" || text == "NO") {
+  return env_flag_enabled(name, fallback);
+}
+
+bool binary_pic_enabled() {
+  static const bool enabled = env_bool_enabled_binary_expr("SPARK_BINARY_PIC", true);
+  return enabled;
+}
+
+int binary_pic_warmup_threshold() {
+  static const int warmup = [] {
+    const char* raw = std::getenv("SPARK_BINARY_PIC_WARMUP");
+    if (!raw || *raw == '\0') {
+      return 8;
+    }
+    const int parsed = std::atoi(raw);
+    if (parsed <= 0) {
+      return 1;
+    }
+    return parsed;
+  }();
+  return warmup;
+}
+
+bool binary_pic_trace_enabled() {
+  static const bool enabled = env_bool_enabled_binary_expr("SPARK_BINARY_PIC_TRACE", false);
+  return enabled;
+}
+
+bool is_numeric_pic_operator(const BinaryOp op) {
+  return op == BinaryOp::Add || op == BinaryOp::Sub || op == BinaryOp::Mul ||
+         op == BinaryOp::Div || op == BinaryOp::Mod || op == BinaryOp::Pow ||
+         op == BinaryOp::Eq || op == BinaryOp::Ne || op == BinaryOp::Lt ||
+         op == BinaryOp::Lte || op == BinaryOp::Gt || op == BinaryOp::Gte;
+}
+
+bool is_int_or_double_value(const Value& value) {
+  return value.kind == Value::Kind::Int || value.kind == Value::Kind::Double;
+}
+
+bool is_low_float_numeric_kind(const Value::NumericKind kind) {
+  return kind == Value::NumericKind::F8 || kind == Value::NumericKind::F16 ||
+         kind == Value::NumericKind::BF16 || kind == Value::NumericKind::F32 ||
+         kind == Value::NumericKind::F64;
+}
+
+bool is_low_float_numeric_value(const Value& value, Value::NumericKind& out_kind) {
+  if (value.kind != Value::Kind::Numeric || !value.numeric_value) {
     return false;
   }
+  const auto kind = value.numeric_value->kind;
+  if (!is_low_float_numeric_kind(kind) || numeric_kind_is_int(kind) ||
+      numeric_kind_is_high_precision_float(kind)) {
+    return false;
+  }
+  out_kind = kind;
   return true;
+}
+
+long double read_numeric_scalar_pic(const Value& value) {
+  if (value.kind == Value::Kind::Numeric && value.numeric_value) {
+    if (value.numeric_value->parsed_float_valid) {
+      return value.numeric_value->parsed_float;
+    }
+    if (value.numeric_value->parsed_int_valid) {
+      return static_cast<long double>(value.numeric_value->parsed_int);
+    }
+  }
+  return static_cast<long double>(numeric_value_to_double(value));
+}
+
+Value make_low_float_numeric_value(const Value::NumericKind kind, long double out) {
+  const auto normalized = normalize_numeric_float_value(kind, out);
+  return Value::numeric_float_value_of(kind, normalized);
+}
+
+std::optional<long long> integral_pow_exponent_pic(const double value) {
+  if (!std::isfinite(value)) {
+    return std::nullopt;
+  }
+  const double rounded = std::nearbyint(value);
+  if (std::fabs(value - rounded) > 1e-12) {
+    return std::nullopt;
+  }
+  if (std::fabs(rounded) > 1'000'000.0) {
+    return std::nullopt;
+  }
+  return static_cast<long long>(rounded);
+}
+
+double powi_double_pic(double base, long long exponent) {
+  if (exponent == 0) {
+    return 1.0;
+  }
+  if (base == 0.0 && exponent < 0) {
+    return std::numeric_limits<double>::infinity();
+  }
+  const bool negative = exponent < 0;
+  unsigned long long n = static_cast<unsigned long long>(negative ? -exponent : exponent);
+  double result = 1.0;
+  double factor = base;
+  while (n > 0ULL) {
+    if ((n & 1ULL) != 0ULL) {
+      result *= factor;
+    }
+    n >>= 1ULL;
+    if (n > 0ULL) {
+      factor *= factor;
+    }
+  }
+  return negative ? (1.0 / result) : result;
+}
+
+template <typename T>
+T fast_mod_pic(T x, T y) {
+  const T q = std::trunc(x / y);
+  const T r = x - q * y;
+  if (!std::isfinite(r) || std::fabs(r) >= std::fabs(y)) {
+    return std::fmod(x, y);
+  }
+  if (r == static_cast<T>(0)) {
+    return std::copysign(static_cast<T>(0), x);
+  }
+  if ((x < static_cast<T>(0) && r > static_cast<T>(0)) ||
+      (x > static_cast<T>(0) && r < static_cast<T>(0))) {
+    return std::fmod(x, y);
+  }
+  return r;
+}
+
+enum class BinaryPicRoute : std::uint8_t {
+  None = 0,
+  IntInt = 1,
+  DoubleLike = 2,
+  NumericLowFloat = 3,
+  NumericHighPrecision = 4,
+};
+
+struct BinaryPicEntry {
+  const Expr* expr = nullptr;
+  std::uint64_t env_id = 0;
+  BinaryOp op = BinaryOp::Add;
+  std::uint16_t lhs_sig = 0;
+  std::uint16_t rhs_sig = 0;
+  std::uint32_t hits = 0;
+  BinaryPicRoute route = BinaryPicRoute::None;
+  bool memo_valid = false;
+  std::uint64_t lhs_stamp = 0;
+  std::uint64_t rhs_stamp = 0;
+  Value memo_value = Value::nil();
+};
+
+std::uint16_t value_kind_signature(const Value& value) {
+  if (value.kind == Value::Kind::Numeric && value.numeric_value.has_value()) {
+    return static_cast<std::uint16_t>(0x100U + static_cast<std::uint16_t>(value.numeric_value->kind));
+  }
+  return static_cast<std::uint16_t>(value.kind);
+}
+
+BinaryPicEntry& binary_pic_cache_slot(const Expr* expr, std::uint64_t env_id, BinaryOp op,
+                                      std::uint16_t lhs_sig, std::uint16_t rhs_sig) {
+  constexpr std::size_t kPicCacheSize = 4096;
+  static thread_local std::array<BinaryPicEntry, kPicCacheSize> cache{};
+  const auto key_a = static_cast<std::size_t>(reinterpret_cast<std::uintptr_t>(expr));
+  const auto key_b = static_cast<std::size_t>(env_id) * 11400714819323198485ull;
+  const auto key_c = (static_cast<std::size_t>(op) << 17U) ^
+                     (static_cast<std::size_t>(lhs_sig) << 7U) ^
+                     static_cast<std::size_t>(rhs_sig);
+  auto& slot = cache[(key_a ^ key_b ^ key_c) & (kPicCacheSize - 1)];
+  return slot;
+}
+
+BinaryPicRoute choose_binary_pic_route(const BinaryOp op, const Value& lhs, const Value& rhs) {
+  if (!is_numeric_pic_operator(op)) {
+    return BinaryPicRoute::None;
+  }
+
+  if (is_int_or_double_value(lhs) && is_int_or_double_value(rhs)) {
+    if (lhs.kind == Value::Kind::Int && rhs.kind == Value::Kind::Int) {
+      return BinaryPicRoute::IntInt;
+    }
+    return BinaryPicRoute::DoubleLike;
+  }
+
+  Value::NumericKind lhs_numeric_kind = Value::NumericKind::F64;
+  Value::NumericKind rhs_numeric_kind = Value::NumericKind::F64;
+  if (is_low_float_numeric_value(lhs, lhs_numeric_kind) &&
+      is_low_float_numeric_value(rhs, rhs_numeric_kind) &&
+      lhs_numeric_kind == rhs_numeric_kind) {
+    return BinaryPicRoute::NumericLowFloat;
+  }
+
+  if (lhs.kind == Value::Kind::Numeric && rhs.kind == Value::Kind::Numeric &&
+      lhs.numeric_value && rhs.numeric_value &&
+      numeric_kind_is_high_precision_float(lhs.numeric_value->kind) &&
+      lhs.numeric_value->kind == rhs.numeric_value->kind) {
+    return BinaryPicRoute::NumericHighPrecision;
+  }
+
+  return BinaryPicRoute::None;
+}
+
+Value execute_binary_pic_route(const BinaryPicRoute route, const BinaryOp op,
+                               const Value& lhs, const Value& rhs) {
+  switch (route) {
+    case BinaryPicRoute::IntInt: {
+      switch (op) {
+        case BinaryOp::Add:
+          return Value::int_value_of(lhs.int_value + rhs.int_value);
+        case BinaryOp::Sub:
+          return Value::int_value_of(lhs.int_value - rhs.int_value);
+        case BinaryOp::Mul:
+          return Value::int_value_of(lhs.int_value * rhs.int_value);
+        case BinaryOp::Div:
+          if (rhs.int_value == 0) {
+            throw EvalException("division by zero");
+          }
+          return Value::double_value_of(static_cast<double>(lhs.int_value) /
+                                        static_cast<double>(rhs.int_value));
+        case BinaryOp::Mod:
+          if (rhs.int_value == 0) {
+            throw EvalException("modulo by zero");
+          }
+          return Value::int_value_of(lhs.int_value % rhs.int_value);
+        case BinaryOp::Pow: {
+          const auto lhs_double = static_cast<double>(lhs.int_value);
+          const auto rhs_double = static_cast<double>(rhs.int_value);
+          if (const auto integral_exp = integral_pow_exponent_pic(rhs_double); integral_exp.has_value()) {
+            return Value::double_value_of(powi_double_pic(lhs_double, *integral_exp));
+          }
+          return Value::double_value_of(std::pow(lhs_double, rhs_double));
+        }
+        case BinaryOp::Eq:
+          return Value::bool_value_of(lhs.int_value == rhs.int_value);
+        case BinaryOp::Ne:
+          return Value::bool_value_of(lhs.int_value != rhs.int_value);
+        case BinaryOp::Lt:
+          return Value::bool_value_of(lhs.int_value < rhs.int_value);
+        case BinaryOp::Lte:
+          return Value::bool_value_of(lhs.int_value <= rhs.int_value);
+        case BinaryOp::Gt:
+          return Value::bool_value_of(lhs.int_value > rhs.int_value);
+        case BinaryOp::Gte:
+          return Value::bool_value_of(lhs.int_value >= rhs.int_value);
+        default:
+          break;
+      }
+      break;
+    }
+    case BinaryPicRoute::DoubleLike: {
+      const double lhs_double = (lhs.kind == Value::Kind::Int)
+                                    ? static_cast<double>(lhs.int_value)
+                                    : lhs.double_value;
+      const double rhs_double = (rhs.kind == Value::Kind::Int)
+                                    ? static_cast<double>(rhs.int_value)
+                                    : rhs.double_value;
+      switch (op) {
+        case BinaryOp::Add:
+          return Value::double_value_of(lhs_double + rhs_double);
+        case BinaryOp::Sub:
+          return Value::double_value_of(lhs_double - rhs_double);
+        case BinaryOp::Mul:
+          return Value::double_value_of(lhs_double * rhs_double);
+        case BinaryOp::Div:
+          if (rhs_double == 0.0) {
+            throw EvalException("division by zero");
+          }
+          return Value::double_value_of(lhs_double / rhs_double);
+        case BinaryOp::Mod:
+          if (rhs_double == 0.0) {
+            throw EvalException("modulo by zero");
+          }
+          return Value::double_value_of(fast_mod_pic(lhs_double, rhs_double));
+        case BinaryOp::Pow:
+          if (const auto integral_exp = integral_pow_exponent_pic(rhs_double); integral_exp.has_value()) {
+            return Value::double_value_of(powi_double_pic(lhs_double, *integral_exp));
+          }
+          return Value::double_value_of(std::pow(lhs_double, rhs_double));
+        case BinaryOp::Eq:
+          return Value::bool_value_of(lhs_double == rhs_double);
+        case BinaryOp::Ne:
+          return Value::bool_value_of(lhs_double != rhs_double);
+        case BinaryOp::Lt:
+          return Value::bool_value_of(lhs_double < rhs_double);
+        case BinaryOp::Lte:
+          return Value::bool_value_of(lhs_double <= rhs_double);
+        case BinaryOp::Gt:
+          return Value::bool_value_of(lhs_double > rhs_double);
+        case BinaryOp::Gte:
+          return Value::bool_value_of(lhs_double >= rhs_double);
+        default:
+          break;
+      }
+      break;
+    }
+    case BinaryPicRoute::NumericLowFloat: {
+      const auto kind = lhs.numeric_value->kind;
+      const auto lhs_scalar = read_numeric_scalar_pic(lhs);
+      const auto rhs_scalar = read_numeric_scalar_pic(rhs);
+      const bool as_f64 = kind == Value::NumericKind::F64;
+      switch (op) {
+        case BinaryOp::Add:
+          return as_f64
+                     ? make_low_float_numeric_value(
+                           kind,
+                           static_cast<long double>(static_cast<double>(lhs_scalar) +
+                                                    static_cast<double>(rhs_scalar)))
+                     : make_low_float_numeric_value(
+                           kind,
+                           static_cast<long double>(static_cast<float>(lhs_scalar) +
+                                                    static_cast<float>(rhs_scalar)));
+        case BinaryOp::Sub:
+          return as_f64
+                     ? make_low_float_numeric_value(
+                           kind,
+                           static_cast<long double>(static_cast<double>(lhs_scalar) -
+                                                    static_cast<double>(rhs_scalar)))
+                     : make_low_float_numeric_value(
+                           kind,
+                           static_cast<long double>(static_cast<float>(lhs_scalar) -
+                                                    static_cast<float>(rhs_scalar)));
+        case BinaryOp::Mul:
+          if (lhs_scalar == 0.0L || rhs_scalar == 0.0L) {
+            return make_low_float_numeric_value(kind, 0.0L);
+          }
+          return as_f64
+                     ? make_low_float_numeric_value(
+                           kind,
+                           static_cast<long double>(static_cast<double>(lhs_scalar) *
+                                                    static_cast<double>(rhs_scalar)))
+                     : make_low_float_numeric_value(
+                           kind,
+                           static_cast<long double>(static_cast<float>(lhs_scalar) *
+                                                    static_cast<float>(rhs_scalar)));
+        case BinaryOp::Div:
+          if (rhs_scalar == 0.0L) {
+            throw EvalException("division by zero");
+          }
+          if (lhs_scalar == 0.0L) {
+            return make_low_float_numeric_value(kind, 0.0L);
+          }
+          return as_f64
+                     ? make_low_float_numeric_value(
+                           kind,
+                           static_cast<long double>(static_cast<double>(lhs_scalar) /
+                                                    static_cast<double>(rhs_scalar)))
+                     : make_low_float_numeric_value(
+                           kind,
+                           static_cast<long double>(static_cast<float>(lhs_scalar) /
+                                                    static_cast<float>(rhs_scalar)));
+        case BinaryOp::Mod:
+          if (rhs_scalar == 0.0L) {
+            throw EvalException("modulo by zero");
+          }
+          if (lhs_scalar == 0.0L) {
+            return make_low_float_numeric_value(kind, 0.0L);
+          }
+          if (std::isfinite(lhs_scalar) && std::isfinite(rhs_scalar) &&
+              std::fabs(lhs_scalar) < std::fabs(rhs_scalar)) {
+            return make_low_float_numeric_value(kind, lhs_scalar);
+          }
+          return as_f64
+                     ? make_low_float_numeric_value(
+                           kind,
+                           static_cast<long double>(
+                               fast_mod_pic(static_cast<double>(lhs_scalar),
+                                            static_cast<double>(rhs_scalar))))
+                     : make_low_float_numeric_value(
+                           kind,
+                           static_cast<long double>(
+                               fast_mod_pic(static_cast<float>(lhs_scalar),
+                                            static_cast<float>(rhs_scalar))));
+        case BinaryOp::Pow:
+          return as_f64
+                     ? make_low_float_numeric_value(
+                           kind,
+                           static_cast<long double>(
+                               std::pow(static_cast<double>(lhs_scalar),
+                                        static_cast<double>(rhs_scalar))))
+                     : make_low_float_numeric_value(
+                           kind,
+                           static_cast<long double>(
+                               std::pow(static_cast<float>(lhs_scalar),
+                                        static_cast<float>(rhs_scalar))));
+        case BinaryOp::Eq:
+          return as_f64
+                     ? Value::bool_value_of(static_cast<double>(lhs_scalar) ==
+                                            static_cast<double>(rhs_scalar))
+                     : Value::bool_value_of(static_cast<float>(lhs_scalar) ==
+                                            static_cast<float>(rhs_scalar));
+        case BinaryOp::Ne:
+          return as_f64
+                     ? Value::bool_value_of(static_cast<double>(lhs_scalar) !=
+                                            static_cast<double>(rhs_scalar))
+                     : Value::bool_value_of(static_cast<float>(lhs_scalar) !=
+                                            static_cast<float>(rhs_scalar));
+        case BinaryOp::Lt:
+          return as_f64
+                     ? Value::bool_value_of(static_cast<double>(lhs_scalar) <
+                                            static_cast<double>(rhs_scalar))
+                     : Value::bool_value_of(static_cast<float>(lhs_scalar) <
+                                            static_cast<float>(rhs_scalar));
+        case BinaryOp::Lte:
+          return as_f64
+                     ? Value::bool_value_of(static_cast<double>(lhs_scalar) <=
+                                            static_cast<double>(rhs_scalar))
+                     : Value::bool_value_of(static_cast<float>(lhs_scalar) <=
+                                            static_cast<float>(rhs_scalar));
+        case BinaryOp::Gt:
+          return as_f64
+                     ? Value::bool_value_of(static_cast<double>(lhs_scalar) >
+                                            static_cast<double>(rhs_scalar))
+                     : Value::bool_value_of(static_cast<float>(lhs_scalar) >
+                                            static_cast<float>(rhs_scalar));
+        case BinaryOp::Gte:
+          return as_f64
+                     ? Value::bool_value_of(static_cast<double>(lhs_scalar) >=
+                                            static_cast<double>(rhs_scalar))
+                     : Value::bool_value_of(static_cast<float>(lhs_scalar) >=
+                                            static_cast<float>(rhs_scalar));
+        default:
+          break;
+      }
+      break;
+    }
+    case BinaryPicRoute::NumericHighPrecision: {
+      if (!is_numeric_pic_operator(op)) {
+        break;
+      }
+      return eval_numeric_binary_value(op, lhs, rhs);
+    }
+    case BinaryPicRoute::None:
+      break;
+  }
+  throw EvalException("unsupported binary PIC route");
+}
+
+std::uint64_t mix_u64(std::uint64_t x) {
+  x ^= x >> 30U;
+  x *= 0xbf58476d1ce4e5b9ULL;
+  x ^= x >> 27U;
+  x *= 0x94d049bb133111ebULL;
+  x ^= x >> 31U;
+  return x;
+}
+
+std::uint64_t combine_hash_u64(std::uint64_t h, std::uint64_t v) {
+  return mix_u64(h ^ (v + 0x9e3779b97f4a7c15ULL + (h << 6U) + (h >> 2U)));
+}
+
+std::uint64_t value_stamp_for_pic(const Value& value, const Value* identity_ptr) {
+  std::uint64_t h = mix_u64(static_cast<std::uint64_t>(value.kind));
+  if (identity_ptr) {
+    h = combine_hash_u64(h, static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(identity_ptr)));
+  }
+  switch (value.kind) {
+    case Value::Kind::Int:
+      h = combine_hash_u64(h, static_cast<std::uint64_t>(value.int_value));
+      break;
+    case Value::Kind::Double: {
+      std::uint64_t bits = 0;
+      std::memcpy(&bits, &value.double_value, sizeof(bits));
+      h = combine_hash_u64(h, bits);
+      break;
+    }
+    case Value::Kind::Numeric:
+      if (value.numeric_value) {
+        const auto& numeric = *value.numeric_value;
+        h = combine_hash_u64(h, static_cast<std::uint64_t>(numeric.kind));
+        h = combine_hash_u64(h, numeric.revision);
+        if (!identity_ptr) {
+          if (numeric.parsed_int_valid) {
+            const auto int_low = static_cast<std::uint64_t>(numeric.parsed_int);
+            const auto int_high = static_cast<std::uint64_t>(numeric.parsed_int >> 64U);
+            h = combine_hash_u64(h, int_low);
+            h = combine_hash_u64(h, int_high);
+          } else if (numeric.parsed_float_valid) {
+            const auto as_double = static_cast<double>(numeric.parsed_float);
+            std::uint64_t bits = 0;
+            std::memcpy(&bits, &as_double, sizeof(bits));
+            h = combine_hash_u64(h, bits);
+          } else if (!numeric.payload.empty()) {
+            h = combine_hash_u64(h, static_cast<std::uint64_t>(std::hash<std::string>{}(numeric.payload)));
+          }
+        }
+      }
+      break;
+    default:
+      break;
+  }
+  return h;
+}
+
+bool try_eval_binary_pic(const BinaryExpr& binary, std::uint64_t env_id,
+                         const Value& lhs, const Value& rhs, Value& out,
+                         const Value* lhs_identity = nullptr,
+                         const Value* rhs_identity = nullptr) {
+  if (!binary_pic_enabled() || !is_numeric_pic_operator(binary.op)) {
+    return false;
+  }
+  if (!is_int_or_double_value(lhs) || !is_int_or_double_value(rhs)) {
+    Value::NumericKind lhs_kind = Value::NumericKind::F64;
+    Value::NumericKind rhs_kind = Value::NumericKind::F64;
+    if (!(is_low_float_numeric_value(lhs, lhs_kind) &&
+          is_low_float_numeric_value(rhs, rhs_kind) && lhs_kind == rhs_kind)) {
+      if (!(lhs.kind == Value::Kind::Numeric && rhs.kind == Value::Kind::Numeric &&
+            lhs.numeric_value && rhs.numeric_value &&
+            numeric_kind_is_high_precision_float(lhs.numeric_value->kind) &&
+            lhs.numeric_value->kind == rhs.numeric_value->kind)) {
+        return false;
+      }
+    }
+  }
+
+  const auto lhs_sig = value_kind_signature(lhs);
+  const auto rhs_sig = value_kind_signature(rhs);
+  auto& slot = binary_pic_cache_slot(&binary, env_id, binary.op, lhs_sig, rhs_sig);
+
+  const bool slot_match =
+      slot.expr == &binary && slot.env_id == env_id && slot.op == binary.op &&
+      slot.lhs_sig == lhs_sig && slot.rhs_sig == rhs_sig;
+  if (!slot_match) {
+    slot.expr = &binary;
+    slot.env_id = env_id;
+    slot.op = binary.op;
+    slot.lhs_sig = lhs_sig;
+    slot.rhs_sig = rhs_sig;
+    slot.hits = 0;
+    slot.route = BinaryPicRoute::None;
+    slot.memo_valid = false;
+  }
+
+  if (slot.hits < std::numeric_limits<std::uint32_t>::max()) {
+    ++slot.hits;
+  }
+
+  if (slot.route == BinaryPicRoute::None && slot.hits >= static_cast<std::uint32_t>(binary_pic_warmup_threshold())) {
+    slot.route = choose_binary_pic_route(binary.op, lhs, rhs);
+    if (binary_pic_trace_enabled() && slot.route != BinaryPicRoute::None) {
+      std::fprintf(stderr,
+                   "[spark-binary-pic] quickened expr=%p op=%d lhs_sig=%u rhs_sig=%u route=%u hits=%u\n",
+                   static_cast<const void*>(&binary), static_cast<int>(binary.op),
+                   static_cast<unsigned>(lhs_sig), static_cast<unsigned>(rhs_sig),
+                   static_cast<unsigned>(slot.route), static_cast<unsigned>(slot.hits));
+    }
+  }
+
+  if (slot.route == BinaryPicRoute::None) {
+    return false;
+  }
+
+  const auto lhs_stamp = value_stamp_for_pic(lhs, lhs_identity);
+  const auto rhs_stamp = value_stamp_for_pic(rhs, rhs_identity);
+  if (slot.memo_valid && slot.lhs_stamp == lhs_stamp && slot.rhs_stamp == rhs_stamp) {
+    out = slot.memo_value;
+    return true;
+  }
+
+  out = execute_binary_pic_route(slot.route, binary.op, lhs, rhs);
+  slot.memo_valid = true;
+  slot.lhs_stamp = lhs_stamp;
+  slot.rhs_stamp = rhs_stamp;
+  slot.memo_value = out;
+  return true;
+}
+
+const Value* get_var_ref_cached(const Expr* expr, const std::shared_ptr<Environment>& env) {
+  if (!expr || expr->kind != Expr::Kind::Variable) {
+    return nullptr;
+  }
+
+  struct VarRefCacheEntry {
+    const Expr* expr = nullptr;
+    std::uint64_t env_id = 0;
+    const Value* value = nullptr;
+  };
+  constexpr std::size_t kVarRefCacheSize = 1024;
+  static thread_local std::array<VarRefCacheEntry, kVarRefCacheSize> kVarRefCache{};
+
+  const auto key_expr = expr;
+  const auto key_env = env->stable_id;
+  const auto raw_hash =
+      static_cast<std::size_t>(reinterpret_cast<std::uintptr_t>(key_expr)) ^
+      (static_cast<std::size_t>(key_env) * 11400714819323198485ull);
+  auto& slot = kVarRefCache[raw_hash & (kVarRefCacheSize - 1)];
+  if (slot.expr == key_expr && slot.env_id == key_env && slot.value != nullptr) {
+    return slot.value;
+  }
+
+  const auto& variable = static_cast<const VariableExpr&>(*expr);
+  const auto* value = env->get_ptr(variable.name);
+  if (value) {
+    slot.expr = key_expr;
+    slot.env_id = key_env;
+    slot.value = value;
+  }
+  return value;
 }
 
 bool is_container_arith_op(const BinaryOp op) {
@@ -609,8 +1198,115 @@ Value evaluate_case_binary(const BinaryExpr& binary, Interpreter& self,
     }
   }
 
+  const auto* lhs_ref = get_var_ref_cached(binary.left.get(), env);
+  const auto* rhs_ref = get_var_ref_cached(binary.right.get(), env);
+  const auto try_get_number_literal = [](const Expr* expr, Value& out) -> bool {
+    if (!expr || expr->kind != Expr::Kind::Number) {
+      return false;
+    }
+    const auto& number = static_cast<const NumberExpr&>(*expr);
+    out = number.is_int ? Value::int_value_of(static_cast<long long>(number.value))
+                        : Value::double_value_of(number.value);
+    return true;
+  };
+  if (lhs_ref && rhs_ref) {
+    Value pic_value = Value::nil();
+    if (try_eval_binary_pic(binary, env->stable_id, *lhs_ref, *rhs_ref, pic_value, lhs_ref, rhs_ref)) {
+      return pic_value;
+    }
+
+    if (lhs_ref->kind == Value::Kind::Numeric && rhs_ref->kind == Value::Kind::Numeric) {
+      switch (binary.op) {
+        case BinaryOp::Add:
+        case BinaryOp::Sub:
+        case BinaryOp::Mul:
+        case BinaryOp::Div:
+        case BinaryOp::Mod:
+        case BinaryOp::Pow:
+        case BinaryOp::Eq:
+        case BinaryOp::Ne:
+        case BinaryOp::Lt:
+        case BinaryOp::Lte:
+        case BinaryOp::Gt:
+        case BinaryOp::Gte:
+          return eval_numeric_binary_value(binary.op, *lhs_ref, *rhs_ref);
+        default:
+          break;
+      }
+    }
+    return self.eval_binary(binary.op, *lhs_ref, *rhs_ref);
+  }
+
+  if (lhs_ref) {
+    Value rhs_number = Value::nil();
+    if (try_get_number_literal(binary.right.get(), rhs_number)) {
+      Value pic_value = Value::nil();
+      if (try_eval_binary_pic(binary, env->stable_id, *lhs_ref, rhs_number, pic_value, lhs_ref, nullptr)) {
+        return pic_value;
+      }
+
+      if (lhs_ref->kind == Value::Kind::Numeric) {
+        switch (binary.op) {
+          case BinaryOp::Add:
+          case BinaryOp::Sub:
+          case BinaryOp::Mul:
+          case BinaryOp::Div:
+          case BinaryOp::Mod:
+          case BinaryOp::Pow:
+          case BinaryOp::Eq:
+          case BinaryOp::Ne:
+          case BinaryOp::Lt:
+          case BinaryOp::Lte:
+          case BinaryOp::Gt:
+          case BinaryOp::Gte:
+            return eval_numeric_binary_value(binary.op, *lhs_ref, rhs_number);
+          default:
+            break;
+        }
+      }
+      return self.eval_binary(binary.op, *lhs_ref, rhs_number);
+    }
+  }
+
+  if (rhs_ref) {
+    Value lhs_number = Value::nil();
+    if (try_get_number_literal(binary.left.get(), lhs_number)) {
+      Value pic_value = Value::nil();
+      if (try_eval_binary_pic(binary, env->stable_id, lhs_number, *rhs_ref, pic_value, nullptr, rhs_ref)) {
+        return pic_value;
+      }
+
+      if (rhs_ref->kind == Value::Kind::Numeric) {
+        switch (binary.op) {
+          case BinaryOp::Add:
+          case BinaryOp::Sub:
+          case BinaryOp::Mul:
+          case BinaryOp::Div:
+          case BinaryOp::Mod:
+          case BinaryOp::Pow:
+          case BinaryOp::Eq:
+          case BinaryOp::Ne:
+          case BinaryOp::Lt:
+          case BinaryOp::Lte:
+          case BinaryOp::Gt:
+          case BinaryOp::Gte:
+            return eval_numeric_binary_value(binary.op, lhs_number, *rhs_ref);
+          default:
+            break;
+        }
+      }
+      return self.eval_binary(binary.op, lhs_number, *rhs_ref);
+    }
+  }
+
   auto lhs = self.evaluate(*binary.left, env);
   auto rhs = self.evaluate(*binary.right, env);
+
+  Value pic_value = Value::nil();
+  if (try_eval_binary_pic(binary, env->stable_id, lhs, rhs, pic_value)) {
+    return pic_value;
+  }
+
   return self.eval_binary(binary.op, lhs, rhs);
 }
 

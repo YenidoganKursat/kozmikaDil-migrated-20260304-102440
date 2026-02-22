@@ -91,19 +91,6 @@ Matmul4WorkspaceF32& matmul4_workspace_f32() {
   return workspace;
 }
 
-bool env_bool_enabled_local(const char* name, bool fallback) {
-  const auto* value = std::getenv(name);
-  if (!value || *value == '\0') {
-    return fallback;
-  }
-  const std::string text = value;
-  if (text == "0" || text == "false" || text == "False" || text == "off" || text == "OFF" ||
-      text == "no" || text == "NO") {
-    return false;
-  }
-  return true;
-}
-
 std::size_t env_size_t_local(const char* name, std::size_t fallback) {
   const auto* value = std::getenv(name);
   if (!value || *value == '\0') {
@@ -536,7 +523,7 @@ Value run_matmul_sum_impl(Value& lhs, const Value& rhs, bool use_f32) {
     throw EvalException("matmul_sum() shape mismatch: lhs.cols must equal rhs.rows");
   }
 
-  const bool cache_enabled = env_bool_enabled_local("SPARK_MATMUL_SUM_CACHE", true);
+  const bool cache_enabled = env_flag_enabled("SPARK_MATMUL_SUM_CACHE", true);
   std::string cache_key;
   auto& sum_cache = matmul_sum_cache_store();
   if (cache_enabled) {
@@ -639,7 +626,7 @@ Value run_matmul4_sum_impl(Value& a, const Value& b, const Value& c, const Value
     throw EvalException("matmul4_sum() shape mismatch: chain dimensions must align");
   }
 
-  const bool cache_enabled = env_bool_enabled_local("SPARK_MATMUL4_SUM_CACHE", true);
+  const bool cache_enabled = env_flag_enabled("SPARK_MATMUL4_SUM_CACHE", true);
   std::string cache_key;
   auto& sum_cache = matmul_sum_cache_store();
   if (cache_enabled) {
@@ -652,7 +639,7 @@ Value run_matmul4_sum_impl(Value& a, const Value& b, const Value& c, const Value
 
   // Fast checksum path: sum((((A*B)*C)*D)) == 1^T A B C D 1.
   // This keeps semantics for checksum-focused programs while avoiding O(n^3) kernels.
-  const bool fast_sum_path = env_bool_enabled_local("SPARK_MATMUL4_SUM_FAST", true);
+  const bool fast_sum_path = env_flag_enabled("SPARK_MATMUL4_SUM_FAST", true);
   if (fast_sum_path) {
     if (use_f32) {
       bool cache_hit = false;

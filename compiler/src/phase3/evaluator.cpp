@@ -1,6 +1,12 @@
 #include "spark/evaluator.h"
 #include "spark/parser.h"
 
+// NOTE(architecture):
+// evaluator.cpp intentionally uses a unity-style aggregation of phase runtime units.
+// This keeps hot runtime paths in one translation unit for inlining/perf stability.
+// Layer boundaries are still represented by directory ownership; shared contracts are
+// routed through internal_helpers.h to avoid copy/paste drift.
+
 #include "evaluator_parts/01_helpers.cpp"
 
 #include "phase5/runtime/value_constructors.cpp"

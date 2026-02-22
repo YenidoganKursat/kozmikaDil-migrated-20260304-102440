@@ -26,34 +26,11 @@ bool compile_pipeline(const std::string& file_path, PipelineProducts& products, 
   return true;
 }
 
-bool allow_approx_high_precision_native() {
-  const char* raw = std::getenv("SPARK_ALLOW_APPROX_HIGH_PRECISION_NATIVE");
-  if (raw && *raw != '\0') {
-    static bool warned_once = false;
-    if (!warned_once) {
-      warned_once = true;
-      std::cerr << "warning: SPARK_ALLOW_APPROX_HIGH_PRECISION_NATIVE is ignored in strict correctness mode.\n";
-    }
-  }
-  return false;
-}
-
-bool allow_hybrid_high_precision_native() {
-  const char* raw = std::getenv("SPARK_HP_HYBRID_FAST");
-  if (raw && *raw != '\0') {
-    static bool warned_once = false;
-    if (!warned_once) {
-      warned_once = true;
-      std::cerr << "warning: SPARK_HP_HYBRID_FAST is disabled for f128/f256/f512 to preserve precision.\n";
-    }
-  }
-  return false;
-}
-
 bool write_high_precision_interpreter_launcher(const std::filesystem::path& source_file,
                                                const std::filesystem::path& output_file,
                                                std::string& error_message) {
   const auto source_abs = std::filesystem::absolute(source_file);
+  const auto local_sparkc = std::filesystem::absolute(std::filesystem::current_path() / "build/compiler/sparkc");
   const auto local_k = std::filesystem::absolute(std::filesystem::current_path() / "k");
   const auto output_parent = output_file.parent_path();
   if (!output_parent.empty()) {
@@ -74,6 +51,9 @@ bool write_high_precision_interpreter_launcher(const std::filesystem::path& sour
   out << "#!/usr/bin/env bash\n";
   out << "set -euo pipefail\n";
   out << "SOURCE_FILE=" << shell_escape(source_abs.string()) << "\n";
+  out << "if [ -x " << shell_escape(local_sparkc.string()) << " ]; then\n";
+  out << "  exec " << shell_escape(local_sparkc.string()) << " run --interpret \"$SOURCE_FILE\"\n";
+  out << "fi\n";
   out << "if [ -x " << shell_escape(local_k.string()) << " ]; then\n";
   out << "  exec " << shell_escape(local_k.string()) << " run --interpret \"$SOURCE_FILE\"\n";
   out << "fi\n";
@@ -107,8 +87,6 @@ int compile_mode_main(const std::string& file_path, bool emit_c, bool emit_asm,
                      bool emit_llvm, bool emit_mlir, const std::string& output_path) {
   const auto source_text = read_file(file_path);
   if (source_uses_high_precision_float_primitives(source_text)) {
-    (void)allow_hybrid_high_precision_native();
-    (void)allow_approx_high_precision_native();
     std::cerr << "compile: f128/f256/f512 detected; native C backend is precision-limited.\n";
     std::cerr << "compile: use `sparkc run --interpret` for high-precision execution.\n";
     return 1;
@@ -187,8 +165,6 @@ int build_mode_main(const std::string& file_path, const std::string& output_path
   }
 
   if (source_uses_high_precision_float_primitives(bundle.source)) {
-    (void)allow_hybrid_high_precision_native();
-    (void)allow_approx_high_precision_native();
     const std::filesystem::path out_path = output_path.empty() ? "a.out" : output_path;
     std::string launcher_error;
     if (!write_high_precision_interpreter_launcher(file_path, out_path, launcher_error)) {
@@ -243,6 +219,94 @@ int run_interpreter_main(const std::string& file_path, bool explain_layout) {
   return 0;
 }
 
+std::uint64_t fnv1a64_hash(std::string_view text, std::uint64_t seed = 1469598103934665603ULL) {
+  std::uint64_t h = seed;
+  for (const unsigned char ch : text) {
+    h ^= static_cast<std::uint64_t>(ch);
+    h *= 1099511628211ULL;
+  }
+  return h;
+}
+
+std::string hex_u64(std::uint64_t value) {
+  std::ostringstream out;
+  out << std::hex << std::setfill('0') << std::setw(16) << value;
+  return out.str();
+}
+
+std::filesystem::path adaptive_run_cache_dir() {
+  if (const auto* custom = getenv_non_empty("SPARK_RUN_CACHE_DIR")) {
+    return std::filesystem::path(custom);
+  }
+  return std::filesystem::current_path() / ".kozmika_cache" / "run_native";
+}
+
+std::string adaptive_run_cache_key(const std::string& file_path, const std::string& source,
+                                   const std::string& c_source, bool allow_t5_codegen,
+                                   const BuildTuningOptions& tuning) {
+  std::string material;
+  material.reserve(source.size() + c_source.size() + 256);
+  material += "abi=v2\n";
+  material += "file=" + std::filesystem::absolute(file_path).string() + "\n";
+  material += "allow_t5=" + std::string(allow_t5_codegen ? "1" : "0") + "\n";
+  material += "target=" + tuning.target_triple + "\n";
+  material += "sysroot=" + tuning.sysroot + "\n";
+  material += "lto=" + tuning.lto_mode + "\n";
+  material += "pgo_mode=" + tuning.pgo_mode + "\n";
+  material += "pgo_profile=" + tuning.pgo_profile + "\n";
+  material += "opt_profile=" + tuning.optimization_profile + "\n";
+  material += "env_cflags=" + std::string(getenv_non_empty("SPARK_CFLAGS") ? getenv_non_empty("SPARK_CFLAGS") : "") + "\n";
+  material += "env_cxxflags=" + std::string(getenv_non_empty("SPARK_CXXFLAGS") ? getenv_non_empty("SPARK_CXXFLAGS") : "") + "\n";
+  material += "env_opt_profile=" + std::string(getenv_non_empty("SPARK_OPT_PROFILE") ? getenv_non_empty("SPARK_OPT_PROFILE") : "") + "\n";
+  material += "--source--\n";
+  material += source;
+  material += "\n--c-source--\n";
+  material += c_source;
+  const auto h1 = fnv1a64_hash(material);
+  const auto h2 = fnv1a64_hash(c_source, h1 ^ 0x9e3779b97f4a7c15ULL);
+  return hex_u64(h1) + hex_u64(h2);
+}
+
+int run_native_adaptive_cached(const std::string& file_path, const ProgramBundle& bundle,
+                               const PipelineProducts& products, bool allow_t5_codegen,
+                               const BuildTuningOptions& tuning, bool& compiled_now,
+                               std::string& compile_error) {
+  const bool cache_enabled = env_truthy("SPARK_RUN_ADAPTIVE_CACHE", true);
+  TempFileRegistry temp_files;
+  std::filesystem::path binary_path;
+
+  if (!cache_enabled) {
+    binary_path = temp_files.make_temp_file(".out");
+  } else {
+    binary_path = adaptive_run_cache_dir() /
+                  (adaptive_run_cache_key(file_path, bundle.source, products.c_source,
+                                          allow_t5_codegen, tuning) +
+                   ".out");
+    std::error_code mkdir_error;
+    std::filesystem::create_directories(binary_path.parent_path(), mkdir_error);
+    if (mkdir_error) {
+      compile_error = "failed to create adaptive run cache directory: " +
+                      binary_path.parent_path().string();
+      return 1;
+    }
+  }
+
+  std::error_code stat_error;
+  const bool binary_exists = std::filesystem::exists(binary_path, stat_error);
+  if (stat_error) {
+    compile_error = "failed to inspect adaptive run cache binary: " + binary_path.string();
+    return 1;
+  }
+  if (!binary_exists) {
+    compiled_now = true;
+    if (!write_temp_source_and_compile(temp_files, products.c_source, binary_path, compile_error)) {
+      return 1;
+    }
+  }
+
+  return run_system_command(shell_escape(binary_path.string()));
+}
+
 int run_mode_main(const std::string& file_path, bool force_interpreter,
                   bool allow_t5_codegen, bool explain_layout,
                   const BuildTuningOptions& tuning) {
@@ -265,8 +329,6 @@ int run_mode_main(const std::string& file_path, bool force_interpreter,
   }
 
   if (source_uses_high_precision_float_primitives(bundle.source)) {
-    (void)allow_hybrid_high_precision_native();
-    (void)allow_approx_high_precision_native();
     std::cerr << "run: f128/f256/f512 detected; switching to interpreter high-precision backend.\n";
     return run_interpreter_main(file_path, false);
   }
@@ -290,15 +352,15 @@ int run_mode_main(const std::string& file_path, bool force_interpreter,
     return run_interpreter_main(file_path, false);
   }
 
-  TempFileRegistry temp_files;
-  const auto binary_path = temp_files.make_temp_file(".out");
   std::string compile_error;
-  if (!write_temp_source_and_compile(temp_files, products.c_source, binary_path, compile_error)) {
-    std::cerr << "run: native compile failed: " << compile_error << "\n";
+  bool compiled_now = false;
+  const auto status = run_native_adaptive_cached(
+      file_path, bundle, products, allow_t5_codegen, tuning, compiled_now, compile_error);
+  if (status == 1 && !compile_error.empty()) {
+    std::cerr << "run: native adaptive compile failed: " << compile_error << "\n";
     std::cerr << "run: falling back to interpreter\n";
     return run_interpreter_main(file_path, false);
   }
 
-  const auto status = run_system_command(shell_escape(binary_path.string()));
   return status;
 }

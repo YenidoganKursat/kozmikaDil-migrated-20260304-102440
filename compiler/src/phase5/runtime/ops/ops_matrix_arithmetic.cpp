@@ -69,25 +69,48 @@ Value apply_matrix_matrix_op(const Value& left, const Value& right, BinaryOp op)
       std::vector<double> out_dense(total, 0.0);
       double out_sum = 0.0;
       if (op == BinaryOp::Add) {
-        for (std::size_t i = 0; i < total; ++i) {
-          const auto out = lhs_dense[i] + rhs_dense[i];
-          out_dense[i] = out;
-          out_sum += out;
+        if (!simd_apply_binary_f64(BinaryOp::Add, lhs_dense.data(), rhs_dense.data(),
+                                   out_dense.data(), total)) {
+          for (std::size_t i = 0; i < total; ++i) {
+            const auto out = lhs_dense[i] + rhs_dense[i];
+            out_dense[i] = out;
+            out_sum += out;
+          }
+        } else {
+          for (const auto v : out_dense) {
+            out_sum += v;
+          }
         }
       } else if (op == BinaryOp::Sub) {
-        for (std::size_t i = 0; i < total; ++i) {
-          const auto out = lhs_dense[i] - rhs_dense[i];
-          out_dense[i] = out;
-          out_sum += out;
+        if (!simd_apply_binary_f64(BinaryOp::Sub, lhs_dense.data(), rhs_dense.data(),
+                                   out_dense.data(), total)) {
+          for (std::size_t i = 0; i < total; ++i) {
+            const auto out = lhs_dense[i] - rhs_dense[i];
+            out_dense[i] = out;
+            out_sum += out;
+          }
+        } else {
+          for (const auto v : out_dense) {
+            out_sum += v;
+          }
         }
       } else if (op == BinaryOp::Div) {
         for (std::size_t i = 0; i < total; ++i) {
           if (rhs_dense[i] == 0.0) {
             throw EvalException("division by zero");
           }
-          const auto out = lhs_dense[i] / rhs_dense[i];
-          out_dense[i] = out;
-          out_sum += out;
+        }
+        if (!simd_apply_binary_f64(BinaryOp::Div, lhs_dense.data(), rhs_dense.data(),
+                                   out_dense.data(), total)) {
+          for (std::size_t i = 0; i < total; ++i) {
+            const auto out = lhs_dense[i] / rhs_dense[i];
+            out_dense[i] = out;
+            out_sum += out;
+          }
+        } else {
+          for (const auto v : out_dense) {
+            out_sum += v;
+          }
         }
       } else if (op == BinaryOp::Mod) {
         for (std::size_t i = 0; i < total; ++i) {
@@ -186,37 +209,70 @@ Value apply_matrix_scalar_op(const Value& matrix, const Value& scalar, BinaryOp 
       std::vector<double> out_dense(total, 0.0);
       double out_sum = 0.0;
       if (op == BinaryOp::Add) {
-        for (std::size_t i = 0; i < total; ++i) {
-          const double lhs = dense[i];
-          const auto out = matrix_on_left ? lhs + rhs : rhs + lhs;
-          out_dense[i] = out;
-          out_sum += out;
+        if (!simd_apply_binary_f64_scalar(BinaryOp::Add, dense.data(), rhs, out_dense.data(),
+                                          total, matrix_on_left)) {
+          for (std::size_t i = 0; i < total; ++i) {
+            const double lhs = dense[i];
+            const auto out = matrix_on_left ? lhs + rhs : rhs + lhs;
+            out_dense[i] = out;
+            out_sum += out;
+          }
+        } else {
+          for (const auto v : out_dense) {
+            out_sum += v;
+          }
         }
       } else if (op == BinaryOp::Sub) {
-        for (std::size_t i = 0; i < total; ++i) {
-          const double lhs = dense[i];
-          const auto out = matrix_on_left ? lhs - rhs : rhs - lhs;
-          out_dense[i] = out;
-          out_sum += out;
+        if (!simd_apply_binary_f64_scalar(BinaryOp::Sub, dense.data(), rhs, out_dense.data(),
+                                          total, matrix_on_left)) {
+          for (std::size_t i = 0; i < total; ++i) {
+            const double lhs = dense[i];
+            const auto out = matrix_on_left ? lhs - rhs : rhs - lhs;
+            out_dense[i] = out;
+            out_sum += out;
+          }
+        } else {
+          for (const auto v : out_dense) {
+            out_sum += v;
+          }
         }
       } else if (op == BinaryOp::Mul) {
-        for (std::size_t i = 0; i < total; ++i) {
-          const auto out = dense[i] * rhs;
-          out_dense[i] = out;
-          out_sum += out;
+        if (!simd_apply_binary_f64_scalar(BinaryOp::Mul, dense.data(), rhs, out_dense.data(),
+                                          total, matrix_on_left)) {
+          for (std::size_t i = 0; i < total; ++i) {
+            const auto out = dense[i] * rhs;
+            out_dense[i] = out;
+            out_sum += out;
+          }
+        } else {
+          for (const auto v : out_dense) {
+            out_sum += v;
+          }
         }
       } else if (op == BinaryOp::Div) {
         if (matrix_on_left && rhs == 0.0) {
           throw EvalException("division by zero");
         }
-        for (std::size_t i = 0; i < total; ++i) {
-          const double lhs = dense[i];
-          if (!matrix_on_left && lhs == 0.0) {
-            throw EvalException("division by zero");
+        if (!matrix_on_left) {
+          for (std::size_t i = 0; i < total; ++i) {
+            const double lhs = dense[i];
+            if (lhs == 0.0) {
+              throw EvalException("division by zero");
+            }
           }
-          const auto out = matrix_on_left ? lhs / rhs : rhs / lhs;
-          out_dense[i] = out;
-          out_sum += out;
+        }
+        if (!simd_apply_binary_f64_scalar(BinaryOp::Div, dense.data(), rhs, out_dense.data(),
+                                          total, matrix_on_left)) {
+          for (std::size_t i = 0; i < total; ++i) {
+            const double lhs = dense[i];
+            const auto out = matrix_on_left ? lhs / rhs : rhs / lhs;
+            out_dense[i] = out;
+            out_sum += out;
+          }
+        } else {
+          for (const auto v : out_dense) {
+            out_sum += v;
+          }
         }
       } else if (op == BinaryOp::Mod) {
         if (matrix_on_left && rhs == 0.0) {

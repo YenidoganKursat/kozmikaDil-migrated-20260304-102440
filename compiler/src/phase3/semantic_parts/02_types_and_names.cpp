@@ -25,6 +25,9 @@ void TypeChecker::check(const Program& program) {
   define_name("append", builtin_type({list_type(any_type()), any_type()}, nil_type(), 2));
   define_name("len", builtin_type({any_type()}, int_type(), 1));
   define_name("bench_tick", builtin_type({}, int_type(), 0));
+  define_name("bench_tick_raw", builtin_type({}, int_type(), 0));
+  define_name("bench_tick_scale_num", builtin_type({}, int_type(), 0));
+  define_name("bench_tick_scale_den", builtin_type({}, int_type(), 0));
   define_name("string", builtin_type({any_type()}, string_type(), 0));
   define_name("utf8_len", builtin_type({string_type()}, int_type(), 1));
   define_name("utf16_len", builtin_type({string_type()}, int_type(), 1));

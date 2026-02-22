@@ -16,6 +16,7 @@ std::vector<double> as_matrix_flat(const spark::Value& value);
 std::string analyze_dump(std::string_view source, std::string_view which);
 
 void run_phase8_matmul_tests();
+void run_phase8_matmul_extreme_tests();
 void run_phase8_analyze_tests();
 
 }  // namespace phase8_test

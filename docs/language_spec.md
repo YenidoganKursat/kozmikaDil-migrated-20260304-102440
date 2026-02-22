@@ -61,7 +61,7 @@ Date: 2026-02-17
 - `k run` automatically switches to interpreter mode when `f128/f256/f512` is detected, so native C backend does not silently downcast these types.
 - High-precision strictness policy:
   - `f128/f256/f512` remain interpreter/MPFR-backed for correctness.
-  - `SPARK_ALLOW_APPROX_HIGH_PRECISION_NATIVE` is deprecated/ignored in strict correctness mode.
+  - approximate high-precision native mode is removed; strict precision is always enforced.
 
 ## 4. Containers
 - List literal: `[1, 2, 3]`
