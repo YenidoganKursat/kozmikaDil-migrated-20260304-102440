@@ -24,8 +24,8 @@ jobs:
 
       - name: Install toolchain
         run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build clang g++ make python3 python3-pip libmpfr-dev libgmp-dev default-jdk
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get -o Acquire::Retries=3 install -y cmake ninja-build clang g++ make python3 python3-pip libmpfr-dev libgmp-dev default-jdk
 
       - name: Architecture and coverage guard
         run: python3 ./.github/scripts/architecture_guard.py --max-lines 1800
@@ -46,6 +46,7 @@ jobs:
             --output-on-failure \
             --timeout 1800 \
             -E "sparkc_phase5_crosslang_primitives" \
+            --output-junit ./build/ctest_core.junit.xml \
             --output-log ./build/ctest_core.log
 
       - name: Cross-language primitive correctness (CI profile)
@@ -66,6 +67,7 @@ jobs:
             --timeout 1800 \
             --repeat until-fail:3 \
             -R "sparkc_typecheck_tests|sparkc_codegen_tests|sparkc_phase(5|6|7|8|9|10)_tests" \
+            --output-junit ./build/ctest_replay.junit.xml \
             --output-log ./build/ctest_replay.log
 
       - name: Upload CTest logs
@@ -76,6 +78,8 @@ jobs:
           path: |
             build/ctest_core.log
             build/ctest_replay.log
+            build/ctest_core.junit.xml
+            build/ctest_replay.junit.xml
             build/Testing/Temporary/LastTest.log
           if-no-files-found: warn
 
@@ -99,8 +103,8 @@ jobs:
 
       - name: Install toolchain
         run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build clang g++ make python3 libmpfr-dev libgmp-dev
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get -o Acquire::Retries=3 install -y cmake ninja-build clang g++ make python3 libmpfr-dev libgmp-dev
 
       - name: Configure
         env:
@@ -116,6 +120,7 @@ jobs:
           ctest --test-dir build_${{ matrix.name }} \
             --output-on-failure \
             --timeout 1200 \
+            --output-junit ./build_${{ matrix.name }}/ctest_smoke.junit.xml \
             -R "sparkc_smoke_test|sparkc_parser_tests|sparkc_eval_tests|sparkc_typecheck_tests|sparkc_codegen_tests"
 
   sanitizer:
@@ -128,8 +133,8 @@ jobs:
 
       - name: Install toolchain
         run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build clang g++ make python3 libmpfr-dev libgmp-dev
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get -o Acquire::Retries=3 install -y cmake ninja-build clang g++ make python3 libmpfr-dev libgmp-dev
 
       - name: Configure (sanitizers)
         run: |
@@ -154,6 +159,7 @@ jobs:
           ctest --test-dir build_san \
             --output-on-failure \
             --timeout 1800 \
+            --output-junit ./build_san/ctest_san.junit.xml \
             -R "sparkc_smoke_test|sparkc_parser_tests|sparkc_eval_tests|sparkc_typecheck_tests|sparkc_codegen_tests|sparkc_phase5_tests"
 
   thread-sanitizer:
@@ -166,8 +172,8 @@ jobs:
 
       - name: Install toolchain
         run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build clang g++ make python3 libmpfr-dev libgmp-dev
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get -o Acquire::Retries=3 install -y cmake ninja-build clang g++ make python3 libmpfr-dev libgmp-dev
 
       - name: Configure (TSan)
         run: |
@@ -192,6 +198,7 @@ jobs:
             --output-on-failure \
             --timeout 1800 \
             --parallel 1 \
+            --output-junit ./build_tsan/ctest_tsan.junit.xml \
             -R "sparkc_smoke_test|sparkc_phase9_tests"
 
   perf-regression:
@@ -204,8 +211,8 @@ jobs:
 
       - name: Install toolchain
         run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build clang g++ make python3 python3-pip libmpfr-dev libgmp-dev
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get -o Acquire::Retries=3 install -y cmake ninja-build clang g++ make python3 python3-pip libmpfr-dev libgmp-dev
 
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSPARK_BUILD_TESTS=OFF

@@ -22,8 +22,8 @@ jobs:
 
       - name: Install toolchain
         run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build clang g++ make python3 python3-pip libmpfr-dev libgmp-dev default-jdk
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get -o Acquire::Retries=3 install -y cmake ninja-build clang g++ make python3 python3-pip libmpfr-dev libgmp-dev default-jdk
 
       - name: Architecture and coverage guard
         run: python3 ./.github/scripts/architecture_guard.py --max-lines 1800
@@ -41,6 +41,7 @@ jobs:
             --output-on-failure \
             --timeout 1800 \
             -E "sparkc_phase5_crosslang_primitives" \
+            --output-junit ./build/nightly_ctest_full.junit.xml \
             --output-log ./build/nightly_ctest_full.log
 
       - name: Critical replay (flake detection)
@@ -50,6 +51,7 @@ jobs:
             --timeout 1800 \
             --repeat until-fail:10 \
             -R "sparkc_typecheck_tests|sparkc_codegen_tests|sparkc_phase(5|6|7|8|9|10)_tests" \
+            --output-junit ./build/nightly_ctest_replay.junit.xml \
             --output-log ./build/nightly_ctest_replay.log
 
       - name: Cross-language primitive stress profile
@@ -79,6 +81,8 @@ jobs:
           path: |
             build/nightly_ctest_full.log
             build/nightly_ctest_replay.log
+            build/nightly_ctest_full.junit.xml
+            build/nightly_ctest_replay.junit.xml
             build/Testing/Temporary/LastTest.log
             bench/results/primitives
           if-no-files-found: warn

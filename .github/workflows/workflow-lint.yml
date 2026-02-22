@@ -22,7 +22,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Lint GitHub workflows
-        uses: reviewdog/action-actionlint@v1
+        uses: reviewdog/action-actionlint@0d952c597ef8459f634d7145b0b044a9699e5e43 # v1
         with:
           fail_level: error
-
