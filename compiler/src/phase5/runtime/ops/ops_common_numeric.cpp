@@ -180,7 +180,7 @@ bool simd_allowed_runtime() {
     }
 #if defined(__x86_64__) || defined(__i386__) || defined(_M_X64) || defined(_M_IX86)
 #if defined(__GNUC__) || defined(__clang__)
-    return __builtin_cpu_supports("avx2");
+    return __builtin_cpu_supports("avx2") != 0;
 #else
     return false;
 #endif
@@ -217,6 +217,110 @@ std::size_t simd_min_count_runtime() {
 
 }  // namespace
 
+#if defined(__x86_64__) || defined(__i386__) || defined(_M_X64) || defined(_M_IX86)
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((target("avx2"))) void simd_apply_binary_f64_avx2_impl(BinaryOp op,
+                                                                      const double* lhs,
+                                                                      const double* rhs,
+                                                                      double* out,
+                                                                      std::size_t count) {
+  std::size_t i = 0;
+  const std::size_t vec_end = count & ~static_cast<std::size_t>(3);
+  for (; i < vec_end; i += 4) {
+    const __m256d a = _mm256_loadu_pd(lhs + i);
+    const __m256d b = _mm256_loadu_pd(rhs + i);
+    __m256d r;
+    switch (op) {
+      case BinaryOp::Add:
+        r = _mm256_add_pd(a, b);
+        break;
+      case BinaryOp::Sub:
+        r = _mm256_sub_pd(a, b);
+        break;
+      case BinaryOp::Mul:
+        r = _mm256_mul_pd(a, b);
+        break;
+      case BinaryOp::Div:
+        r = _mm256_div_pd(a, b);
+        break;
+      default:
+        return;
+    }
+    _mm256_storeu_pd(out + i, r);
+  }
+  for (; i < count; ++i) {
+    switch (op) {
+      case BinaryOp::Add:
+        out[i] = lhs[i] + rhs[i];
+        break;
+      case BinaryOp::Sub:
+        out[i] = lhs[i] - rhs[i];
+        break;
+      case BinaryOp::Mul:
+        out[i] = lhs[i] * rhs[i];
+        break;
+      case BinaryOp::Div:
+        out[i] = lhs[i] / rhs[i];
+        break;
+      default:
+        return;
+    }
+  }
+}
+
+__attribute__((target("avx2"))) void simd_apply_binary_f64_scalar_avx2_impl(BinaryOp op,
+                                                                             const double* values,
+                                                                             double scalar,
+                                                                             double* out,
+                                                                             std::size_t count,
+                                                                             bool values_on_left) {
+  std::size_t i = 0;
+  const std::size_t vec_end = count & ~static_cast<std::size_t>(3);
+  const __m256d s = _mm256_set1_pd(scalar);
+  for (; i < vec_end; i += 4) {
+    const __m256d v = _mm256_loadu_pd(values + i);
+    __m256d r;
+    switch (op) {
+      case BinaryOp::Add:
+        r = _mm256_add_pd(v, s);
+        break;
+      case BinaryOp::Sub:
+        r = values_on_left ? _mm256_sub_pd(v, s) : _mm256_sub_pd(s, v);
+        break;
+      case BinaryOp::Mul:
+        r = _mm256_mul_pd(v, s);
+        break;
+      case BinaryOp::Div:
+        r = values_on_left ? _mm256_div_pd(v, s) : _mm256_div_pd(s, v);
+        break;
+      default:
+        return;
+    }
+    _mm256_storeu_pd(out + i, r);
+  }
+  for (; i < count; ++i) {
+    const auto lhs = values[i];
+    switch (op) {
+      case BinaryOp::Add:
+        out[i] = lhs + scalar;
+        break;
+      case BinaryOp::Sub:
+        out[i] = values_on_left ? (lhs - scalar) : (scalar - lhs);
+        break;
+      case BinaryOp::Mul:
+        out[i] = lhs * scalar;
+        break;
+      case BinaryOp::Div:
+        out[i] = values_on_left ? (lhs / scalar) : (scalar / lhs);
+        break;
+      default:
+        return;
+    }
+  }
+}
+#endif
+#endif
+
 bool simd_apply_binary_f64(BinaryOp op, const double* lhs, const double* rhs, double* out, std::size_t count) {
   if (!lhs || !rhs || !out || count < simd_min_count_runtime() || !simd_allowed_runtime()) {
     return false;
@@ -230,56 +334,8 @@ bool simd_apply_binary_f64(BinaryOp op, const double* lhs, const double* rhs, do
   if (!has_avx2) {
     return false;
   }
-  // Compile AVX2 kernels irrespective of global target flags.
-  __attribute__((target("avx2"))) static auto run = [](BinaryOp op_inner,
-                                                        const double* lhs_inner,
-                                                        const double* rhs_inner,
-                                                        double* out_inner,
-                                                        std::size_t count_inner) {
-    std::size_t i = 0;
-    const std::size_t vec_end = count_inner & ~static_cast<std::size_t>(3);
-    for (; i < vec_end; i += 4) {
-      const __m256d a = _mm256_loadu_pd(lhs_inner + i);
-      const __m256d b = _mm256_loadu_pd(rhs_inner + i);
-      __m256d r;
-      switch (op_inner) {
-        case BinaryOp::Add:
-          r = _mm256_add_pd(a, b);
-          break;
-        case BinaryOp::Sub:
-          r = _mm256_sub_pd(a, b);
-          break;
-        case BinaryOp::Mul:
-          r = _mm256_mul_pd(a, b);
-          break;
-        case BinaryOp::Div:
-          r = _mm256_div_pd(a, b);
-          break;
-        default:
-          return;
-      }
-      _mm256_storeu_pd(out_inner + i, r);
-    }
-    for (; i < count_inner; ++i) {
-      switch (op_inner) {
-        case BinaryOp::Add:
-          out_inner[i] = lhs_inner[i] + rhs_inner[i];
-          break;
-        case BinaryOp::Sub:
-          out_inner[i] = lhs_inner[i] - rhs_inner[i];
-          break;
-        case BinaryOp::Mul:
-          out_inner[i] = lhs_inner[i] * rhs_inner[i];
-          break;
-        case BinaryOp::Div:
-          out_inner[i] = lhs_inner[i] / rhs_inner[i];
-          break;
-        default:
-          return;
-      }
-    }
-  };
-  run(op, lhs, rhs, out, count);
+  // Compile AVX2 kernel irrespective of global target flags.
+  simd_apply_binary_f64_avx2_impl(op, lhs, rhs, out, count);
   return true;
 #else
   (void)op;
@@ -354,57 +410,7 @@ bool simd_apply_binary_f64_scalar(BinaryOp op, const double* values, double scal
   if (!has_avx2) {
     return false;
   }
-  __attribute__((target("avx2"))) static auto run = [](BinaryOp op_inner,
-                                                        const double* values_inner,
-                                                        double scalar_inner,
-                                                        double* out_inner,
-                                                        std::size_t count_inner,
-                                                        bool values_on_left_inner) {
-    std::size_t i = 0;
-    const std::size_t vec_end = count_inner & ~static_cast<std::size_t>(3);
-    const __m256d s = _mm256_set1_pd(scalar_inner);
-    for (; i < vec_end; i += 4) {
-      const __m256d v = _mm256_loadu_pd(values_inner + i);
-      __m256d r;
-      switch (op_inner) {
-        case BinaryOp::Add:
-          r = _mm256_add_pd(v, s);
-          break;
-        case BinaryOp::Sub:
-          r = values_on_left_inner ? _mm256_sub_pd(v, s) : _mm256_sub_pd(s, v);
-          break;
-        case BinaryOp::Mul:
-          r = _mm256_mul_pd(v, s);
-          break;
-        case BinaryOp::Div:
-          r = values_on_left_inner ? _mm256_div_pd(v, s) : _mm256_div_pd(s, v);
-          break;
-        default:
-          return;
-      }
-      _mm256_storeu_pd(out_inner + i, r);
-    }
-    for (; i < count_inner; ++i) {
-      const auto lhs = values_inner[i];
-      switch (op_inner) {
-        case BinaryOp::Add:
-          out_inner[i] = lhs + scalar_inner;
-          break;
-        case BinaryOp::Sub:
-          out_inner[i] = values_on_left_inner ? (lhs - scalar_inner) : (scalar_inner - lhs);
-          break;
-        case BinaryOp::Mul:
-          out_inner[i] = lhs * scalar_inner;
-          break;
-        case BinaryOp::Div:
-          out_inner[i] = values_on_left_inner ? (lhs / scalar_inner) : (scalar_inner / lhs);
-          break;
-        default:
-          return;
-      }
-    }
-  };
-  run(op, values, scalar, out, count, values_on_left);
+  simd_apply_binary_f64_scalar_avx2_impl(op, values, scalar, out, count, values_on_left);
   return true;
 #else
   (void)op;
