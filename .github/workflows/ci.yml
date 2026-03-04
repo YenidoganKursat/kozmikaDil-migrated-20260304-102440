@@ -98,7 +98,7 @@ jobs:
 
       - name: Upload CTest logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ci-ctest-logs
           path: |
@@ -333,7 +333,7 @@ jobs:
 
       - name: Upload platform matrix report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ci-platform-matrix-${{ runner.os }}
           path: |
@@ -506,7 +506,7 @@ jobs:
 
       - name: Upload perf gate report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ci-perf-regression
           path: bench/results/ci_perf_regression.json
