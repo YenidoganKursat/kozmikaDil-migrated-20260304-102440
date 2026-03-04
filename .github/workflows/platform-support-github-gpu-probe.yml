@@ -224,7 +224,7 @@ jobs:
 
       - name: Upload platform_support portability artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: platform_support-portability-probe-${{ runner.os }}
           path: |
