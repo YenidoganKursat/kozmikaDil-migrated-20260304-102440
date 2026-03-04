@@ -18,8 +18,8 @@ namespace spark {
 
 namespace {
 
-using I128 = __int128_t;
-using U128 = __uint128_t;
+using I128 = spark_i128;
+using U128 = spark_u128;
 
 I128 ec_i128_max() {
   return static_cast<I128>((~U128{0}) >> 1U);
@@ -194,7 +194,7 @@ Value fast_bench_tick_raw_value() {
 #endif
 }
 
-std::string i128_to_string_fast(__int128_t value) {
+std::string i128_to_string_fast(spark_i128 value) {
   if (value == 0) {
     return "0";
   }

@@ -13,7 +13,7 @@ namespace spark {
 
 namespace {
 
-using I128 = __int128_t;
+using I128 = spark_i128;
 
 bool env_bool_enabled_for(const char* name, bool fallback) {
   (void)name;

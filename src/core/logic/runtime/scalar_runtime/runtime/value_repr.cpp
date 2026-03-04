@@ -9,8 +9,8 @@ namespace spark {
 
 namespace {
 
-using I128 = __int128_t;
-using U128 = __uint128_t;
+using I128 = spark_i128;
+using U128 = spark_u128;
 
 std::string vr_i128_to_string(I128 value) {
   if (value == 0) {

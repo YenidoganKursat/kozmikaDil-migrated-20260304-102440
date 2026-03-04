@@ -996,7 +996,7 @@ bool try_execute_fast_bench_tick_window(const WhileStmt& while_stmt, Interpreter
         return *ptr;
       }
       if (value.numeric_value->parsed_int_valid) {
-        const volatile __int128_t* ptr = &value.numeric_value->parsed_int;
+        const volatile spark_i128* ptr = &value.numeric_value->parsed_int;
         return static_cast<long double>(*ptr);
       }
     }

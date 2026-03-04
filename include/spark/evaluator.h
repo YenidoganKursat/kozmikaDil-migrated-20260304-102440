@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "spark/ast.h"
+#include "spark/core/common/int128_compat.h"
 
 namespace spark {
 
@@ -180,7 +181,7 @@ struct Value {
     std::uint64_t revision = 1;
     std::string payload;
     bool parsed_int_valid = false;
-    __int128_t parsed_int = 0;
+    spark_i128 parsed_int = 0;
     bool parsed_float_valid = false;
     long double parsed_float = 0.0L;
     // Opaque runtime cache for high-precision numeric backends (e.g. MPFR).
@@ -204,7 +205,7 @@ struct Value {
   static Value double_value_of(double v);
   static Value string_value_of(std::string v);
   static Value numeric_value_of(NumericKind kind, std::string payload);
-  static Value numeric_int_value_of(NumericKind kind, __int128_t v);
+  static Value numeric_int_value_of(NumericKind kind, spark_i128 v);
   static Value numeric_float_value_of(NumericKind kind, long double v);
   static Value bool_value_of(bool v);
   static Value list_value_of(std::vector<Value> values);

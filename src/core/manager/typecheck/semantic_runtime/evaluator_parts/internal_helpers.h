@@ -47,7 +47,7 @@ bool numeric_kind_is_high_precision_float(Value::NumericKind kind);
 long double normalize_numeric_float_value(Value::NumericKind kind, long double value);
 std::string high_precision_numeric_to_string(const Value::NumericValue& numeric);
 std::string extended_int_numeric_to_string(const Value::NumericValue& numeric);
-bool extended_int_numeric_to_i128_clamped(const Value::NumericValue& numeric, __int128_t& out);
+bool extended_int_numeric_to_i128_clamped(const Value::NumericValue& numeric, spark_i128& out);
 long double extended_int_numeric_to_long_double(const Value::NumericValue& numeric);
 double numeric_value_to_double(const Value& value);
 long long numeric_value_to_i64(const Value& value);

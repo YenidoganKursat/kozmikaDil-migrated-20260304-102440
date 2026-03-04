@@ -12,8 +12,8 @@ namespace spark {
 
 namespace {
 
-using I128 = __int128_t;
-using U128 = __uint128_t;
+using I128 = spark_i128;
+using U128 = spark_u128;
 
 I128 vc_i128_max() {
   return static_cast<I128>((~U128{0}) >> 1);
@@ -137,7 +137,7 @@ long double vc_parse_long_double(const std::string& text) {
 
 Value::NumericValue make_numeric_payload(
     Value::NumericKind kind, std::string payload, bool parsed_int_valid,
-    __int128_t parsed_int, bool parsed_float_valid, long double parsed_float) {
+    spark_i128 parsed_int, bool parsed_float_valid, long double parsed_float) {
   Value::NumericValue numeric;
   numeric.kind = kind;
   numeric.payload = std::move(payload);
@@ -354,7 +354,7 @@ Value Value::numeric_value_of(NumericKind kind, std::string payload) {
   return value;
 }
 
-Value Value::numeric_int_value_of(NumericKind kind, __int128_t v) {
+Value Value::numeric_int_value_of(NumericKind kind, spark_i128 v) {
   Value value;
   value.kind = Kind::Numeric;
   if (kind == NumericKind::I256 || kind == NumericKind::I512) {

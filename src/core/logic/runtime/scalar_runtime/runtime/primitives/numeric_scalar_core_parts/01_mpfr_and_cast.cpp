@@ -25,8 +25,8 @@ namespace spark {
 
 namespace {
 
-using I128 = __int128_t;
-using U128 = __uint128_t;
+using I128 = spark_i128;
+using U128 = spark_u128;
 
 I128 i128_max() {
   return static_cast<I128>((~U128{0}) >> 1);
@@ -712,7 +712,7 @@ std::string extended_int_numeric_to_string(const Value::NumericValue& numeric) {
   return extended_int_numeric_to_string_impl(numeric);
 }
 
-bool extended_int_numeric_to_i128_clamped(const Value::NumericValue& numeric, __int128_t& out) {
+bool extended_int_numeric_to_i128_clamped(const Value::NumericValue& numeric, spark_i128& out) {
   return extended_int_numeric_to_i128_clamped_impl(numeric, out);
 }
 
