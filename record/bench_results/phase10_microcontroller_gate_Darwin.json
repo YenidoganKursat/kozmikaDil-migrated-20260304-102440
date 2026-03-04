@@ -1,0 +1,343 @@
+{
+  "host_arch": "aarch64",
+  "program": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+  "preset": "embedded",
+  "include_experimental": false,
+  "include_embedded": true,
+  "targets": [
+    {
+      "target": "arm-none-eabi",
+      "arch": "arm",
+      "family": "arm-mcu",
+      "os_class": "embedded",
+      "tier": "embedded",
+      "mode": "interpret_only",
+      "notes": "Cortex-M bare-metal (runtime not yet portable)",
+      "build_attempted": false,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.arm-none-eabi.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.arm-none-eabi.bin",
+        "--target",
+        "arm-none-eabi"
+      ],
+      "interpret": {
+        "attempted": true,
+        "status_ok": true,
+        "status": 0,
+        "output": "19999900000\n"
+      },
+      "output": "skipped: embedded target currently interpret_only tier | interpret_ok",
+      "effective_target": "arm-none-eabi",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "riscv64-unknown-elf",
+      "arch": "riscv64",
+      "family": "riscv-mcu",
+      "os_class": "embedded",
+      "tier": "embedded",
+      "mode": "interpret_only",
+      "notes": "RISC-V bare-metal (runtime not yet portable)",
+      "build_attempted": false,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.riscv64-unknown-elf.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.riscv64-unknown-elf.bin",
+        "--target",
+        "riscv64-unknown-elf"
+      ],
+      "interpret": {
+        "attempted": true,
+        "status_ok": true,
+        "status": 0,
+        "output": "19999900000\n"
+      },
+      "output": "skipped: embedded target currently interpret_only tier | interpret_ok",
+      "effective_target": "riscv64-unknown-elf",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "avr-none-elf",
+      "arch": "avr",
+      "family": "avr",
+      "os_class": "embedded",
+      "tier": "embedded",
+      "mode": "interpret_only",
+      "notes": "Arduino AVR bare-metal (runtime not yet portable)",
+      "build_attempted": false,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.avr-none-elf.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.avr-none-elf.bin",
+        "--target",
+        "avr-none-elf"
+      ],
+      "interpret": {
+        "attempted": true,
+        "status_ok": true,
+        "status": 0,
+        "output": "19999900000\n"
+      },
+      "output": "skipped: embedded target currently interpret_only tier | interpret_ok",
+      "effective_target": "avr-none-elf",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "xtensa-esp32-elf",
+      "arch": "xtensa",
+      "family": "xtensa",
+      "os_class": "embedded",
+      "tier": "embedded",
+      "mode": "interpret_only",
+      "notes": "ESP32 bare-metal/RTOS (runtime not yet portable)",
+      "build_attempted": false,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.xtensa-esp32-elf.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.xtensa-esp32-elf.bin",
+        "--target",
+        "xtensa-esp32-elf"
+      ],
+      "interpret": {
+        "attempted": true,
+        "status_ok": true,
+        "status": 0,
+        "output": "19999900000\n"
+      },
+      "output": "skipped: embedded target currently interpret_only tier | interpret_ok",
+      "effective_target": "xtensa-esp32-elf",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    }
+  ],
+  "passed": true,
+  "microcontroller_gate": {
+    "pass": true,
+    "summary": {
+      "embedded_targets": [
+        "arm-none-eabi",
+        "avr-none-elf",
+        "riscv64-unknown-elf",
+        "xtensa-esp32-elf"
+      ],
+      "plan_modes": [
+        "interpret_only"
+      ],
+      "buildable": 0,
+      "skipped": 4,
+      "interpret_checked": 4,
+      "interpret_ok": 4,
+      "report_rows": {
+        "arm-none-eabi": {
+          "target": "arm-none-eabi",
+          "arch": "arm",
+          "family": "arm-mcu",
+          "os_class": "embedded",
+          "tier": "embedded",
+          "mode": "interpret_only",
+          "notes": "Cortex-M bare-metal (runtime not yet portable)",
+          "build_attempted": false,
+          "build_ok": false,
+          "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.arm-none-eabi.bin",
+          "command": [
+            "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+            "build",
+            "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+            "-o",
+            "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.arm-none-eabi.bin",
+            "--target",
+            "arm-none-eabi"
+          ],
+          "interpret": {
+            "attempted": true,
+            "status_ok": true,
+            "status": 0,
+            "output": "19999900000\n"
+          },
+          "output": "skipped: embedded target currently interpret_only tier | interpret_ok",
+          "effective_target": "arm-none-eabi",
+          "fallback_used": false,
+          "fallback_target": "",
+          "fallback_status": 0,
+          "fallback_output": "",
+          "smoke": {
+            "attempted": false,
+            "status_ok": false,
+            "output": "",
+            "status": 0
+          }
+        },
+        "riscv64-unknown-elf": {
+          "target": "riscv64-unknown-elf",
+          "arch": "riscv64",
+          "family": "riscv-mcu",
+          "os_class": "embedded",
+          "tier": "embedded",
+          "mode": "interpret_only",
+          "notes": "RISC-V bare-metal (runtime not yet portable)",
+          "build_attempted": false,
+          "build_ok": false,
+          "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.riscv64-unknown-elf.bin",
+          "command": [
+            "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+            "build",
+            "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+            "-o",
+            "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.riscv64-unknown-elf.bin",
+            "--target",
+            "riscv64-unknown-elf"
+          ],
+          "interpret": {
+            "attempted": true,
+            "status_ok": true,
+            "status": 0,
+            "output": "19999900000\n"
+          },
+          "output": "skipped: embedded target currently interpret_only tier | interpret_ok",
+          "effective_target": "riscv64-unknown-elf",
+          "fallback_used": false,
+          "fallback_target": "",
+          "fallback_status": 0,
+          "fallback_output": "",
+          "smoke": {
+            "attempted": false,
+            "status_ok": false,
+            "output": "",
+            "status": 0
+          }
+        },
+        "avr-none-elf": {
+          "target": "avr-none-elf",
+          "arch": "avr",
+          "family": "avr",
+          "os_class": "embedded",
+          "tier": "embedded",
+          "mode": "interpret_only",
+          "notes": "Arduino AVR bare-metal (runtime not yet portable)",
+          "build_attempted": false,
+          "build_ok": false,
+          "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.avr-none-elf.bin",
+          "command": [
+            "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+            "build",
+            "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+            "-o",
+            "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.avr-none-elf.bin",
+            "--target",
+            "avr-none-elf"
+          ],
+          "interpret": {
+            "attempted": true,
+            "status_ok": true,
+            "status": 0,
+            "output": "19999900000\n"
+          },
+          "output": "skipped: embedded target currently interpret_only tier | interpret_ok",
+          "effective_target": "avr-none-elf",
+          "fallback_used": false,
+          "fallback_target": "",
+          "fallback_status": 0,
+          "fallback_output": "",
+          "smoke": {
+            "attempted": false,
+            "status_ok": false,
+            "output": "",
+            "status": 0
+          }
+        },
+        "xtensa-esp32-elf": {
+          "target": "xtensa-esp32-elf",
+          "arch": "xtensa",
+          "family": "xtensa",
+          "os_class": "embedded",
+          "tier": "embedded",
+          "mode": "interpret_only",
+          "notes": "ESP32 bare-metal/RTOS (runtime not yet portable)",
+          "build_attempted": false,
+          "build_ok": false,
+          "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.xtensa-esp32-elf.bin",
+          "command": [
+            "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+            "build",
+            "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+            "-o",
+            "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.xtensa-esp32-elf.bin",
+            "--target",
+            "xtensa-esp32-elf"
+          ],
+          "interpret": {
+            "attempted": true,
+            "status_ok": true,
+            "status": 0,
+            "output": "19999900000\n"
+          },
+          "output": "skipped: embedded target currently interpret_only tier | interpret_ok",
+          "effective_target": "xtensa-esp32-elf",
+          "fallback_used": false,
+          "fallback_target": "",
+          "fallback_status": 0,
+          "fallback_output": "",
+          "smoke": {
+            "attempted": false,
+            "status_ok": false,
+            "output": "",
+            "status": 0
+          }
+        }
+      }
+    },
+    "warnings": []
+  }
+}

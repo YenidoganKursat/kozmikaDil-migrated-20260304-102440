@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "description": "CI policy for CPU/GPU/microcontroller support validation.",
+  "targets": {
+    "required_build_targets": "all",
+    "required_interpret_targets": "all",
+    "required_host_exec_targets": "host",
+    "exceptions": {
+      "build_failures": {
+        "all": [],
+        "Linux": [],
+        "Darwin": [],
+        "Windows": []
+      },
+      "interpret_failures": {
+        "all": []
+      },
+      "host_exec_failures": {
+        "all": []
+      }
+    }
+  },
+  "microcontroller": {
+    "required_build_targets": [
+      "arm-none-eabi",
+      "riscv64-unknown-elf",
+      "avr-none-elf",
+      "xtensa-esp32-elf"
+    ],
+    "required_interpret_targets": [],
+    "exceptions": {
+      "build_failures": {
+        "all": []
+      },
+      "interpret_failures": {
+        "all": []
+      }
+    }
+  },
+  "gpu": {
+    "required_available_targets": {
+      "required": {
+        "Linux": [
+          "cuda",
+          "rocm_hip",
+          "oneapi_sycl",
+          "opencl",
+          "vulkan_compute",
+          "webgpu"
+        ],
+        "Darwin": [
+          "metal",
+          "opencl",
+          "webgpu"
+        ],
+        "Windows": [
+          "cuda",
+          "oneapi_sycl",
+          "opencl",
+          "vulkan_compute",
+          "webgpu"
+        ]
+      },
+      "optional": {}
+    },
+    "exceptions": {
+      "available": {
+        "all": [],
+        "Linux": [],
+        "Darwin": [],
+        "Windows": []
+      }
+    }
+  },
+  "performance": {
+    "required_targets": "host",
+    "required_interpret_targets": "all",
+    "min_sample_count": 1
+  }
+}

@@ -3,10 +3,10 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 K_BIN="${ROOT_DIR}/k"
-MEASURE_BIN="${ROOT_DIR}/scripts/phase10/measure_binary.py"
+MEASURE_BIN="${ROOT_DIR}/scripts/core/platform/runtime/measure_binary.py"
 
-PROGRAM="bench/programs/phase10/pgo_call_chain_large.k"
-OUT_DIR="bench/results/phase10/autofdo"
+PROGRAM="bench/programs/platform_support/pgo_call_chain_large.k"
+OUT_DIR="bench/results/platform_support/autofdo"
 LTO_MODE="full"
 RUNS=11
 WARMUP_RUNS=2
@@ -74,9 +74,9 @@ payload = {
     "reason": "perf and/or llvm-profgen not found",
     "speedup_vs_baseline": 0.0,
 }
-(out_dir / "phase10_autofdo_cycle.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
-print("phase10 autofdo: skipped (missing perf/llvm-profgen)")
-print(f"results json: {out_dir / 'phase10_autofdo_cycle.json'}")
+(out_dir / "platform_support_autofdo_cycle.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+print("platform_support autofdo: skipped (missing perf/llvm-profgen)")
+print(f"results json: {out_dir / 'platform_support_autofdo_cycle.json'}")
 PY
   exit 0
 fi
@@ -134,9 +134,9 @@ payload = {
     "reason": f"llvm-profgen failed: {sys.argv[4]}",
     "speedup_vs_baseline": 0.0,
 }
-(out_dir / "phase10_autofdo_cycle.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
-print("phase10 autofdo: skipped (llvm-profgen failed)")
-print(f"results json: {out_dir / 'phase10_autofdo_cycle.json'}")
+(out_dir / "platform_support_autofdo_cycle.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+print("platform_support autofdo: skipped (llvm-profgen failed)")
+print(f"results json: {out_dir / 'platform_support_autofdo_cycle.json'}")
 PY
     exit 0
   fi
@@ -186,7 +186,7 @@ payload = {
     "autofdo_use": autofdo,
     "skipped": False,
 }
-(out_dir / "phase10_autofdo_cycle.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
-print(f"phase10 autofdo speedup: {speedup:.4f}x (raw={raw_speedup:.4f}x, selected={selected_variant})")
-print(f"results json: {out_dir / 'phase10_autofdo_cycle.json'}")
+(out_dir / "platform_support_autofdo_cycle.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+print(f"platform_support autofdo speedup: {speedup:.4f}x (raw={raw_speedup:.4f}x, selected={selected_variant})")
+print(f"results json: {out_dir / 'platform_support_autofdo_cycle.json'}")
 PY

@@ -1,0 +1,76 @@
+{
+  "host_arch": "aarch64",
+  "program": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+  "preset": "core",
+  "include_experimental": false,
+  "include_embedded": false,
+  "targets": [
+    {
+      "target": "x86_64-linux-gnu",
+      "arch": "x86_64",
+      "family": "x86_64",
+      "os_class": "linux",
+      "tier": "stable",
+      "mode": "aot",
+      "notes": "Desktop/server Linux",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-gnu.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-gnu.bin",
+        "--target",
+        "x86_64-linux-gnu"
+      ],
+      "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_7655120502485558922_148569612882125_1.c:3:10: fatal error: 'stdio.h' file not found\n    3 | #include <stdio.h>\n      |          ^~~~~~~~~\n1 error generated.\nbuild: native compile failed (exit 1)\n",
+      "effective_target": "x86_64-apple-darwin",
+      "fallback_used": true,
+      "fallback_target": "x86_64-apple-darwin",
+      "fallback_status": 0,
+      "fallback_output": "built: \"/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-gnu.bin\"\n",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "aarch64-linux-gnu",
+      "arch": "aarch64",
+      "family": "arm64",
+      "os_class": "linux",
+      "tier": "stable",
+      "mode": "aot",
+      "notes": "ARM64 Linux (Raspberry Pi 64-bit, ARM servers)",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-gnu.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-gnu.bin",
+        "--target",
+        "aarch64-linux-gnu"
+      ],
+      "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_6278669829564815386_148569962645541_1.c:3:10: fatal error: 'stdio.h' file not found\n    3 | #include <stdio.h>\n      |          ^~~~~~~~~\n1 error generated.\nbuild: native compile failed (exit 1)\n",
+      "effective_target": "arm64-apple-darwin",
+      "fallback_used": true,
+      "fallback_target": "arm64-apple-darwin",
+      "fallback_status": 0,
+      "fallback_output": "built: \"/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-gnu.bin\"\n",
+      "smoke": {
+        "attempted": true,
+        "status_ok": true,
+        "output": "19999900000\n",
+        "status": 0
+      }
+    }
+  ],
+  "passed": true
+}

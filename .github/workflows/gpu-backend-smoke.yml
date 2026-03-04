@@ -1,0 +1,310 @@
+name: GPU Backend Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      backend:
+        description: "GPU backend to verify"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - cuda
+          - rocm_hip
+          - oneapi_sycl
+          - opencl
+          - vulkan_compute
+          - metal
+      strict_self_hosted:
+        description: "Run strict checks on self-hosted GPU runners"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gpu-backend-smoke-${{ github.ref }}-${{ github.event.inputs.backend }}
+  cancel-in-progress: true
+
+jobs:
+  hosted-report:
+    name: GPU Backend Hosted Smoke Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build sparkc (hosted probe)
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSPARK_BUILD_TESTS=OFF
+          cmake --build build --parallel 4 --target sparkc
+      - name: Hosted GPU smoke matrix (report mode)
+        run: |
+          python scripts/core/platform/runtime/gpu_smoke_matrix.py \
+            --backends "${{ github.event.inputs.backend }}" \
+            --include-planning \
+            --json-out bench/results/gpu_backend_smoke_hosted.json
+      - name: Upload hosted smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-gpu-backend-smoke-hosted
+          path: bench/results/gpu_backend_smoke_hosted.json
+          if-no-files-found: warn
+
+  cuda:
+    if: ${{ github.event.inputs.strict_self_hosted == 'true' && (github.event.inputs.backend == 'all' || github.event.inputs.backend == 'cuda') }}
+    runs-on: [self-hosted, linux, x64, gpu, cuda]
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Prepare CUDA infra
+        run: |
+          python scripts/core/platform/runtime/gpu_backend_infra.py \
+            --backends cuda \
+            --provision \
+            --strict \
+            --json-out bench/results/platform_support_gpu_infra_cuda_${{ runner.os }}.json
+      - name: CUDA strict smoke
+        run: |
+          python scripts/core/platform/runtime/gpu_smoke_matrix.py \
+            --backends cuda \
+            --fail-on-unavailable cuda \
+            --json-out bench/results/platform_support_gpu_smoke_cuda.json
+
+  rocm:
+    if: ${{ github.event.inputs.strict_self_hosted == 'true' && (github.event.inputs.backend == 'all' || github.event.inputs.backend == 'rocm_hip') }}
+    runs-on: [self-hosted, linux, x64, gpu, rocm]
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Prepare ROCm infra
+        run: |
+          python scripts/core/platform/runtime/gpu_backend_infra.py \
+            --backends rocm_hip \
+            --provision \
+            --strict \
+            --json-out bench/results/platform_support_gpu_infra_rocm_${{ runner.os }}.json
+      - name: ROCm strict smoke
+        run: |
+          python scripts/core/platform/runtime/gpu_smoke_matrix.py \
+            --backends rocm_hip \
+            --fail-on-unavailable rocm_hip \
+            --json-out bench/results/platform_support_gpu_smoke_rocm.json
+
+  oneapi:
+    if: ${{ github.event.inputs.strict_self_hosted == 'true' && (github.event.inputs.backend == 'all' || github.event.inputs.backend == 'oneapi_sycl') }}
+    runs-on: [self-hosted, linux, x64, gpu, oneapi]
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Prepare oneAPI infra
+        run: |
+          python scripts/core/platform/runtime/gpu_backend_infra.py \
+            --backends oneapi_sycl \
+            --provision \
+            --strict \
+            --json-out bench/results/platform_support_gpu_infra_oneapi_${{ runner.os }}.json
+      - name: oneAPI strict smoke
+        run: |
+          python scripts/core/platform/runtime/gpu_smoke_matrix.py \
+            --backends oneapi_sycl \
+            --fail-on-unavailable oneapi_sycl \
+            --json-out bench/results/platform_support_gpu_smoke_oneapi.json
+
+  oneapi-windows:
+    if: ${{ github.event.inputs.strict_self_hosted == 'true' && (github.event.inputs.backend == 'all' || github.event.inputs.backend == 'oneapi_sycl') }}
+    runs-on: [self-hosted, windows, x64, gpu, oneapi]
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Prepare oneAPI infra
+        run: |
+          python scripts/core/platform/runtime/gpu_backend_infra.py \
+            --backends oneapi_sycl \
+            --provision \
+            --strict \
+            --json-out bench/results/platform_support_gpu_infra_oneapi_${{ runner.os }}.json
+      - name: oneAPI strict smoke
+        run: |
+          python scripts/core/platform/runtime/gpu_smoke_matrix.py \
+            --backends oneapi_sycl \
+            --fail-on-unavailable oneapi_sycl \
+            --json-out bench/results/platform_support_gpu_smoke_oneapi_${{ runner.os }}.json
+
+  opencl:
+    if: ${{ github.event.inputs.strict_self_hosted == 'true' && (github.event.inputs.backend == 'all' || github.event.inputs.backend == 'opencl') }}
+    runs-on: [self-hosted, linux, x64, gpu, opencl]
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Prepare OpenCL infra
+        run: |
+          python scripts/core/platform/runtime/gpu_backend_infra.py \
+            --backends opencl \
+            --provision \
+            --strict \
+            --json-out bench/results/platform_support_gpu_infra_opencl_${{ runner.os }}.json
+      - name: OpenCL strict smoke
+        run: |
+          python scripts/core/platform/runtime/gpu_smoke_matrix.py \
+            --backends opencl \
+            --fail-on-unavailable opencl \
+            --json-out bench/results/platform_support_gpu_smoke_opencl.json
+
+  opencl-windows:
+    if: ${{ github.event.inputs.strict_self_hosted == 'true' && (github.event.inputs.backend == 'all' || github.event.inputs.backend == 'opencl') }}
+    runs-on: [self-hosted, windows, x64, gpu, opencl]
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Prepare OpenCL infra
+        run: |
+          python scripts/core/platform/runtime/gpu_backend_infra.py \
+            --backends opencl \
+            --provision \
+            --strict \
+            --json-out bench/results/platform_support_gpu_infra_opencl_${{ runner.os }}.json
+      - name: OpenCL strict smoke
+        run: |
+          python scripts/core/platform/runtime/gpu_smoke_matrix.py \
+            --backends opencl \
+            --fail-on-unavailable opencl \
+            --json-out bench/results/platform_support_gpu_smoke_opencl_${{ runner.os }}.json
+
+  cuda-windows:
+    if: ${{ github.event.inputs.strict_self_hosted == 'true' && (github.event.inputs.backend == 'all' || github.event.inputs.backend == 'cuda') }}
+    runs-on: [self-hosted, windows, x64, gpu, cuda]
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Prepare CUDA infra
+        run: |
+          python scripts/core/platform/runtime/gpu_backend_infra.py \
+            --backends cuda \
+            --provision \
+            --strict \
+            --json-out bench/results/platform_support_gpu_infra_cuda_${{ runner.os }}.json
+      - name: CUDA strict smoke
+        run: |
+          python scripts/core/platform/runtime/gpu_smoke_matrix.py \
+            --backends cuda \
+            --fail-on-unavailable cuda \
+            --json-out bench/results/platform_support_gpu_smoke_cuda_${{ runner.os }}.json
+
+  vulkan-windows:
+    if: ${{ github.event.inputs.strict_self_hosted == 'true' && (github.event.inputs.backend == 'all' || github.event.inputs.backend == 'vulkan_compute') }}
+    runs-on: [self-hosted, windows, x64, gpu, vulkan]
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Prepare Vulkan infra
+        run: |
+          python scripts/core/platform/runtime/gpu_backend_infra.py \
+            --backends vulkan_compute \
+            --provision \
+            --strict \
+            --json-out bench/results/platform_support_gpu_infra_vulkan_${{ runner.os }}.json
+      - name: Vulkan strict smoke
+        run: |
+          python scripts/core/platform/runtime/gpu_smoke_matrix.py \
+            --backends vulkan_compute \
+            --fail-on-unavailable vulkan_compute \
+            --json-out bench/results/platform_support_gpu_smoke_vulkan_${{ runner.os }}.json
+
+  vulkan:
+    if: ${{ github.event.inputs.strict_self_hosted == 'true' && (github.event.inputs.backend == 'all' || github.event.inputs.backend == 'vulkan_compute') }}
+    runs-on: [self-hosted, linux, x64, gpu, vulkan]
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Prepare Vulkan infra
+        run: |
+          python scripts/core/platform/runtime/gpu_backend_infra.py \
+            --backends vulkan_compute \
+            --provision \
+            --strict \
+            --json-out bench/results/platform_support_gpu_infra_vulkan_${{ runner.os }}.json
+      - name: Vulkan strict smoke
+        run: |
+          python scripts/core/platform/runtime/gpu_smoke_matrix.py \
+            --backends vulkan_compute \
+            --fail-on-unavailable vulkan_compute \
+            --json-out bench/results/platform_support_gpu_smoke_vulkan.json
+
+  metal:
+    if: ${{ github.event.inputs.strict_self_hosted == 'true' && (github.event.inputs.backend == 'all' || github.event.inputs.backend == 'metal') }}
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Prepare Metal infra
+        run: |
+          python scripts/core/platform/runtime/gpu_backend_infra.py \
+            --backends metal \
+            --provision \
+            --strict \
+            --json-out bench/results/platform_support_gpu_infra_metal_${{ runner.os }}.json
+      - name: Metal strict smoke
+        run: |
+          python scripts/core/platform/runtime/gpu_smoke_matrix.py \
+            --backends metal \
+            --fail-on-unavailable metal \
+            --json-out bench/results/platform_support_gpu_smoke_metal.json

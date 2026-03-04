@@ -1,0 +1,94 @@
+{
+  "host": {
+    "system": "Darwin",
+    "machine": "arm64",
+    "platform": "macOS-26.3-arm64-arm-64bit-Mach-O"
+  },
+  "config": {
+    "preset": "core",
+    "explicit_targets": [],
+    "include_experimental": true,
+    "include_embedded": false,
+    "include_gpu_experimental": false,
+    "include_gpu_planning": false,
+    "run_multiarch_probe": true,
+    "multiarch_lto": "off"
+  },
+  "cpu": {
+    "summary": {
+      "total": 3,
+      "stable": 2,
+      "experimental": 1,
+      "embedded": 0,
+      "build_attempted": 3,
+      "build_ok": 2,
+      "skipped": 0
+    },
+    "targets": [
+      {
+        "target": "x86_64-linux-gnu",
+        "family": "x86_64",
+        "os_class": "linux",
+        "tier": "stable",
+        "mode": "aot",
+        "notes": "Desktop/server Linux",
+        "build_attempted": true,
+        "build_ok": true,
+        "effective_target": "x86_64-apple-darwin",
+        "fallback_used": true,
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "aarch64-linux-gnu",
+        "family": "arm64",
+        "os_class": "linux",
+        "tier": "stable",
+        "mode": "aot",
+        "notes": "ARM64 Linux (Raspberry Pi 64-bit, ARM servers)",
+        "build_attempted": true,
+        "build_ok": true,
+        "effective_target": "arm64-apple-darwin",
+        "fallback_used": true,
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "riscv64-linux-gnu",
+        "family": "riscv64",
+        "os_class": "linux",
+        "tier": "experimental",
+        "mode": "aot",
+        "notes": "RISC-V Linux userland",
+        "build_attempted": true,
+        "build_ok": false,
+        "effective_target": "riscv64-linux-gnu",
+        "fallback_used": false,
+        "smoke_attempted": false,
+        "smoke_ok": false
+      }
+    ],
+    "probe_output": "phase10 multiarch: 2/3 builds passed, skipped=0\nresults json: /Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10_platform_matrix_multiarch_probe.json\n"
+  },
+  "gpu": {
+    "summary": {
+      "total": 1,
+      "stable": 1,
+      "experimental": 0,
+      "planning": 0,
+      "available": 1,
+      "unavailable": 0
+    },
+    "backends": [
+      {
+        "name": "metal",
+        "api": "Metal",
+        "tier": "stable",
+        "mode": "native_accel",
+        "available": true,
+        "reason": "probe_ok:xcrun -f metal",
+        "notes": "Apple Metal backend"
+      }
+    ]
+  }
+}

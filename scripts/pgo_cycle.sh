@@ -3,10 +3,10 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 K_BIN="${ROOT_DIR}/k"
-MEASURE_BIN="${ROOT_DIR}/scripts/phase10/measure_binary.py"
+MEASURE_BIN="${ROOT_DIR}/scripts/core/platform/runtime/measure_binary.py"
 
-PROGRAM="bench/programs/phase4/scalar_sum_large.k"
-OUT_DIR="bench/results/phase10/pgo"
+PROGRAM="bench/programs/scalar_runtime/scalar_sum_large.k"
+OUT_DIR="bench/results/platform_support/pgo"
 LTO_MODE="thin"
 RUNS=11
 WARMUP_RUNS=2
@@ -74,9 +74,9 @@ payload = {
     "reason": "llvm-profdata not found",
     "speedup_vs_baseline": 0.0,
 }
-(out_dir / "phase10_pgo_cycle.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
-print("phase10 pgo: skipped (llvm-profdata not found)")
-print(f"results json: {out_dir / 'phase10_pgo_cycle.json'}")
+(out_dir / "platform_support_pgo_cycle.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+print("platform_support pgo: skipped (llvm-profdata not found)")
+print(f"results json: {out_dir / 'platform_support_pgo_cycle.json'}")
 PY
   exit 0
 fi
@@ -144,7 +144,7 @@ payload = {
     "baseline": baseline,
     "pgo_use": pgo,
 }
-(out_dir / "phase10_pgo_cycle.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
-print(f"phase10 pgo speedup: {speedup:.4f}x (raw={raw_speedup:.4f}x, selected={selected_variant})")
-print(f"results json: {out_dir / 'phase10_pgo_cycle.json'}")
+(out_dir / "platform_support_pgo_cycle.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+print(f"platform_support pgo speedup: {speedup:.4f}x (raw={raw_speedup:.4f}x, selected={selected_variant})")
+print(f"results json: {out_dir / 'platform_support_pgo_cycle.json'}")
 PY

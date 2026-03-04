@@ -1,0 +1,27 @@
+{
+  "program": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase8/matmul_core_f64.k",
+  "runs": 3,
+  "warmup": 1,
+  "max_perf": true,
+  "results": [
+    {
+      "requested_backend": "all",
+      "effective_backend": "own",
+      "status_ok": true,
+      "parse_ok": true,
+      "parse_error": "",
+      "program_pass": true,
+      "median_time_sec": 0.017987625004025176,
+      "mean_time_sec": 0.019823291678524885,
+      "total": 7787441.887500029,
+      "expected": 7787441.887499999,
+      "diff": 2.9802322387695312e-08,
+      "backend_id": 0.0,
+      "own_calls": 3.0,
+      "blas_calls": 0.0,
+      "tile_m": 96.0,
+      "tile_n": 96.0,
+      "tile_k": 96.0
+    }
+  ]
+}

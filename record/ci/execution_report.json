@@ -1,0 +1,43 @@
+{
+  "timestamp": "2026-03-04T00:00:00+03:00",
+  "plan": "KozmikaDil Guvenli Entegrasyon + Cop Temizligi",
+  "local_validation": {
+    "architecture_guard_errors": 0,
+    "clean_build": "success",
+    "ctest_failed": 0,
+    "ctest_total": 12
+  },
+  "cleanup": {
+    "legacy_build_dirs_removed": 11,
+    "active_build_dirs_after_rebuild": 1,
+    "active_build_dir_names": [
+      "build"
+    ],
+    "tmp_files_remaining": 0,
+    "record_trash_exists": false
+  },
+  "github_runs": [
+    {
+      "run_id": 22544112130,
+      "workflow": "CI",
+      "url": "https://github.com/YenidoganKursat/kozmikaDil/actions/runs/22544112130",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "run_id": 22468789624,
+      "workflow": "CPU22 GitHub Matrix",
+      "url": "https://github.com/YenidoganKursat/kozmikaDil/actions/runs/22468789624",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "run_id": 22468856028,
+      "workflow": "GPU7 GitHub Matrix",
+      "url": "https://github.com/YenidoganKursat/kozmikaDil/actions/runs/22468856028",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "overall": "success"
+}

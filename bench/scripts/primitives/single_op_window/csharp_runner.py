@@ -13,7 +13,7 @@ from .common import parse_lines, run_checked
 from .models import WindowResult
 
 
-def run_csharp(operator: str, loops: int, runs: int, a_lit: str, b_lit: str) -> Optional[WindowResult]:
+def run_csharp(operator: str, loops: int, batch: int, runs: int, a_lit: str, b_lit: str) -> Optional[WindowResult]:
     if shutil.which("dotnet") is None:
         return None
 
@@ -22,7 +22,7 @@ def run_csharp(operator: str, loops: int, runs: int, a_lit: str, b_lit: str) -> 
         project = tmpdir / "SingleOp.csproj"
         source = tmpdir / "Program.cs"
         make_csharp_project(project)
-        make_csharp_program(source, operator, loops, a_lit, b_lit)
+        make_csharp_program(source, operator, loops, batch, a_lit, b_lit)
 
         run_checked(["dotnet", "build", "-c", "Release"], tmpdir)
 
@@ -37,8 +37,9 @@ def run_csharp(operator: str, loops: int, runs: int, a_lit: str, b_lit: str) -> 
             floor_total_ns = float(lines[-3])
             raw_total_ns = float(lines[-2])
             checksum = lines[-1]
-            floor_samples.append(floor_total_ns / loops)
-            raw_samples.append(raw_total_ns / loops)
+            denom = float(loops * batch)
+            floor_samples.append(floor_total_ns / denom)
+            raw_samples.append(raw_total_ns / denom)
 
     floor_ns = statistics.median(floor_samples)
     raw_ns = statistics.median(raw_samples)
@@ -49,10 +50,10 @@ def run_csharp(operator: str, loops: int, runs: int, a_lit: str, b_lit: str) -> 
         primitive="double",
         operator=operator,
         loops=loops,
+        batch=batch,
         runs=runs,
         floor_ns=floor_ns,
         raw_ns=raw_ns,
         net_ns=net_ns,
         checksum=checksum,
     )
-

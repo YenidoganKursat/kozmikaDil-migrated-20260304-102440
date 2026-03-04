@@ -18,7 +18,9 @@ bash scripts/bootstrap_phase1.sh
 
 Architecture docs:
 - `docs/architecture/repo_layers.md`
+- `docs/architecture/core_port_application_model.md`
 - `docs/architecture/dev_native_workflow.md`
+- `docs/platform_support_matrix.md`
 
 ## Available Phase 1 Commands
 
@@ -130,6 +132,11 @@ Execution modes:
 - `native`: compiled runtime path (`k build ... && ./binary`)
 - `builtin` benchmark helpers: micro-kernel measurement path only
 
+Global numeric policy:
+- strict precision is mandatory across interpret/native paths.
+- relaxed floating-point compile/runtime modes (`fast-math` family) are disallowed.
+- test pass criteria must not use tolerance relaxation as a workaround for numerical regressions.
+
 ## Phase 7 Commands
 
 ```bash
@@ -166,12 +173,20 @@ python3 tune/matmul_tuner.py
 
 # Multi-arch and final perf pipeline
 ./scripts/phase10_multiarch.sh --run-host-smoke
+python3 ./scripts/core/pipeline/phase10/multiarch_build.py --list-presets
+python3 ./scripts/core/pipeline/phase10/multiarch_build.py --preset market --include-experimental --include-embedded --run-host-smoke
+./scripts/phase10_platform_matrix.sh --preset market --include-experimental --include-embedded --include-gpu-experimental --include-gpu-planning
+python3 ./scripts/core/pipeline/phase10/gpu_smoke_matrix.py --backends all --include-planning
+python3 ./scripts/core/pipeline/phase10/gpu_backend_perf.py --backends all --include-planning --runs 7 --warmup 2
+python3 ./scripts/core/pipeline/phase10/gpu_backend_runtime_perf.py --program bench/programs/phase8/matmul_core_f64.k --runs 5 --warmup 1 --max-perf
+python3 ./.github/scripts/platform_readiness_gate.py
 ./scripts/pgo_cycle.sh --program bench/programs/phase10/pgo_call_chain_large.k --lto thin
 ./scripts/bolt_opt.sh --binary bench/results/phase10/pgo/native_pgo.bin --profile-cmd bench/results/phase10/pgo/native_pgo.bin
 ./bench/scripts/run_phase10_benchmarks.sh
 
 # Correctness/safety gates
 ./scripts/phase10_safety_gates.sh
+./bench/scripts/run_full_performance_audit.sh
 
 # Release artifact
 ./scripts/release_package.sh 0.10.0-rc1

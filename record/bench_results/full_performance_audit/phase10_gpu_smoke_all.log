@@ -1,0 +1,11 @@
+[full-perf] GPU smoke matrix (all backends) :: start
+[gpu-smoke] cuda: available=False tier=experimental reason=os_not_supported:Darwin
+[gpu-smoke] rocm_hip: available=False tier=experimental reason=os_not_supported:Darwin
+[gpu-smoke] oneapi_sycl: available=False tier=experimental reason=os_not_supported:Darwin
+[gpu-smoke] opencl: available=False tier=experimental reason=tool_not_found
+[gpu-smoke] vulkan_compute: available=False tier=experimental reason=os_not_supported:Darwin
+[gpu-smoke] metal: available=True tier=stable reason=probe_ok:xcrun -f metal
+[gpu-smoke] webgpu: available=False tier=planning reason=planning_only
+gpu_smoke json: /Users/kursatyenidogan/Documents/kozmikaDil/bench/results/full_performance_audit/phase10_gpu_smoke_all.json
+gpu_smoke PASS
+[full-perf] GPU smoke matrix (all backends) :: ok

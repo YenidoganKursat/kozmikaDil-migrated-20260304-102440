@@ -1,0 +1,242 @@
+name: Phase10 GitHub GPU/Portability Probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      enforce_gpu_requirements:
+        description: "Enforce strict host GPU availability in this probe"
+        required: false
+        default: false
+        type: boolean
+      runs:
+        description: "Number of probe/runtime repetitions"
+        required: false
+        default: "3"
+        type: number
+      warmup:
+        description: "Number of warmup iterations"
+        required: false
+        default: "1"
+        type: number
+
+permissions:
+  contents: read
+
+concurrency:
+  group: platform-support-github-gpu-probe-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  portability-probe:
+    name: Portability Probe (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.os == 'windows-latest' }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Linux probe deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get -o Acquire::Retries=3 install -y \
+            cmake ninja-build clang g++ make python3 python3-pip \
+            gcc-arm-none-eabi \
+            gcc-riscv64-unknown-elf binutils-riscv64-unknown-elf \
+            gcc-avr binutils-avr avr-libc
+
+      - name: Build sparkc for k-based probes
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSPARK_BUILD_TESTS=OFF
+          else
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DSPARK_BUILD_TESTS=OFF
+          fi
+          cmake --build build --parallel 4 --target sparkc --config Release
+
+      - name: Python compile checks (platform_support scripts)
+        run: |
+          python -m py_compile scripts/core/platform/runtime/advanced_capability_smoke.py
+          python -m py_compile scripts/core/platform/runtime/platform_performance_smoke.py
+          python -m py_compile scripts/core/platform/runtime/target_catalog.py
+          python -m py_compile .github/scripts/platform_support_gate.py
+          python -m py_compile scripts/core/platform/runtime/gpu_backend_catalog.py
+          python -m py_compile scripts/core/platform/runtime/gpu_backend_perf.py
+          python -m py_compile scripts/core/platform/runtime/gpu_backend_runtime_perf.py
+          python -m py_compile scripts/core/platform/runtime/platform_matrix.py
+          python -m py_compile scripts/core/platform/runtime/gpu_smoke_matrix.py
+          python -m py_compile .github/scripts/microcontroller_readiness_gate.py
+
+      - name: Run advanced capability smoke across all CPU/embedded targets
+        run: |
+          python scripts/core/platform/runtime/advanced_capability_smoke.py \
+            --all-targets \
+            --json-out bench/results/platform_support_advanced_capability_${{ runner.os }}.json
+
+      - name: Run cross-platform performance smoke across all CPU/embedded targets
+        run: |
+          python scripts/core/platform/runtime/platform_performance_smoke.py \
+            --all-targets \
+            --runs ${{ inputs.runs }} \
+            --warmup ${{ inputs.warmup }} \
+            --timeout 30 \
+            --json-out bench/results/platform_support_cross_platform_perf_${{ runner.os }}.json
+
+      - name: GPU smoke matrix (all backends, report mode)
+        run: |
+          python scripts/core/platform/runtime/gpu_smoke_matrix.py \
+            --backends all \
+            --include-planning \
+            --json-out bench/results/platform_support_gpu_smoke_${{ runner.os }}.json
+
+      - name: GPU backend probe perf matrix
+        run: |
+          python scripts/core/platform/runtime/gpu_backend_perf.py \
+            --backends all \
+            --include-planning \
+            --runs ${{ inputs.runs }} \
+            --warmup ${{ inputs.warmup }} \
+            --json-out bench/results/platform_support_gpu_probe_perf_${{ runner.os }}.json
+
+      - name: Resolve required strict GPU backends for policy
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.enforce_gpu_requirements == 'true'
+        id: gpu_required_backends
+        run: |
+          required_backends="$(python3 - <<'PY'
+          import json
+          import os
+
+          with open("doc/platform_support_policy.json", "r", encoding="utf-8") as fp:
+              policy = json.load(fp)
+
+          host = os.environ.get("RUNNER_OS", "")
+          cfg = policy.get("gpu", {}).get("required_available_targets", {})
+          required = set()
+
+          def normalize(values):
+              if values is None:
+                  return []
+              if isinstance(values, str):
+                  values = values.strip()
+                  return [values] if values else []
+              if isinstance(values, list):
+                  return [str(v).strip() for v in values if str(v).strip()]
+              return []
+
+          if isinstance(cfg, dict) and isinstance(cfg.get("required"), dict):
+              required.update(normalize(cfg["required"].get("all")))
+              required.update(normalize(cfg["required"].get(host)))
+          else:
+              required.update(normalize(cfg.get("all")))
+              required.update(normalize(cfg.get(host)))
+
+          print(','.join(sorted(required)))
+          PY
+          )"
+          echo "backends=$required_backends" >> "$GITHUB_OUTPUT"
+
+      - name: GPU backend runtime perf smoke (best-effort)
+        run: |
+          runtime_perf_args=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.enforce_gpu_requirements }}" = "true" ]; then
+            runtime_perf_args="--require-portable-routing --require-gpu-coverage"
+          fi
+          python scripts/core/platform/runtime/gpu_backend_runtime_perf.py \
+            --program bench/programs/matmul_schedule_gpu/matmul_core_f64.k \
+            --backends all \
+            --runs ${{ inputs.runs }} \
+            --warmup ${{ inputs.warmup }} \
+            --max-perf \
+            --allow-missing-runtime \
+            $runtime_perf_args \
+            --json-out bench/results/platform_support_gpu_runtime_perf_${{ runner.os }}.json \
+            --csv-out bench/results/platform_support_gpu_runtime_perf_${{ runner.os }}.csv
+
+      - name: Generate platform matrix for all targets
+        run: |
+          python scripts/core/platform/runtime/platform_matrix.py \
+            --preset market \
+            --include-experimental \
+            --include-embedded \
+            --include-gpu-experimental \
+            --include-gpu-planning \
+            --run-multiarch-probe \
+            --multiarch-lto thin \
+            --json-out bench/results/platform_support_portability_matrix_${{ runner.os }}.json
+
+      - name: Validate microcontroller readiness
+        run: |
+          python .github/scripts/microcontroller_readiness_gate.py \
+            --require-interpret-smoke \
+            --json-out bench/results/platform_support_microcontroller_gate_${{ runner.os }}.json
+
+      - name: Validate microcontroller readiness (strict native builds)
+        if: runner.os == 'Linux'
+        run: |
+          python .github/scripts/microcontroller_readiness_gate.py \
+            --require-native-mcu \
+            --require-interpret-smoke \
+            --json-out bench/results/platform_support_microcontroller_gate_${{ runner.os }}_strict.json
+
+      - name: Run unified portability support gate
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.enforce_gpu_requirements }}" = "true" ]; then
+            python .github/scripts/platform_support_gate.py \
+              --platform-matrix bench/results/platform_support_portability_matrix_${{ runner.os }}.json \
+              --advanced-capability bench/results/platform_support_advanced_capability_${{ runner.os }}.json \
+              --cross-perf bench/results/platform_support_cross_platform_perf_${{ runner.os }}.json \
+              --microcontroller bench/results/platform_support_microcontroller_gate_${{ runner.os }}.json \
+              --gpu-smoke bench/results/platform_support_gpu_smoke_${{ runner.os }}.json \
+              --report-out bench/results/platform_support_platform_support_gate_${{ runner.os }}.json
+          else
+            python .github/scripts/platform_support_gate.py \
+              --platform-matrix bench/results/platform_support_portability_matrix_${{ runner.os }}.json \
+              --advanced-capability bench/results/platform_support_advanced_capability_${{ runner.os }}.json \
+              --cross-perf bench/results/platform_support_cross_platform_perf_${{ runner.os }}.json \
+              --microcontroller bench/results/platform_support_microcontroller_gate_${{ runner.os }}.json \
+              --gpu-smoke bench/results/platform_support_gpu_smoke_${{ runner.os }}.json \
+              --report-out bench/results/platform_support_platform_support_gate_${{ runner.os }}.json \
+              --no-require-gpu
+          fi
+
+      - name: Enforce strict policy backends for current host
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.enforce_gpu_requirements == 'true'
+        run: |
+          python scripts/core/platform/runtime/gpu_smoke_matrix.py \
+            --backends all \
+            --include-planning \
+            --fail-on-unavailable "${{ steps.gpu_required_backends.outputs.backends }}" \
+            --json-out bench/results/platform_support_gpu_smoke_${{ runner.os }}_strict.json
+
+      - name: Upload platform_support portability artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: platform_support-portability-probe-${{ runner.os }}
+          path: |
+            bench/results/platform_support_advanced_capability_${{ runner.os }}.json
+            bench/results/platform_support_cross_platform_perf_${{ runner.os }}.json
+            bench/results/platform_support_gpu_smoke_${{ runner.os }}.json
+            bench/results/platform_support_gpu_smoke_${{ runner.os }}_strict.json
+            bench/results/platform_support_gpu_probe_perf_${{ runner.os }}.json
+            bench/results/platform_support_gpu_runtime_perf_${{ runner.os }}.json
+            bench/results/platform_support_gpu_runtime_perf_${{ runner.os }}.csv
+            bench/results/platform_support_platform_support_gate_${{ runner.os }}.json
+            bench/results/platform_support_portability_matrix_${{ runner.os }}.json
+            bench/results/platform_support_microcontroller_gate_${{ runner.os }}.json
+            bench/results/platform_support_microcontroller_gate_${{ runner.os }}_strict.json
+          if-no-files-found: warn

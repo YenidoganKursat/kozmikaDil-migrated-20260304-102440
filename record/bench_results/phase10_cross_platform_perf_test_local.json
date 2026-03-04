@@ -1,0 +1,1062 @@
+{
+  "config": {
+    "program": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+    "preset": "market",
+    "targets": [
+      "x86_64-linux-gnu",
+      "aarch64-linux-gnu",
+      "i686-linux-gnu",
+      "riscv64-linux-gnu",
+      "armv7-linux-gnueabihf",
+      "riscv32-linux-gnu",
+      "ppc64le-linux-gnu",
+      "s390x-linux-gnu",
+      "loongarch64-linux-gnu",
+      "mips64el-linux-gnuabi64",
+      "mipsel-linux-gnu",
+      "x86_64-apple-darwin",
+      "arm64-apple-darwin",
+      "x86_64-w64-mingw32",
+      "aarch64-w64-mingw32",
+      "x86_64-unknown-freebsd",
+      "aarch64-unknown-freebsd",
+      "aarch64-linux-android",
+      "x86_64-linux-android",
+      "armv7a-linux-androideabi",
+      "wasm32-wasi",
+      "wasm32-unknown-emscripten",
+      "arm-none-eabi",
+      "riscv64-unknown-elf",
+      "avr-none-elf",
+      "xtensa-esp32-elf"
+    ],
+    "explicit_targets": [],
+    "include_experimental": true,
+    "include_embedded": true,
+    "runs": 1,
+    "warmup": 0,
+    "timeout": 30.0,
+    "run_build": false,
+    "run_host_exec": false,
+    "host_platform": {
+      "system": "Darwin",
+      "machine": "arm64"
+    }
+  },
+  "summary": {
+    "interpret_attempted": 26,
+    "interpret_pass": 26,
+    "build_attempted": 0,
+    "build_pass": 0,
+    "host_exec_attempted": 0,
+    "host_exec_pass": 0
+  },
+  "os_summary": {
+    "linux": {
+      "targets": 11,
+      "interpret_pass": 11,
+      "interpret_attempted": 11,
+      "interpret_pass_rate": 1.0
+    },
+    "darwin": {
+      "targets": 2,
+      "interpret_pass": 2,
+      "interpret_attempted": 2,
+      "interpret_pass_rate": 1.0
+    },
+    "windows": {
+      "targets": 2,
+      "interpret_pass": 2,
+      "interpret_attempted": 2,
+      "interpret_pass_rate": 1.0
+    },
+    "freebsd": {
+      "targets": 2,
+      "interpret_pass": 2,
+      "interpret_attempted": 2,
+      "interpret_pass_rate": 1.0
+    },
+    "android": {
+      "targets": 3,
+      "interpret_pass": 3,
+      "interpret_attempted": 3,
+      "interpret_pass_rate": 1.0
+    },
+    "web": {
+      "targets": 2,
+      "interpret_pass": 2,
+      "interpret_attempted": 2,
+      "interpret_pass_rate": 1.0
+    },
+    "embedded": {
+      "targets": 4,
+      "interpret_pass": 4,
+      "interpret_attempted": 4,
+      "interpret_pass_rate": 1.0
+    }
+  },
+  "targets": [
+    {
+      "target": "x86_64-linux-gnu",
+      "family": "x86_64",
+      "os_class": "linux",
+      "tier": "stable",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 14.780542,
+        "mean_ms": 14.780542,
+        "min_ms": 14.780542,
+        "max_ms": 14.780542,
+        "p95_ms": 14.780542,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "x86_64-linux-gnu"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "aarch64-linux-gnu",
+      "family": "arm64",
+      "os_class": "linux",
+      "tier": "stable",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 14.136625,
+        "mean_ms": 14.136625,
+        "min_ms": 14.136625,
+        "max_ms": 14.136625,
+        "p95_ms": 14.136625,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "aarch64-linux-gnu"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "i686-linux-gnu",
+      "family": "x86",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 13.778667,
+        "mean_ms": 13.778667,
+        "min_ms": 13.778667,
+        "max_ms": 13.778667,
+        "p95_ms": 13.778667,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "i686-linux-gnu"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "riscv64-linux-gnu",
+      "family": "riscv64",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 13.273917,
+        "mean_ms": 13.273917,
+        "min_ms": 13.273917,
+        "max_ms": 13.273917,
+        "p95_ms": 13.273917,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "riscv64-linux-gnu"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "armv7-linux-gnueabihf",
+      "family": "armv7",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 13.542792,
+        "mean_ms": 13.542792,
+        "min_ms": 13.542792,
+        "max_ms": 13.542792,
+        "p95_ms": 13.542792,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "armv7-linux-gnueabihf"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "riscv32-linux-gnu",
+      "family": "riscv32",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 14.030958,
+        "mean_ms": 14.030958,
+        "min_ms": 14.030958,
+        "max_ms": 14.030958,
+        "p95_ms": 14.030958,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "riscv32-linux-gnu"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "ppc64le-linux-gnu",
+      "family": "ppc64le",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 13.858625,
+        "mean_ms": 13.858625,
+        "min_ms": 13.858625,
+        "max_ms": 13.858625,
+        "p95_ms": 13.858625,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "ppc64le-linux-gnu"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "s390x-linux-gnu",
+      "family": "s390x",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 13.980125,
+        "mean_ms": 13.980125,
+        "min_ms": 13.980125,
+        "max_ms": 13.980125,
+        "p95_ms": 13.980125,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "s390x-linux-gnu"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "loongarch64-linux-gnu",
+      "family": "loongarch64",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 15.606458,
+        "mean_ms": 15.606458,
+        "min_ms": 15.606458,
+        "max_ms": 15.606458,
+        "p95_ms": 15.606458,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "loongarch64-linux-gnu"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "mips64el-linux-gnuabi64",
+      "family": "mips64",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 13.748583,
+        "mean_ms": 13.748583,
+        "min_ms": 13.748583,
+        "max_ms": 13.748583,
+        "p95_ms": 13.748583,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "mips64el-linux-gnuabi64"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "mipsel-linux-gnu",
+      "family": "mips",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 14.030542,
+        "mean_ms": 14.030542,
+        "min_ms": 14.030542,
+        "max_ms": 14.030542,
+        "p95_ms": 14.030542,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "mipsel-linux-gnu"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "x86_64-apple-darwin",
+      "family": "x86_64",
+      "os_class": "darwin",
+      "tier": "stable",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 14.23775,
+        "mean_ms": 14.23775,
+        "min_ms": 14.23775,
+        "max_ms": 14.23775,
+        "p95_ms": 14.23775,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "x86_64-apple-darwin"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "arm64-apple-darwin",
+      "family": "arm64",
+      "os_class": "darwin",
+      "tier": "stable",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 14.127083,
+        "mean_ms": 14.127083,
+        "min_ms": 14.127083,
+        "max_ms": 14.127083,
+        "p95_ms": 14.127083,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "arm64-apple-darwin"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "x86_64-w64-mingw32",
+      "family": "x86_64",
+      "os_class": "windows",
+      "tier": "experimental",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 13.522084,
+        "mean_ms": 13.522084,
+        "min_ms": 13.522084,
+        "max_ms": 13.522084,
+        "p95_ms": 13.522084,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "x86_64-w64-mingw32"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "aarch64-w64-mingw32",
+      "family": "arm64",
+      "os_class": "windows",
+      "tier": "experimental",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 13.514333,
+        "mean_ms": 13.514333,
+        "min_ms": 13.514333,
+        "max_ms": 13.514333,
+        "p95_ms": 13.514333,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "aarch64-w64-mingw32"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "x86_64-unknown-freebsd",
+      "family": "x86_64",
+      "os_class": "freebsd",
+      "tier": "experimental",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 13.644125,
+        "mean_ms": 13.644125,
+        "min_ms": 13.644125,
+        "max_ms": 13.644125,
+        "p95_ms": 13.644125,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "x86_64-unknown-freebsd"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "aarch64-unknown-freebsd",
+      "family": "arm64",
+      "os_class": "freebsd",
+      "tier": "experimental",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 14.636625,
+        "mean_ms": 14.636625,
+        "min_ms": 14.636625,
+        "max_ms": 14.636625,
+        "p95_ms": 14.636625,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "aarch64-unknown-freebsd"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "aarch64-linux-android",
+      "family": "arm64",
+      "os_class": "android",
+      "tier": "experimental",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 13.507792,
+        "mean_ms": 13.507792,
+        "min_ms": 13.507792,
+        "max_ms": 13.507792,
+        "p95_ms": 13.507792,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "aarch64-linux-android"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "x86_64-linux-android",
+      "family": "x86_64",
+      "os_class": "android",
+      "tier": "experimental",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 13.319041,
+        "mean_ms": 13.319041,
+        "min_ms": 13.319041,
+        "max_ms": 13.319041,
+        "p95_ms": 13.319041,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "x86_64-linux-android"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "armv7a-linux-androideabi",
+      "family": "armv7",
+      "os_class": "android",
+      "tier": "experimental",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 13.781958,
+        "mean_ms": 13.781958,
+        "min_ms": 13.781958,
+        "max_ms": 13.781958,
+        "p95_ms": 13.781958,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "armv7a-linux-androideabi"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "wasm32-wasi",
+      "family": "wasm32",
+      "os_class": "web",
+      "tier": "experimental",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 13.246625,
+        "mean_ms": 13.246625,
+        "min_ms": 13.246625,
+        "max_ms": 13.246625,
+        "p95_ms": 13.246625,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "wasm32-wasi"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "wasm32-unknown-emscripten",
+      "family": "wasm32",
+      "os_class": "web",
+      "tier": "experimental",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 13.488584,
+        "mean_ms": 13.488584,
+        "min_ms": 13.488584,
+        "max_ms": 13.488584,
+        "p95_ms": 13.488584,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "wasm32-unknown-emscripten"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "arm-none-eabi",
+      "family": "arm-mcu",
+      "os_class": "embedded",
+      "tier": "embedded",
+      "mode": "interpret_only",
+      "interpret": {
+        "median_ms": 12.788,
+        "mean_ms": 12.788,
+        "min_ms": 12.788,
+        "max_ms": 12.788,
+        "p95_ms": 12.788,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "arm-none-eabi"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "riscv64-unknown-elf",
+      "family": "riscv-mcu",
+      "os_class": "embedded",
+      "tier": "embedded",
+      "mode": "interpret_only",
+      "interpret": {
+        "median_ms": 13.163542,
+        "mean_ms": 13.163542,
+        "min_ms": 13.163542,
+        "max_ms": 13.163542,
+        "p95_ms": 13.163542,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "riscv64-unknown-elf"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "avr-none-elf",
+      "family": "avr",
+      "os_class": "embedded",
+      "tier": "embedded",
+      "mode": "interpret_only",
+      "interpret": {
+        "median_ms": 13.513458,
+        "mean_ms": 13.513458,
+        "min_ms": 13.513458,
+        "max_ms": 13.513458,
+        "p95_ms": 13.513458,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "avr-none-elf"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "xtensa-esp32-elf",
+      "family": "xtensa",
+      "os_class": "embedded",
+      "tier": "embedded",
+      "mode": "interpret_only",
+      "interpret": {
+        "median_ms": 13.184458,
+        "mean_ms": 13.184458,
+        "min_ms": 13.184458,
+        "max_ms": 13.184458,
+        "p95_ms": 13.184458,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/perf_micro_loop.k",
+          "--target",
+          "xtensa-esp32-elf"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    }
+  ]
+}

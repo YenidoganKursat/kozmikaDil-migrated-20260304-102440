@@ -1,0 +1,2114 @@
+{
+  "config": {
+    "runs": 3,
+    "warmup_runs": 1,
+    "repeat": 4,
+    "native_cxx": "",
+    "baseline_cxx": "/usr/bin/clang",
+    "native_cflags": "",
+    "baseline_cflags": "",
+    "native_default_cflags": "-std=c11 -O3 -DNDEBUG -fomit-frame-pointer -fno-stack-protector -fno-plt -fno-fast-math -fno-math-errno",
+    "baseline_default_cflags": "-std=c11 -O3 -DNDEBUG -fno-fast-math -fno-math-errno",
+    "native_profile": "aggressive",
+    "baseline_profile": "portable",
+    "native_lto": "off",
+    "baseline_lto": "off",
+    "native_pgo": "off",
+    "baseline_pgo": "off",
+    "pgo_profile": "",
+    "auto_native_pgo": false,
+    "auto_native_pgo_runs": 2,
+    "band_lower": 0.9,
+    "band_upper": 1.2,
+    "drift_limit": 3.0,
+    "min_sample_time_sec": 0.1,
+    "adaptive_repeat": true,
+    "adaptive_probe_runs": 1,
+    "adaptive_repeat_cap": 0,
+    "pin_core": null,
+    "require_reproducible": false,
+    "allow_t5": false
+  },
+  "benchmarks": [
+    {
+      "name": "scalar_sum",
+      "source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+      "baseline_source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/c_baselines/scalar_sum.c",
+      "expected": "19999900000",
+      "expected_value": 19999900000.0,
+      "interpreted": {
+        "status": 0,
+        "first_output": "19999900000\n",
+        "repeat": 7,
+        "runs": [
+          0.11258504100260325,
+          0.1101554170018062,
+          0.11887266699341126
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.11387104166594024,
+        "median_time_sec": 0.11258504100260325,
+        "stdev_time_sec": 0.003673142172909726,
+        "min_time_sec": 0.1101554170018062,
+        "max_time_sec": 0.11887266699341126,
+        "trimmed_runs": [
+          0.1101554170018062,
+          0.11258504100260325,
+          0.11887266699341126
+        ],
+        "max_drift_percent": 5.58477923427023,
+        "reproducible": false
+      },
+      "native": {
+        "compile": {
+          "status": 0,
+          "output": "built: \"/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/tmpuhssfyn_/scalar_sum.native\"",
+          "time_sec": 0.22644195798784494
+        },
+        "status": 0,
+        "first_output": "19999900000\n",
+        "repeat": 43,
+        "runs": [
+          0.08020429199677892,
+          0.094086957979016,
+          0.09006266700453125
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.08811797232677539,
+        "median_time_sec": 0.09006266700453125,
+        "stdev_time_sec": 0.005832008329661385,
+        "min_time_sec": 0.08020429199677892,
+        "max_time_sec": 0.094086957979016,
+        "trimmed_runs": [
+          0.08020429199677892,
+          0.09006266700453125,
+          0.094086957979016
+        ],
+        "max_drift_percent": 10.946128218983715,
+        "reproducible": false
+      },
+      "baseline": {
+        "compile": {
+          "status": 0,
+          "output": "",
+          "time_sec": 0.04414391700993292
+        },
+        "status": 0,
+        "first_output": "19999900000\n",
+        "repeat": 43,
+        "runs": [
+          0.10375158398528583,
+          0.10314520899555646,
+          0.09057808300713077
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.09915829199599102,
+        "median_time_sec": 0.10314520899555646,
+        "stdev_time_sec": 0.006072172174569877,
+        "min_time_sec": 0.09057808300713077,
+        "max_time_sec": 0.10375158398528583,
+        "trimmed_runs": [
+          0.09057808300713077,
+          0.10314520899555646,
+          0.10375158398528583
+        ],
+        "max_drift_percent": 12.183916355210531,
+        "reproducible": false
+      },
+      "interpreted_value": 19999900000.0,
+      "native_value": 19999900000.0,
+      "baseline_value": 19999900000.0,
+      "interpreted_ok": true,
+      "native_ok": true,
+      "baseline_ok": true,
+      "output_match": true,
+      "outputs_match_with_tolerance": true,
+      "speedup": 7.679028906249357,
+      "speedup_vs_baseline": 1.145260432831364,
+      "within_band_vs_baseline": true,
+      "reproducible_gate": true,
+      "reproducible": false,
+      "pass": true,
+      "pass_no_perf_gate": true,
+      "pass_no_perf_gate_repro": true
+    },
+    {
+      "name": "scalar_for_range",
+      "source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_for_range.k",
+      "baseline_source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/c_baselines/scalar_for_range.c",
+      "expected": "41665416675000",
+      "expected_value": 41665416675000.0,
+      "interpreted": {
+        "status": 0,
+        "first_output": "41665416675000\n",
+        "repeat": 10,
+        "runs": [
+          0.11620812499313615,
+          0.12424854098935612,
+          0.11531279198243283
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.1185898193216417,
+        "median_time_sec": 0.11620812499313615,
+        "stdev_time_sec": 0.004017980710465498,
+        "min_time_sec": 0.11531279198243283,
+        "max_time_sec": 0.12424854098935612,
+        "trimmed_runs": [
+          0.11531279198243283,
+          0.11620812499313615,
+          0.12424854098935612
+        ],
+        "max_drift_percent": 6.918979199341588,
+        "reproducible": false
+      },
+      "native": {
+        "compile": {
+          "status": 0,
+          "output": "built: \"/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/tmpuhssfyn_/scalar_for_range.native\"",
+          "time_sec": 0.1642844169982709
+        },
+        "status": 0,
+        "first_output": "41665416675000\n",
+        "repeat": 37,
+        "runs": [
+          0.08155458301189356,
+          0.0833275000040885,
+          0.08282474998850375
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.0825689443348286,
+        "median_time_sec": 0.08282474998850375,
+        "stdev_time_sec": 0.0007460500718863872,
+        "min_time_sec": 0.08155458301189356,
+        "max_time_sec": 0.0833275000040885,
+        "trimmed_runs": [
+          0.08155458301189356,
+          0.08282474998850375,
+          0.0833275000040885
+        ],
+        "max_drift_percent": 1.5335596869130308,
+        "reproducible": true
+      },
+      "baseline": {
+        "compile": {
+          "status": 0,
+          "output": "",
+          "time_sec": 0.04670979201910086
+        },
+        "status": 0,
+        "first_output": "41665416675000\n",
+        "repeat": 43,
+        "runs": [
+          0.0916791670024395,
+          0.08684900001389906,
+          0.09138091598288156
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.08996969433307338,
+        "median_time_sec": 0.09138091598288156,
+        "stdev_time_sec": 0.002210020843485715,
+        "min_time_sec": 0.08684900001389906,
+        "max_time_sec": 0.0916791670024395,
+        "trimmed_runs": [
+          0.08684900001389906,
+          0.09138091598288156,
+          0.0916791670024395
+        ],
+        "max_drift_percent": 4.959368069621308,
+        "reproducible": false
+      },
+      "interpreted_value": 41665416675000.0,
+      "native_value": 41665416675000.0,
+      "baseline_value": 41665416675000.0,
+      "interpreted_ok": true,
+      "native_ok": true,
+      "baseline_ok": true,
+      "output_match": true,
+      "outputs_match_with_tolerance": true,
+      "speedup": 5.19132339710394,
+      "speedup_vs_baseline": 0.9493549996566498,
+      "within_band_vs_baseline": true,
+      "reproducible_gate": true,
+      "reproducible": false,
+      "pass": true,
+      "pass_no_perf_gate": true,
+      "pass_no_perf_gate_repro": true
+    },
+    {
+      "name": "scalar_functions",
+      "source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_functions.k",
+      "baseline_source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/c_baselines/scalar_functions.c",
+      "expected": "41665416675000",
+      "expected_value": 41665416675000.0,
+      "interpreted": {
+        "status": 0,
+        "first_output": "41665416675000\n",
+        "repeat": 4,
+        "runs": [
+          3.603185708023375,
+          3.533094583021011,
+          3.528373458015267
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 3.5548845830198843,
+        "median_time_sec": 3.533094583021011,
+        "stdev_time_sec": 0.03420839334414957,
+        "min_time_sec": 3.528373458015267,
+        "max_time_sec": 3.603185708023375,
+        "trimmed_runs": [
+          3.528373458015267,
+          3.533094583021011,
+          3.603185708023375
+        ],
+        "max_drift_percent": 1.9838451350609334,
+        "reproducible": true
+      },
+      "native": {
+        "compile": {
+          "status": 0,
+          "output": "built: \"/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/tmpuhssfyn_/scalar_functions.native\"",
+          "time_sec": 0.22286766598699614
+        },
+        "status": 0,
+        "first_output": "41665416675000\n",
+        "repeat": 34,
+        "runs": [
+          0.05557579098967835,
+          0.055316542013315484,
+          0.0562950000166893
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.05572911100656105,
+        "median_time_sec": 0.05557579098967835,
+        "stdev_time_sec": 0.00041390440665629613,
+        "min_time_sec": 0.055316542013315484,
+        "max_time_sec": 0.0562950000166893,
+        "trimmed_runs": [
+          0.055316542013315484,
+          0.05557579098967835,
+          0.0562950000166893
+        ],
+        "max_drift_percent": 1.2941048866844207,
+        "reproducible": true
+      },
+      "baseline": {
+        "compile": {
+          "status": 0,
+          "output": "",
+          "time_sec": 0.04239245899952948
+        },
+        "status": 0,
+        "first_output": "41665416675000\n",
+        "repeat": 52,
+        "runs": [
+          0.08817454197560437,
+          0.08900204199017026,
+          0.08737654198193923
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.08818437531590462,
+        "median_time_sec": 0.08817454197560437,
+        "stdev_time_sec": 0.0006636440261294023,
+        "min_time_sec": 0.08737654198193923,
+        "max_time_sec": 0.08900204199017026,
+        "trimmed_runs": [
+          0.08737654198193923,
+          0.08817454197560437,
+          0.08900204199017026
+        ],
+        "max_drift_percent": 0.9384795157709274,
+        "reproducible": true
+      },
+      "interpreted_value": 41665416675000.0,
+      "native_value": 41665416675000.0,
+      "baseline_value": 41665416675000.0,
+      "interpreted_ok": true,
+      "native_ok": true,
+      "baseline_ok": true,
+      "output_match": true,
+      "outputs_match_with_tolerance": true,
+      "speedup": 540.3666492350252,
+      "speedup_vs_baseline": 1.0373686835802753,
+      "within_band_vs_baseline": true,
+      "reproducible_gate": true,
+      "reproducible": true,
+      "pass": true,
+      "pass_no_perf_gate": true,
+      "pass_no_perf_gate_repro": true
+    },
+    {
+      "name": "scalar_if_else",
+      "source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_if_else.k",
+      "baseline_source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/c_baselines/scalar_if_else.c",
+      "expected": "10",
+      "expected_value": 10.0,
+      "interpreted": {
+        "status": 0,
+        "first_output": "10\n",
+        "repeat": 10,
+        "runs": [
+          0.11239008299889974,
+          0.10548237501643598,
+          0.10518204199615866
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.10768483333716479,
+        "median_time_sec": 0.10548237501643598,
+        "stdev_time_sec": 0.0033293723898266334,
+        "min_time_sec": 0.10518204199615866,
+        "max_time_sec": 0.11239008299889974,
+        "trimmed_runs": [
+          0.10518204199615866,
+          0.10548237501643598,
+          0.11239008299889974
+        ],
+        "max_drift_percent": 6.548684537475974,
+        "reproducible": false
+      },
+      "native": {
+        "compile": {
+          "status": 0,
+          "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_14547020287895672831_168809298214333_1.c:2467:12: warning: equality comparison with extraneous parentheses [-Wparentheses-equality]\n 2467 |   if (((v) == (1))) {\n      |        ~~~~^~~~~~\n/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_14547020287895672831_168809298214333_1.c:2467:12: note: remove extraneous parentheses around the comparison to silence this warning\n 2467 |   if (((v) == (1))) {\n      |       ~    ^     ~\n/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_14547020287895672831_168809298214333_1.c:2467:12: note: use '=' to turn this equality comparison into an assignment\n 2467 |   if (((v) == (1))) {\n      |            ^~\n      |            =\n1 warning generated.\nbuilt: \"/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/tmpuhssfyn_/scalar_if_else.native\"",
+          "time_sec": 0.18517716700443998
+        },
+        "status": 0,
+        "first_output": "10\n",
+        "repeat": 33,
+        "runs": [
+          0.05399112502345815,
+          0.0532273749995511,
+          0.05662466600188054
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.054614388674963266,
+        "median_time_sec": 0.05399112502345815,
+        "stdev_time_sec": 0.0014552753973258248,
+        "min_time_sec": 0.0532273749995511,
+        "max_time_sec": 0.05662466600188054,
+        "trimmed_runs": [
+          0.0532273749995511,
+          0.05399112502345815,
+          0.05662466600188054
+        ],
+        "max_drift_percent": 4.877729399559952,
+        "reproducible": false
+      },
+      "baseline": {
+        "compile": {
+          "status": 0,
+          "output": "",
+          "time_sec": 0.04313158299191855
+        },
+        "status": 0,
+        "first_output": "10\n",
+        "repeat": 53,
+        "runs": [
+          0.0864509170060046,
+          0.08890249999240041,
+          0.09318229099153541
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.08951190266331348,
+        "median_time_sec": 0.08890249999240041,
+        "stdev_time_sec": 0.0027816515052221783,
+        "min_time_sec": 0.0864509170060046,
+        "max_time_sec": 0.09318229099153541,
+        "trimmed_runs": [
+          0.0864509170060046,
+          0.08890249999240041,
+          0.09318229099153541
+        ],
+        "max_drift_percent": 4.814027726442843,
+        "reproducible": false
+      },
+      "interpreted_value": 10.0,
+      "native_value": 10.0,
+      "baseline_value": 10.0,
+      "interpreted_ok": true,
+      "native_ok": true,
+      "baseline_ok": true,
+      "output_match": true,
+      "outputs_match_with_tolerance": true,
+      "speedup": 6.447204747132037,
+      "speedup_vs_baseline": 1.0252497380573298,
+      "within_band_vs_baseline": true,
+      "reproducible_gate": true,
+      "reproducible": false,
+      "pass": true,
+      "pass_no_perf_gate": true,
+      "pass_no_perf_gate_repro": true
+    },
+    {
+      "name": "scalar_f64",
+      "source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_f64.k",
+      "baseline_source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/c_baselines/scalar_f64.c",
+      "expected": "1250012500",
+      "expected_value": 1250012500.0,
+      "interpreted": {
+        "status": 0,
+        "first_output": "1250012500\n",
+        "repeat": 6,
+        "runs": [
+          0.11406887500197627,
+          0.11339741700794548,
+          0.11318920800113119
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.11355183333701764,
+        "median_time_sec": 0.11339741700794548,
+        "stdev_time_sec": 0.00037535477449743916,
+        "min_time_sec": 0.11318920800113119,
+        "max_time_sec": 0.11406887500197627,
+        "trimmed_runs": [
+          0.11318920800113119,
+          0.11339741700794548,
+          0.11406887500197627
+        ],
+        "max_drift_percent": 0.5921281205053738,
+        "reproducible": true
+      },
+      "native": {
+        "compile": {
+          "status": 0,
+          "output": "built: \"/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/tmpuhssfyn_/scalar_f64.native\"",
+          "time_sec": 0.18662441600463353
+        },
+        "status": 0,
+        "first_output": "1250012500\n",
+        "repeat": 34,
+        "runs": [
+          0.058136959007242694,
+          0.05783941599656828,
+          0.058918416005326435
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.05829826366971247,
+        "median_time_sec": 0.058136959007242694,
+        "stdev_time_sec": 0.0004550272155420244,
+        "min_time_sec": 0.05783941599656828,
+        "max_time_sec": 0.058918416005326435,
+        "trimmed_runs": [
+          0.05783941599656828,
+          0.058136959007242694,
+          0.058918416005326435
+        ],
+        "max_drift_percent": 1.3441655900618859,
+        "reproducible": true
+      },
+      "baseline": {
+        "compile": {
+          "status": 0,
+          "output": "",
+          "time_sec": 0.0415134999784641
+        },
+        "status": 0,
+        "first_output": "1250012500\n",
+        "repeat": 49,
+        "runs": [
+          0.08206941597745754,
+          0.08836287498706952,
+          0.08393679198343307
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.08478969431598671,
+        "median_time_sec": 0.08393679198343307,
+        "stdev_time_sec": 0.0026391271749163746,
+        "min_time_sec": 0.08206941597745754,
+        "max_time_sec": 0.08836287498706952,
+        "trimmed_runs": [
+          0.08206941597745754,
+          0.08393679198343307,
+          0.08836287498706952
+        ],
+        "max_drift_percent": 5.273114326921195,
+        "reproducible": false
+      },
+      "interpreted_value": 1250012500.0,
+      "native_value": 1250012500.0,
+      "baseline_value": 1250012500.0,
+      "interpreted_ok": true,
+      "native_ok": true,
+      "baseline_ok": true,
+      "output_match": true,
+      "outputs_match_with_tolerance": true,
+      "speedup": 11.052957946509917,
+      "speedup_vs_baseline": 1.0018043024011318,
+      "within_band_vs_baseline": true,
+      "reproducible_gate": true,
+      "reproducible": false,
+      "pass": true,
+      "pass_no_perf_gate": true,
+      "pass_no_perf_gate_repro": true
+    },
+    {
+      "name": "scalar_bool",
+      "source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_bool.k",
+      "baseline_source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/c_baselines/scalar_bool.c",
+      "expected": "16666",
+      "expected_value": 16666.0,
+      "interpreted": {
+        "status": 0,
+        "first_output": "16666\n",
+        "repeat": 4,
+        "runs": [
+          0.1593945829954464,
+          0.16206654100096785,
+          0.1598296659940388
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.160430263330151,
+        "median_time_sec": 0.1598296659940388,
+        "stdev_time_sec": 0.0011705775685322609,
+        "min_time_sec": 0.1593945829954464,
+        "max_time_sec": 0.16206654100096785,
+        "trimmed_runs": [
+          0.1593945829954464,
+          0.1598296659940388,
+          0.16206654100096785
+        ],
+        "max_drift_percent": 1.3995368087752051,
+        "reproducible": true
+      },
+      "native": {
+        "compile": {
+          "status": 0,
+          "output": "built: \"/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/tmpuhssfyn_/scalar_bool.native\"",
+          "time_sec": 0.31248187500750646
+        },
+        "status": 0,
+        "first_output": "16666\n",
+        "repeat": 46,
+        "runs": [
+          0.07479025001521222,
+          0.0767094999901019,
+          0.07721349998610094
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.07623774999713835,
+        "median_time_sec": 0.0767094999901019,
+        "stdev_time_sec": 0.0010440134568892856,
+        "min_time_sec": 0.07479025001521222,
+        "max_time_sec": 0.07721349998610094,
+        "trimmed_runs": [
+          0.07479025001521222,
+          0.0767094999901019,
+          0.07721349998610094
+        ],
+        "max_drift_percent": 2.5019716920815913,
+        "reproducible": true
+      },
+      "baseline": {
+        "compile": {
+          "status": 0,
+          "output": "",
+          "time_sec": 0.042881458008196205
+        },
+        "status": 0,
+        "first_output": "16666\n",
+        "repeat": 34,
+        "runs": [
+          0.05928916699485853,
+          0.05763062500045635,
+          0.057708124979399145
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.05820930565823801,
+        "median_time_sec": 0.057708124979399145,
+        "stdev_time_sec": 0.0007642324870656978,
+        "min_time_sec": 0.05763062500045635,
+        "max_time_sec": 0.05928916699485853,
+        "trimmed_runs": [
+          0.05763062500045635,
+          0.057708124979399145,
+          0.05928916699485853
+        ],
+        "max_drift_percent": 2.7397216874119454,
+        "reproducible": true
+      },
+      "interpreted_value": 16666.0,
+      "native_value": 16666.0,
+      "baseline_value": 16666.0,
+      "interpreted_ok": true,
+      "native_ok": true,
+      "baseline_ok": true,
+      "output_match": true,
+      "outputs_match_with_tolerance": true,
+      "speedup": 23.96106296050183,
+      "speedup_vs_baseline": 1.017810030199837,
+      "within_band_vs_baseline": true,
+      "reproducible_gate": true,
+      "reproducible": true,
+      "pass": true,
+      "pass_no_perf_gate": true,
+      "pass_no_perf_gate_repro": true
+    },
+    {
+      "name": "scalar_nested_calls",
+      "source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_nested_calls.k",
+      "baseline_source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/c_baselines/scalar_nested_calls.c",
+      "expected": "8",
+      "expected_value": 8.0,
+      "interpreted": {
+        "status": 0,
+        "first_output": "8\n",
+        "repeat": 12,
+        "runs": [
+          0.10127820799243636,
+          0.10256516598747112,
+          0.10165862500434741
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.1018339996614183,
+        "median_time_sec": 0.10165862500434741,
+        "stdev_time_sec": 0.0005398348037458723,
+        "min_time_sec": 0.10127820799243636,
+        "max_time_sec": 0.10256516598747112,
+        "trimmed_runs": [
+          0.10127820799243636,
+          0.10165862500434741,
+          0.10256516598747112
+        ],
+        "max_drift_percent": 0.8917501914716403,
+        "reproducible": true
+      },
+      "native": {
+        "compile": {
+          "status": 1,
+          "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_13972591652402277712_168814748887750_1.c:2452:3: error: void function 'inc' should not return a value [-Wreturn-mismatch]\n 2452 |   return _t2;\n      |   ^      ~~~\n/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_13972591652402277712_168814748887750_1.c:2455:8: error: variable has incomplete type 'void'\n 2455 |   void _t3;\n      |        ^\n/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_13972591652402277712_168814748887750_1.c:2456:8: error: variable has incomplete type 'void'\n 2456 |   void _t4;\n      |        ^\n/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_13972591652402277712_168814748887750_1.c:2462:8: error: variable has incomplete type 'void'\n 2462 |   void _t6;\n      |        ^\n4 errors generated.\nbuild: native compile failed (exit 1)",
+          "time_sec": 0.1103497080039233
+        },
+        "status": 1,
+        "first_output": "",
+        "repeat": 4,
+        "runs": [],
+        "mean_time_sec": 0.0,
+        "median_time_sec": 0.0,
+        "stdev_time_sec": 0.0,
+        "min_time_sec": 0.0,
+        "max_time_sec": 0.0,
+        "trimmed_runs": [],
+        "max_drift_percent": 0.0,
+        "reproducible": false
+      },
+      "baseline": {
+        "compile": {
+          "status": 0,
+          "output": "",
+          "time_sec": 0.04130933299893513
+        },
+        "status": 0,
+        "first_output": "8\n",
+        "repeat": 50,
+        "runs": [
+          0.08073104100185446,
+          0.08209658300620504,
+          0.08210450000478886
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.08164404133761612,
+        "median_time_sec": 0.08209658300620504,
+        "stdev_time_sec": 0.0006455968192519317,
+        "min_time_sec": 0.08073104100185446,
+        "max_time_sec": 0.08210450000478886,
+        "trimmed_runs": [
+          0.08073104100185446,
+          0.08209658300620504,
+          0.08210450000478886
+        ],
+        "max_drift_percent": 1.6633359810448654,
+        "reproducible": true
+      },
+      "interpreted_value": 8.0,
+      "native_value": 0.0,
+      "baseline_value": 8.0,
+      "interpreted_ok": true,
+      "native_ok": false,
+      "baseline_ok": true,
+      "output_match": false,
+      "outputs_match_with_tolerance": false,
+      "speedup": null,
+      "speedup_vs_baseline": null,
+      "within_band_vs_baseline": false,
+      "reproducible_gate": true,
+      "reproducible": false,
+      "pass": false,
+      "pass_no_perf_gate": false,
+      "pass_no_perf_gate_repro": false
+    },
+    {
+      "name": "scalar_while_if",
+      "source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_while_if.k",
+      "baseline_source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/c_baselines/scalar_while_if.c",
+      "expected": "25000",
+      "expected_value": 25000.0,
+      "interpreted": {
+        "status": 0,
+        "first_output": "25000\n",
+        "repeat": 10,
+        "runs": [
+          0.1057392499933485,
+          0.10346054102410562,
+          0.10327258400502615
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.10415745834082675,
+        "median_time_sec": 0.10346054102410562,
+        "stdev_time_sec": 0.0011211246092639605,
+        "min_time_sec": 0.10327258400502615,
+        "max_time_sec": 0.1057392499933485,
+        "trimmed_runs": [
+          0.10327258400502615,
+          0.10346054102410562,
+          0.1057392499933485
+        ],
+        "max_drift_percent": 2.2024908691632943,
+        "reproducible": true
+      },
+      "native": {
+        "compile": {
+          "status": 0,
+          "output": "built: \"/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/tmpuhssfyn_/scalar_while_if.native\"",
+          "time_sec": 0.2254771250009071
+        },
+        "status": 0,
+        "first_output": "25000\n",
+        "repeat": 49,
+        "runs": [
+          0.08217895802226849,
+          0.0816032080037985,
+          0.07970195799134672
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.08116137467247124,
+        "median_time_sec": 0.0816032080037985,
+        "stdev_time_sec": 0.0010583933760816993,
+        "min_time_sec": 0.07970195799134672,
+        "max_time_sec": 0.08217895802226849,
+        "trimmed_runs": [
+          0.07970195799134672,
+          0.0816032080037985,
+          0.08217895802226849
+        ],
+        "max_drift_percent": 2.3298716545105465,
+        "reproducible": true
+      },
+      "baseline": {
+        "compile": {
+          "status": 0,
+          "output": "",
+          "time_sec": 0.04340474997297861
+        },
+        "status": 0,
+        "first_output": "25000\n",
+        "repeat": 38,
+        "runs": [
+          0.06221170898061246,
+          0.06211579201044515,
+          0.062181124987546355
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.062169541992867984,
+        "median_time_sec": 0.062181124987546355,
+        "stdev_time_sec": 4.0005338108877776e-05,
+        "min_time_sec": 0.06211579201044515,
+        "max_time_sec": 0.06221170898061246,
+        "trimmed_runs": [
+          0.06211579201044515,
+          0.062181124987546355,
+          0.06221170898061246
+        ],
+        "max_drift_percent": 0.10506882452559628,
+        "reproducible": true
+      },
+      "interpreted_value": 25000.0,
+      "native_value": 25000.0,
+      "baseline_value": 25000.0,
+      "interpreted_ok": true,
+      "native_ok": true,
+      "baseline_ok": true,
+      "output_match": true,
+      "outputs_match_with_tolerance": true,
+      "speedup": 6.212459821365351,
+      "speedup_vs_baseline": 0.9825707381787528,
+      "within_band_vs_baseline": true,
+      "reproducible_gate": true,
+      "reproducible": true,
+      "pass": true,
+      "pass_no_perf_gate": true,
+      "pass_no_perf_gate_repro": true
+    },
+    {
+      "name": "scalar_branches",
+      "source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_branches.k",
+      "baseline_source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/c_baselines/scalar_branches.c",
+      "expected": "21",
+      "expected_value": 21.0,
+      "interpreted": {
+        "status": 0,
+        "first_output": "21\n",
+        "repeat": 12,
+        "runs": [
+          0.09926591700059362,
+          0.09930179198272526,
+          0.10347370899398811
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.10068047265910234,
+        "median_time_sec": 0.09930179198272526,
+        "stdev_time_sec": 0.0019751706543115624,
+        "min_time_sec": 0.09926591700059362,
+        "max_time_sec": 0.10347370899398811,
+        "trimmed_runs": [
+          0.09926591700059362,
+          0.09930179198272526,
+          0.10347370899398811
+        ],
+        "max_drift_percent": 4.2012504789325495,
+        "reproducible": false
+      },
+      "native": {
+        "compile": {
+          "status": 0,
+          "output": "built: \"/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/tmpuhssfyn_/scalar_branches.native\"",
+          "time_sec": 0.2222210830077529
+        },
+        "status": 0,
+        "first_output": "21\n",
+        "repeat": 36,
+        "runs": [
+          0.05820808300632052,
+          0.05838670799857937,
+          0.059298082982422784
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.058630957995774224,
+        "median_time_sec": 0.05838670799857937,
+        "stdev_time_sec": 0.0004773318432167143,
+        "min_time_sec": 0.05820808300632052,
+        "max_time_sec": 0.059298082982422784,
+        "trimmed_runs": [
+          0.05820808300632052,
+          0.05838670799857937,
+          0.059298082982422784
+        ],
+        "max_drift_percent": 1.5609288741978584,
+        "reproducible": true
+      },
+      "baseline": {
+        "compile": {
+          "status": 0,
+          "output": "",
+          "time_sec": 0.04218929199851118
+        },
+        "status": 0,
+        "first_output": "21\n",
+        "repeat": 52,
+        "runs": [
+          0.08272858397685923,
+          0.09124687500298023,
+          0.09364833400468342
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.08920793099484096,
+        "median_time_sec": 0.09124687500298023,
+        "stdev_time_sec": 0.004685310709639003,
+        "min_time_sec": 0.08272858397685923,
+        "max_time_sec": 0.09364833400468342,
+        "trimmed_runs": [
+          0.08272858397685923,
+          0.09124687500298023,
+          0.09364833400468342
+        ],
+        "max_drift_percent": 9.335433159593451,
+        "reproducible": false
+      },
+      "interpreted_value": 21.0,
+      "native_value": 21.0,
+      "baseline_value": 21.0,
+      "interpreted_ok": true,
+      "native_ok": true,
+      "baseline_ok": true,
+      "output_match": true,
+      "outputs_match_with_tolerance": true,
+      "speedup": 5.10228074436778,
+      "speedup_vs_baseline": 1.081939976220936,
+      "within_band_vs_baseline": true,
+      "reproducible_gate": true,
+      "reproducible": false,
+      "pass": true,
+      "pass_no_perf_gate": true,
+      "pass_no_perf_gate_repro": true
+    },
+    {
+      "name": "scalar_matrix_like_guard",
+      "source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_matrix_like_guard.k",
+      "baseline_source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/c_baselines/scalar_matrix_like_guard.c",
+      "expected": "18",
+      "expected_value": 18.0,
+      "interpreted": {
+        "status": 0,
+        "first_output": "18\n",
+        "repeat": 13,
+        "runs": [
+          0.10416766599519178,
+          0.10273825001786463,
+          0.10440650000236928
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.10377080533847523,
+        "median_time_sec": 0.10416766599519178,
+        "stdev_time_sec": 0.0007366085746342555,
+        "min_time_sec": 0.10273825001786463,
+        "max_time_sec": 0.10440650000236928,
+        "trimmed_runs": [
+          0.10273825001786463,
+          0.10416766599519178,
+          0.10440650000236928
+        ],
+        "max_drift_percent": 1.3722261737083872,
+        "reproducible": true
+      },
+      "native": {
+        "compile": {
+          "status": 0,
+          "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_9714287904490830430_168819337105166_1.c:2464:12: warning: equality comparison with extraneous parentheses [-Wparentheses-equality]\n 2464 |   if (((x) == (1))) {\n      |        ~~~~^~~~~~\n/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_9714287904490830430_168819337105166_1.c:2464:12: note: remove extraneous parentheses around the comparison to silence this warning\n 2464 |   if (((x) == (1))) {\n      |       ~    ^     ~\n/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_9714287904490830430_168819337105166_1.c:2464:12: note: use '=' to turn this equality comparison into an assignment\n 2464 |   if (((x) == (1))) {\n      |            ^~\n      |            =\n1 warning generated.\nbuilt: \"/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/tmpuhssfyn_/scalar_matrix_like_guard.native\"",
+          "time_sec": 0.2102073330024723
+        },
+        "status": 0,
+        "first_output": "18\n",
+        "repeat": 34,
+        "runs": [
+          0.055401167017407715,
+          0.05476733300019987,
+          0.05802024999866262
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.05606291667209007,
+        "median_time_sec": 0.055401167017407715,
+        "stdev_time_sec": 0.0014080250243576732,
+        "min_time_sec": 0.05476733300019987,
+        "max_time_sec": 0.05802024999866262,
+        "trimmed_runs": [
+          0.05476733300019987,
+          0.055401167017407715,
+          0.05802024999866262
+        ],
+        "max_drift_percent": 4.7274870228491,
+        "reproducible": false
+      },
+      "baseline": {
+        "compile": {
+          "status": 0,
+          "output": "",
+          "time_sec": 0.040902917011408135
+        },
+        "status": 0,
+        "first_output": "18\n",
+        "repeat": 48,
+        "runs": [
+          0.07592637502239086,
+          0.07909345801454037,
+          0.07987079198937863
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.07829687500876996,
+        "median_time_sec": 0.07909345801454037,
+        "stdev_time_sec": 0.001705972775510976,
+        "min_time_sec": 0.07592637502239086,
+        "max_time_sec": 0.07987079198937863,
+        "trimmed_runs": [
+          0.07592637502239086,
+          0.07909345801454037,
+          0.07987079198937863
+        ],
+        "max_drift_percent": 4.004228758802387,
+        "reproducible": false
+      },
+      "interpreted_value": 18.0,
+      "native_value": 18.0,
+      "baseline_value": 18.0,
+      "interpreted_ok": true,
+      "native_ok": true,
+      "baseline_ok": true,
+      "output_match": true,
+      "outputs_match_with_tolerance": true,
+      "speedup": 4.917559064752991,
+      "speedup_vs_baseline": 1.0112518521982732,
+      "within_band_vs_baseline": true,
+      "reproducible_gate": true,
+      "reproducible": false,
+      "pass": true,
+      "pass_no_perf_gate": true,
+      "pass_no_perf_gate_repro": true
+    },
+    {
+      "name": "scalar_sum_small",
+      "source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum_small.k",
+      "baseline_source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/c_baselines/scalar_sum_small.c",
+      "expected": "1249975000",
+      "expected_value": 1249975000.0,
+      "interpreted": {
+        "status": 0,
+        "first_output": "1249975000\n",
+        "repeat": 10,
+        "runs": [
+          0.09607420899556018,
+          0.09567933299695142,
+          0.10361837499658577
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.09845730566303246,
+        "median_time_sec": 0.09607420899556018,
+        "stdev_time_sec": 0.003652985925958622,
+        "min_time_sec": 0.09567933299695142,
+        "max_time_sec": 0.10361837499658577,
+        "trimmed_runs": [
+          0.09567933299695142,
+          0.09607420899556018,
+          0.10361837499658577
+        ],
+        "max_drift_percent": 7.852436236424514,
+        "reproducible": false
+      },
+      "native": {
+        "compile": {
+          "status": 0,
+          "output": "built: \"/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/tmpuhssfyn_/scalar_sum_small.native\"",
+          "time_sec": 0.17655495900544338
+        },
+        "status": 0,
+        "first_output": "1249975000\n",
+        "repeat": 33,
+        "runs": [
+          0.05504779200418852,
+          0.05392029098584317,
+          0.055050291994120926
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.0546727916613842,
+        "median_time_sec": 0.05504779200418852,
+        "stdev_time_sec": 0.0005320993093428486,
+        "min_time_sec": 0.05392029098584317,
+        "max_time_sec": 0.055050291994120926,
+        "trimmed_runs": [
+          0.05392029098584317,
+          0.05504779200418852,
+          0.055050291994120926
+        ],
+        "max_drift_percent": 2.048222058133714,
+        "reproducible": true
+      },
+      "baseline": {
+        "compile": {
+          "status": 0,
+          "output": "",
+          "time_sec": 0.041639791015768424
+        },
+        "status": 0,
+        "first_output": "1249975000\n",
+        "repeat": 34,
+        "runs": [
+          0.05459333400358446,
+          0.054959667002549395,
+          0.0560851669870317
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.055212722664388515,
+        "median_time_sec": 0.054959667002549395,
+        "stdev_time_sec": 0.0006347804285036413,
+        "min_time_sec": 0.05459333400358446,
+        "max_time_sec": 0.0560851669870317,
+        "trimmed_runs": [
+          0.05459333400358446,
+          0.054959667002549395,
+          0.0560851669870317
+        ],
+        "max_drift_percent": 2.0478653635767023,
+        "reproducible": true
+      },
+      "interpreted_value": 1249975000.0,
+      "native_value": 1249975000.0,
+      "baseline_value": 1249975000.0,
+      "interpreted_ok": true,
+      "native_ok": true,
+      "baseline_ok": true,
+      "output_match": true,
+      "outputs_match_with_tolerance": true,
+      "speedup": 5.759447893227489,
+      "speedup_vs_baseline": 0.96903443837126,
+      "within_band_vs_baseline": true,
+      "reproducible_gate": true,
+      "reproducible": false,
+      "pass": true,
+      "pass_no_perf_gate": true,
+      "pass_no_perf_gate_repro": true
+    },
+    {
+      "name": "scalar_sum_large",
+      "source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum_large.k",
+      "baseline_source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/c_baselines/scalar_sum_large.c",
+      "expected": "61249825000",
+      "expected_value": 61249825000.0,
+      "interpreted": {
+        "status": 0,
+        "first_output": "61249825000\n",
+        "repeat": 6,
+        "runs": [
+          0.11686149999150075,
+          0.11557258301763795,
+          0.11525187498773448
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.11589531933229107,
+        "median_time_sec": 0.11557258301763795,
+        "stdev_time_sec": 0.00069562547863262,
+        "min_time_sec": 0.11525187498773448,
+        "max_time_sec": 0.11686149999150075,
+        "trimmed_runs": [
+          0.11525187498773448,
+          0.11557258301763795,
+          0.11686149999150075
+        ],
+        "max_drift_percent": 1.1152445850120791,
+        "reproducible": true
+      },
+      "native": {
+        "compile": {
+          "status": 0,
+          "output": "built: \"/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/tmpuhssfyn_/scalar_sum_large.native\"",
+          "time_sec": 0.17275579101988114
+        },
+        "status": 0,
+        "first_output": "61249825000\n",
+        "repeat": 50,
+        "runs": [
+          0.08046837500296533,
+          0.08163429200067185,
+          0.07897762500215322
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.08036009733526346,
+        "median_time_sec": 0.08046837500296533,
+        "stdev_time_sec": 0.001087278843488555,
+        "min_time_sec": 0.07897762500215322,
+        "max_time_sec": 0.08163429200067185,
+        "trimmed_runs": [
+          0.07897762500215322,
+          0.08046837500296533,
+          0.08163429200067185
+        ],
+        "max_drift_percent": 1.8525911586473294,
+        "reproducible": true
+      },
+      "baseline": {
+        "compile": {
+          "status": 0,
+          "output": "",
+          "time_sec": 0.04147075000219047
+        },
+        "status": 0,
+        "first_output": "61249825000\n",
+        "repeat": 46,
+        "runs": [
+          0.07404116698307917,
+          0.07649862501421012,
+          0.07578349998220801
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.0754410973264991,
+        "median_time_sec": 0.07578349998220801,
+        "stdev_time_sec": 0.0010320544810134443,
+        "min_time_sec": 0.07404116698307917,
+        "max_time_sec": 0.07649862501421012,
+        "trimmed_runs": [
+          0.07404116698307917,
+          0.07578349998220801,
+          0.07649862501421012
+        ],
+        "max_drift_percent": 2.2990928098305075,
+        "reproducible": true
+      },
+      "interpreted_value": 61249825000.0,
+      "native_value": 61249825000.0,
+      "baseline_value": 61249825000.0,
+      "interpreted_ok": true,
+      "native_ok": true,
+      "baseline_ok": true,
+      "output_match": true,
+      "outputs_match_with_tolerance": true,
+      "speedup": 11.968737512654194,
+      "speedup_vs_baseline": 1.0236738289153067,
+      "within_band_vs_baseline": true,
+      "reproducible_gate": true,
+      "reproducible": true,
+      "pass": true,
+      "pass_no_perf_gate": true,
+      "pass_no_perf_gate_repro": true
+    },
+    {
+      "name": "scalar_for_range_mul",
+      "source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_for_range_mul.k",
+      "baseline_source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/c_baselines/scalar_for_range_mul.c",
+      "expected": "134550",
+      "expected_value": 134550.0,
+      "interpreted": {
+        "status": 0,
+        "first_output": "134550\n",
+        "repeat": 13,
+        "runs": [
+          0.10421370901167393,
+          0.10341570799937472,
+          0.10457137500634417
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.10406693067246427,
+        "median_time_sec": 0.10421370901167393,
+        "stdev_time_sec": 0.0004830800267694035,
+        "min_time_sec": 0.10341570799937472,
+        "max_time_sec": 0.10457137500634417,
+        "trimmed_runs": [
+          0.10341570799937472,
+          0.10421370901167393,
+          0.10457137500634417
+        ],
+        "max_drift_percent": 0.7657351608220935,
+        "reproducible": true
+      },
+      "native": {
+        "compile": {
+          "status": 0,
+          "output": "built: \"/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/tmpuhssfyn_/scalar_for_range_mul.native\"",
+          "time_sec": 0.15862241602735594
+        },
+        "status": 0,
+        "first_output": "134550\n",
+        "repeat": 35,
+        "runs": [
+          0.056297500006621704,
+          0.05596875000628643,
+          0.05638258298859
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.05621627766716605,
+        "median_time_sec": 0.056297500006621704,
+        "stdev_time_sec": 0.00017844184044211797,
+        "min_time_sec": 0.05596875000628643,
+        "max_time_sec": 0.05638258298859,
+        "trimmed_runs": [
+          0.05596875000628643,
+          0.056297500006621704,
+          0.05638258298859
+        ],
+        "max_drift_percent": 0.5839513305148694,
+        "reproducible": true
+      },
+      "baseline": {
+        "compile": {
+          "status": 0,
+          "output": "",
+          "time_sec": 0.04975854200893082
+        },
+        "status": 0,
+        "first_output": "134550\n",
+        "repeat": 38,
+        "runs": [
+          0.06189849998918362,
+          0.061740375007502735,
+          0.06245970801683143
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.062032861004505925,
+        "median_time_sec": 0.06189849998918362,
+        "stdev_time_sec": 0.00030865261638968763,
+        "min_time_sec": 0.061740375007502735,
+        "max_time_sec": 0.06245970801683143,
+        "trimmed_runs": [
+          0.061740375007502735,
+          0.06189849998918362,
+          0.06245970801683143
+        ],
+        "max_drift_percent": 0.9066585260480882,
+        "reproducible": true
+      },
+      "interpreted_value": 134550.0,
+      "native_value": 134550.0,
+      "baseline_value": 134550.0,
+      "interpreted_ok": true,
+      "native_ok": true,
+      "baseline_ok": true,
+      "output_match": true,
+      "outputs_match_with_tolerance": true,
+      "speedup": 4.983798044016945,
+      "speedup_vs_baseline": 1.0126875314023056,
+      "within_band_vs_baseline": true,
+      "reproducible_gate": true,
+      "reproducible": true,
+      "pass": true,
+      "pass_no_perf_gate": true,
+      "pass_no_perf_gate_repro": true
+    },
+    {
+      "name": "scalar_for_range_branch",
+      "source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_for_range_branch.k",
+      "baseline_source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/c_baselines/scalar_for_range_branch.c",
+      "expected": "625025000",
+      "expected_value": 625025000.0,
+      "interpreted": {
+        "status": 0,
+        "first_output": "625025000\n",
+        "repeat": 9,
+        "runs": [
+          0.09850470800301991,
+          0.10080899999593385,
+          0.09993954200763255
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.09975108333552878,
+        "median_time_sec": 0.09993954200763255,
+        "stdev_time_sec": 0.0009501150458304705,
+        "min_time_sec": 0.09850470800301991,
+        "max_time_sec": 0.10080899999593385,
+        "trimmed_runs": [
+          0.09850470800301991,
+          0.09993954200763255,
+          0.10080899999593385
+        ],
+        "max_drift_percent": 1.4357020012189559,
+        "reproducible": true
+      },
+      "native": {
+        "compile": {
+          "status": 0,
+          "output": "built: \"/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/tmpuhssfyn_/scalar_for_range_branch.native\"",
+          "time_sec": 0.20586679101688787
+        },
+        "status": 0,
+        "first_output": "625025000\n",
+        "repeat": 51,
+        "runs": [
+          0.08173074998194352,
+          0.08546570799080655,
+          0.08476341699133627
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.08398662498802878,
+        "median_time_sec": 0.08476341699133627,
+        "stdev_time_sec": 0.0016207060589538077,
+        "min_time_sec": 0.08173074998194352,
+        "max_time_sec": 0.08546570799080655,
+        "trimmed_runs": [
+          0.08173074998194352,
+          0.08476341699133627,
+          0.08546570799080655
+        ],
+        "max_drift_percent": 3.5778017416437145,
+        "reproducible": false
+      },
+      "baseline": {
+        "compile": {
+          "status": 0,
+          "output": "",
+          "time_sec": 0.0439416250155773
+        },
+        "status": 0,
+        "first_output": "625025000\n",
+        "repeat": 53,
+        "runs": [
+          0.08606358300312422,
+          0.08999979199143127,
+          0.08876266700099222
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.08827534733184923,
+        "median_time_sec": 0.08876266700099222,
+        "stdev_time_sec": 0.0016434811924403055,
+        "min_time_sec": 0.08606358300312422,
+        "max_time_sec": 0.08999979199143127,
+        "trimmed_runs": [
+          0.08606358300312422,
+          0.08876266700099222,
+          0.08999979199143127
+        ],
+        "max_drift_percent": 3.0407874042786815,
+        "reproducible": false
+      },
+      "interpreted_value": 625025000.0,
+      "native_value": 625025000.0,
+      "baseline_value": 625025000.0,
+      "interpreted_ok": true,
+      "native_ok": true,
+      "baseline_ok": true,
+      "output_match": true,
+      "outputs_match_with_tolerance": true,
+      "speedup": 6.681232204625125,
+      "speedup_vs_baseline": 1.0076650450029796,
+      "within_band_vs_baseline": true,
+      "reproducible_gate": true,
+      "reproducible": false,
+      "pass": true,
+      "pass_no_perf_gate": true,
+      "pass_no_perf_gate_repro": true
+    },
+    {
+      "name": "scalar_while_decr",
+      "source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_while_decr.k",
+      "baseline_source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/c_baselines/scalar_while_decr.c",
+      "expected": "83332",
+      "expected_value": 83332.0,
+      "interpreted": {
+        "status": 0,
+        "first_output": "83332\n",
+        "repeat": 9,
+        "runs": [
+          0.10553704199264757,
+          0.10074850000091828,
+          0.10032437500194646
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.10220330566517077,
+        "median_time_sec": 0.10074850000091828,
+        "stdev_time_sec": 0.0023636580307568587,
+        "min_time_sec": 0.10032437500194646,
+        "max_time_sec": 0.10553704199264757,
+        "trimmed_runs": [
+          0.10032437500194646,
+          0.10074850000091828,
+          0.10553704199264757
+        ],
+        "max_drift_percent": 4.752966040869733,
+        "reproducible": false
+      },
+      "native": {
+        "compile": {
+          "status": 0,
+          "output": "built: \"/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/tmpuhssfyn_/scalar_while_decr.native\"",
+          "time_sec": 0.2516509579727426
+        },
+        "status": 0,
+        "first_output": "83332\n",
+        "repeat": 37,
+        "runs": [
+          0.061250041995663196,
+          0.062273791001643986,
+          0.06394716698559932
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.062490333327635504,
+        "median_time_sec": 0.062273791001643986,
+        "stdev_time_sec": 0.001111692024811384,
+        "min_time_sec": 0.061250041995663196,
+        "max_time_sec": 0.06394716698559932,
+        "trimmed_runs": [
+          0.061250041995663196,
+          0.062273791001643986,
+          0.06394716698559932
+        ],
+        "max_drift_percent": 2.687127212009885,
+        "reproducible": true
+      },
+      "baseline": {
+        "compile": {
+          "status": 0,
+          "output": "",
+          "time_sec": 0.04240020801080391
+        },
+        "status": 0,
+        "first_output": "83332\n",
+        "repeat": 50,
+        "runs": [
+          0.08389500001794659,
+          0.08477887499611825,
+          0.08191829198040068
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.0835307223314885,
+        "median_time_sec": 0.08389500001794659,
+        "stdev_time_sec": 0.0011958978418163178,
+        "min_time_sec": 0.08191829198040068,
+        "max_time_sec": 0.08477887499611825,
+        "trimmed_runs": [
+          0.08191829198040068,
+          0.08389500001794659,
+          0.08477887499611825
+        ],
+        "max_drift_percent": 2.3561690650492313,
+        "reproducible": true
+      },
+      "interpreted_value": 83332.0,
+      "native_value": 83332.0,
+      "baseline_value": 83332.0,
+      "interpreted_ok": true,
+      "native_ok": true,
+      "baseline_ok": true,
+      "output_match": true,
+      "outputs_match_with_tolerance": true,
+      "speedup": 6.651085008950534,
+      "speedup_vs_baseline": 0.996925014756875,
+      "within_band_vs_baseline": true,
+      "reproducible_gate": true,
+      "reproducible": false,
+      "pass": true,
+      "pass_no_perf_gate": true,
+      "pass_no_perf_gate_repro": true
+    },
+    {
+      "name": "scalar_call_chain",
+      "source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_call_chain.k",
+      "baseline_source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/c_baselines/scalar_call_chain.c",
+      "expected": "5000100000",
+      "expected_value": 5000100000.0,
+      "interpreted": {
+        "status": 0,
+        "first_output": "5000100000\n",
+        "repeat": 4,
+        "runs": [
+          12.499168707989156,
+          12.574284417001763,
+          12.522773625008995
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 12.532075583333304,
+        "median_time_sec": 12.522773625008995,
+        "stdev_time_sec": 0.031363325255432416,
+        "min_time_sec": 12.499168707989156,
+        "max_time_sec": 12.574284417001763,
+        "trimmed_runs": [
+          12.499168707989156,
+          12.522773625008995,
+          12.574284417001763
+        ],
+        "max_drift_percent": 0.4113369253109983,
+        "reproducible": true
+      },
+      "native": {
+        "compile": {
+          "status": 1,
+          "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_14378440760159399885_168894498222208_1.c:2452:3: error: void function 'dbl' should not return a value [-Wreturn-mismatch]\n 2452 |   return (_t2) * (2);\n      |   ^      ~~~~~~~~~~~\n/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_14378440760159399885_168894498222208_1.c:2455:8: error: variable has incomplete type 'void'\n 2455 |   void _t5;\n      |        ^\n/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_14378440760159399885_168894498222208_1.c:2456:8: error: variable has incomplete type 'void'\n 2456 |   void _t6;\n      |        ^\n/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_14378440760159399885_168894498222208_1.c:2465:8: error: variable has incomplete type 'void'\n 2465 |   void _t12;\n      |        ^\n4 errors generated.\nbuild: native compile failed (exit 1)",
+          "time_sec": 0.2379527919983957
+        },
+        "status": 1,
+        "first_output": "",
+        "repeat": 4,
+        "runs": [],
+        "mean_time_sec": 0.0,
+        "median_time_sec": 0.0,
+        "stdev_time_sec": 0.0,
+        "min_time_sec": 0.0,
+        "max_time_sec": 0.0,
+        "trimmed_runs": [],
+        "max_drift_percent": 0.0,
+        "reproducible": false
+      },
+      "baseline": {
+        "compile": {
+          "status": 0,
+          "output": "",
+          "time_sec": 0.04835362499579787
+        },
+        "status": 0,
+        "first_output": "5000100000\n",
+        "repeat": 42,
+        "runs": [
+          0.0890054999908898,
+          0.08720837498549372,
+          0.0896172919892706
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.08861038898855138,
+        "median_time_sec": 0.0890054999908898,
+        "stdev_time_sec": 0.0010223518021040185,
+        "min_time_sec": 0.08720837498549372,
+        "max_time_sec": 0.0896172919892706,
+        "trimmed_runs": [
+          0.08720837498549372,
+          0.0890054999908898,
+          0.0896172919892706
+        ],
+        "max_drift_percent": 2.0191168024223543,
+        "reproducible": true
+      },
+      "interpreted_value": 5000100000.0,
+      "native_value": 0.0,
+      "baseline_value": 5000100000.0,
+      "interpreted_ok": true,
+      "native_ok": false,
+      "baseline_ok": true,
+      "output_match": false,
+      "outputs_match_with_tolerance": false,
+      "speedup": null,
+      "speedup_vs_baseline": null,
+      "within_band_vs_baseline": false,
+      "reproducible_gate": true,
+      "reproducible": false,
+      "pass": false,
+      "pass_no_perf_gate": false,
+      "pass_no_perf_gate_repro": false
+    },
+    {
+      "name": "scalar_while_branch",
+      "source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_while_branch.k",
+      "baseline_source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/c_baselines/scalar_while_branch.c",
+      "expected": "149965",
+      "expected_value": 149965.0,
+      "interpreted": {
+        "status": 0,
+        "first_output": "149965\n",
+        "repeat": 8,
+        "runs": [
+          0.1028100420080591,
+          0.10337329100002535,
+          0.10104762500850484
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.10241031933886309,
+        "median_time_sec": 0.1028100420080591,
+        "stdev_time_sec": 0.0009906274897695407,
+        "min_time_sec": 0.10104762500850484,
+        "max_time_sec": 0.10337329100002535,
+        "trimmed_runs": [
+          0.10104762500850484,
+          0.1028100420080591,
+          0.10337329100002535
+        ],
+        "max_drift_percent": 1.7142459677393271,
+        "reproducible": true
+      },
+      "native": {
+        "compile": {
+          "status": 0,
+          "output": "built: \"/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/tmpuhssfyn_/scalar_while_branch.native\"",
+          "time_sec": 0.26461262500379235
+        },
+        "status": 0,
+        "first_output": "149965\n",
+        "repeat": 45,
+        "runs": [
+          0.09321183399879374,
+          0.09449908300302923,
+          0.09421287500299513
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.09397459733493936,
+        "median_time_sec": 0.09421287500299513,
+        "stdev_time_sec": 0.000551866339522465,
+        "min_time_sec": 0.09321183399879374,
+        "max_time_sec": 0.09449908300302923,
+        "trimmed_runs": [
+          0.09321183399879374,
+          0.09421287500299513,
+          0.09449908300302923
+        ],
+        "max_drift_percent": 1.062531001383381,
+        "reproducible": true
+      },
+      "baseline": {
+        "compile": {
+          "status": 0,
+          "output": "",
+          "time_sec": 0.04720516697852872
+        },
+        "status": 0,
+        "first_output": "149965\n",
+        "repeat": 43,
+        "runs": [
+          0.08991970799979754,
+          0.09079183300491422,
+          0.09172529197530821
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.09081227766000666,
+        "median_time_sec": 0.09079183300491422,
+        "stdev_time_sec": 0.0007372683189073102,
+        "min_time_sec": 0.08991970799979754,
+        "max_time_sec": 0.09172529197530821,
+        "trimmed_runs": [
+          0.08991970799979754,
+          0.09079183300491422,
+          0.09172529197530821
+        ],
+        "max_drift_percent": 1.0281309887679664,
+        "reproducible": true
+      },
+      "interpreted_value": 149965.0,
+      "native_value": 149965.0,
+      "baseline_value": 149965.0,
+      "interpreted_ok": true,
+      "native_ok": true,
+      "baseline_ok": true,
+      "output_match": true,
+      "outputs_match_with_tolerance": true,
+      "speedup": 6.138295708277107,
+      "speedup_vs_baseline": 1.0085108745021372,
+      "within_band_vs_baseline": true,
+      "reproducible_gate": true,
+      "reproducible": true,
+      "pass": true,
+      "pass_no_perf_gate": true,
+      "pass_no_perf_gate_repro": true
+    },
+    {
+      "name": "scalar_if_chain",
+      "source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_if_chain.k",
+      "baseline_source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/c_baselines/scalar_if_chain.c",
+      "expected": "149970",
+      "expected_value": 149970.0,
+      "interpreted": {
+        "status": 0,
+        "first_output": "149970\n",
+        "repeat": 8,
+        "runs": [
+          0.1051460420130752,
+          0.10491333302343264,
+          0.10513070898014121
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.10506336133888301,
+        "median_time_sec": 0.10513070898014121,
+        "stdev_time_sec": 0.00010627055739133247,
+        "min_time_sec": 0.10491333302343264,
+        "max_time_sec": 0.1051460420130752,
+        "trimmed_runs": [
+          0.10491333302343264,
+          0.10513070898014121,
+          0.1051460420130752
+        ],
+        "max_drift_percent": 0.20676732689934285,
+        "reproducible": true
+      },
+      "native": {
+        "compile": {
+          "status": 0,
+          "output": "built: \"/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/tmpuhssfyn_/scalar_if_chain.native\"",
+          "time_sec": 0.2375130410073325
+        },
+        "status": 0,
+        "first_output": "149970\n",
+        "repeat": 43,
+        "runs": [
+          0.09189275000244379,
+          0.09030979202361777,
+          0.09669304100680165
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.09296519434428774,
+        "median_time_sec": 0.09189275000244379,
+        "stdev_time_sec": 0.002714046124036254,
+        "min_time_sec": 0.09030979202361777,
+        "max_time_sec": 0.09669304100680165,
+        "trimmed_runs": [
+          0.09030979202361777,
+          0.09189275000244379,
+          0.09669304100680165
+        ],
+        "max_drift_percent": 5.223797311790322,
+        "reproducible": false
+      },
+      "baseline": {
+        "compile": {
+          "status": 0,
+          "output": "",
+          "time_sec": 0.04768425002112053
+        },
+        "status": 0,
+        "first_output": "149970\n",
+        "repeat": 48,
+        "runs": [
+          0.10459908298798837,
+          0.1006393329880666,
+          0.09991299998364411
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.10171713865323302,
+        "median_time_sec": 0.1006393329880666,
+        "stdev_time_sec": 0.002059302838308741,
+        "min_time_sec": 0.09991299998364411,
+        "max_time_sec": 0.10459908298798837,
+        "trimmed_runs": [
+          0.09991299998364411,
+          0.1006393329880666,
+          0.10459908298798837
+        ],
+        "max_drift_percent": 3.934594837180906,
+        "reproducible": false
+      },
+      "interpreted_value": 149970.0,
+      "native_value": 149970.0,
+      "baseline_value": 149970.0,
+      "interpreted_ok": true,
+      "native_ok": true,
+      "baseline_ok": true,
+      "output_match": true,
+      "outputs_match_with_tolerance": true,
+      "speedup": 6.1493160314957525,
+      "speedup_vs_baseline": 0.9811010023396337,
+      "within_band_vs_baseline": true,
+      "reproducible_gate": true,
+      "reproducible": false,
+      "pass": true,
+      "pass_no_perf_gate": true,
+      "pass_no_perf_gate_repro": true
+    },
+    {
+      "name": "scalar_axpy_int",
+      "source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_axpy_int.k",
+      "baseline_source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/c_baselines/scalar_axpy_int.c",
+      "expected": "7500050000",
+      "expected_value": 7500050000.0,
+      "interpreted": {
+        "status": 0,
+        "first_output": "7500050000\n",
+        "repeat": 9,
+        "runs": [
+          0.10898708400782198,
+          0.10641616600332782,
+          0.10565754101844504
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.10702026367653161,
+        "median_time_sec": 0.10641616600332782,
+        "stdev_time_sec": 0.001424819199899868,
+        "min_time_sec": 0.10565754101844504,
+        "max_time_sec": 0.10898708400782198,
+        "trimmed_runs": [
+          0.10565754101844504,
+          0.10641616600332782,
+          0.10898708400782198
+        ],
+        "max_drift_percent": 2.415909256131031,
+        "reproducible": true
+      },
+      "native": {
+        "compile": {
+          "status": 0,
+          "output": "built: \"/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/tmpuhssfyn_/scalar_axpy_int.native\"",
+          "time_sec": 0.23534262500470504
+        },
+        "status": 0,
+        "first_output": "7500050000\n",
+        "repeat": 46,
+        "runs": [
+          0.09850791699136607,
+          0.09840124999755062,
+          0.09620283299591392
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.09770399999494354,
+        "median_time_sec": 0.09840124999755062,
+        "stdev_time_sec": 0.0010623782223935425,
+        "min_time_sec": 0.09620283299591392,
+        "max_time_sec": 0.09850791699136607,
+        "trimmed_runs": [
+          0.09620283299591392,
+          0.09840124999755062,
+          0.09850791699136607
+        ],
+        "max_drift_percent": 2.2341352388220894,
+        "reproducible": true
+      },
+      "baseline": {
+        "compile": {
+          "status": 0,
+          "output": "",
+          "time_sec": 0.047390541003551334
+        },
+        "status": 0,
+        "first_output": "7500050000\n",
+        "repeat": 42,
+        "runs": [
+          0.08752125001046807,
+          0.09162270798697136,
+          0.089148250001017
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.08943073599948548,
+        "median_time_sec": 0.089148250001017,
+        "stdev_time_sec": 0.0016862854913989068,
+        "min_time_sec": 0.08752125001046807,
+        "max_time_sec": 0.09162270798697136,
+        "trimmed_runs": [
+          0.08752125001046807,
+          0.089148250001017,
+          0.09162270798697136
+        ],
+        "max_drift_percent": 2.775666360165377,
+        "reproducible": true
+      },
+      "interpreted_value": 7500050000.0,
+      "native_value": 7500050000.0,
+      "baseline_value": 7500050000.0,
+      "interpreted_ok": true,
+      "native_ok": true,
+      "baseline_ok": true,
+      "output_match": true,
+      "outputs_match_with_tolerance": true,
+      "speedup": 5.527418081325106,
+      "speedup_vs_baseline": 0.9922491790231708,
+      "within_band_vs_baseline": true,
+      "reproducible_gate": true,
+      "reproducible": true,
+      "pass": true,
+      "pass_no_perf_gate": true,
+      "pass_no_perf_gate_repro": true
+    },
+    {
+      "name": "scalar_parity",
+      "source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_parity.k",
+      "baseline_source": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/c_baselines/scalar_parity.c",
+      "expected": "-1",
+      "expected_value": -1.0,
+      "interpreted": {
+        "status": 0,
+        "first_output": "-1\n",
+        "repeat": 8,
+        "runs": [
+          0.10226754200994037,
+          0.10073937498964369,
+          0.10336116701364517
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.10212269467107642,
+        "median_time_sec": 0.10226754200994037,
+        "stdev_time_sec": 0.0010752314225199525,
+        "min_time_sec": 0.10073937498964369,
+        "max_time_sec": 0.10336116701364517,
+        "trimmed_runs": [
+          0.10073937498964369,
+          0.10226754200994037,
+          0.10336116701364517
+        ],
+        "max_drift_percent": 1.494283513872017,
+        "reproducible": true
+      },
+      "native": {
+        "compile": {
+          "status": 0,
+          "output": "built: \"/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/tmpuhssfyn_/scalar_parity.native\"",
+          "time_sec": 0.2659787909942679
+        },
+        "status": 0,
+        "first_output": "-1\n",
+        "repeat": 45,
+        "runs": [
+          0.09275262500159442,
+          0.09583670800202526,
+          0.0967729169933591
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.09512074999899293,
+        "median_time_sec": 0.09583670800202526,
+        "stdev_time_sec": 0.00171758237480115,
+        "min_time_sec": 0.09275262500159442,
+        "max_time_sec": 0.0967729169933591,
+        "trimmed_runs": [
+          0.09275262500159442,
+          0.09583670800202526,
+          0.0967729169933591
+        ],
+        "max_drift_percent": 3.218060245105313,
+        "reproducible": false
+      },
+      "baseline": {
+        "compile": {
+          "status": 0,
+          "output": "",
+          "time_sec": 0.047393750021001324
+        },
+        "status": 0,
+        "first_output": "-1\n",
+        "repeat": 43,
+        "runs": [
+          0.08967687498079613,
+          0.09602641698438674,
+          0.0929036249872297
+        ],
+        "sample_count": 3,
+        "trimmed_count": 3,
+        "mean_time_sec": 0.09286897231747086,
+        "median_time_sec": 0.0929036249872297,
+        "stdev_time_sec": 0.002592305475759809,
+        "min_time_sec": 0.08967687498079613,
+        "max_time_sec": 0.09602641698438674,
+        "trimmed_runs": [
+          0.08967687498079613,
+          0.0929036249872297,
+          0.09602641698438674
+        ],
+        "max_drift_percent": 3.4732229306198943,
+        "reproducible": false
+      },
+      "interpreted_value": -1.0,
+      "native_value": -1.0,
+      "baseline_value": -1.0,
+      "interpreted_ok": true,
+      "native_ok": true,
+      "baseline_ok": true,
+      "output_match": true,
+      "outputs_match_with_tolerance": true,
+      "speedup": 6.002448704662916,
+      "speedup_vs_baseline": 1.014483133350015,
+      "within_band_vs_baseline": true,
+      "reproducible_gate": true,
+      "reproducible": false,
+      "pass": true,
+      "pass_no_perf_gate": true,
+      "pass_no_perf_gate_repro": true
+    }
+  ]
+}

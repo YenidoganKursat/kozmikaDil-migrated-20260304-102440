@@ -1,0 +1,726 @@
+{
+  "loops": 80000,
+  "random_seed_base": 392230276,
+  "randomize_seed": false,
+  "rows": [
+    {
+      "primitive": "i8",
+      "operator": "+",
+      "loops": 80000,
+      "kozmika_output": "-1",
+      "python_reference": "-1",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i8",
+      "operator": "-",
+      "loops": 80000,
+      "kozmika_output": "0",
+      "python_reference": "0",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i8",
+      "operator": "*",
+      "loops": 80000,
+      "kozmika_output": "-128",
+      "python_reference": "-128",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i8",
+      "operator": "/",
+      "loops": 80000,
+      "kozmika_output": "1",
+      "python_reference": "1",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i8",
+      "operator": "%",
+      "loops": 80000,
+      "kozmika_output": "127",
+      "python_reference": "127",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i8",
+      "operator": "^",
+      "loops": 80000,
+      "kozmika_output": "-0.00036443148688046646645546933207526763",
+      "python_reference": "-0.000364431486880466",
+      "abs_error": 4.87890977618477e-19,
+      "pass_check": true
+    },
+    {
+      "primitive": "i16",
+      "operator": "+",
+      "loops": 80000,
+      "kozmika_output": "-1",
+      "python_reference": "-1",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i16",
+      "operator": "-",
+      "loops": 80000,
+      "kozmika_output": "0",
+      "python_reference": "0",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i16",
+      "operator": "*",
+      "loops": 80000,
+      "kozmika_output": "-32768",
+      "python_reference": "-32768",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i16",
+      "operator": "/",
+      "loops": 80000,
+      "kozmika_output": "1",
+      "python_reference": "1",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i16",
+      "operator": "%",
+      "loops": 80000,
+      "kozmika_output": "-1",
+      "python_reference": "-1",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i16",
+      "operator": "^",
+      "loops": 80000,
+      "kozmika_output": "0.333333333333333314829616256247390993",
+      "python_reference": "0.333333333333333",
+      "abs_error": 3.3306690738754696e-16,
+      "pass_check": true
+    },
+    {
+      "primitive": "i32",
+      "operator": "+",
+      "loops": 80000,
+      "kozmika_output": "165353542",
+      "python_reference": "165353542",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i32",
+      "operator": "-",
+      "loops": 80000,
+      "kozmika_output": "-579091712",
+      "python_reference": "-579091712",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i32",
+      "operator": "*",
+      "loops": 80000,
+      "kozmika_output": "-2147483648",
+      "python_reference": "-2147483648",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i32",
+      "operator": "/",
+      "loops": 80000,
+      "kozmika_output": "1.43244702024799108741603959060739726",
+      "python_reference": "1.43244702024799",
+      "abs_error": 1.1102230246251565e-15,
+      "pass_check": true
+    },
+    {
+      "primitive": "i32",
+      "operator": "%",
+      "loops": 80000,
+      "kozmika_output": "24751617",
+      "python_reference": "24751617",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i32",
+      "operator": "^",
+      "loops": 80000,
+      "kozmika_output": "6561",
+      "python_reference": "6561",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i64",
+      "operator": "+",
+      "loops": 80000,
+      "kozmika_output": "-327870394",
+      "python_reference": "-327870394",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i64",
+      "operator": "-",
+      "loops": 80000,
+      "kozmika_output": "763085568",
+      "python_reference": "763085568",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i64",
+      "operator": "*",
+      "loops": 80000,
+      "kozmika_output": "578972178298535625",
+      "python_reference": "578972178298535625",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i64",
+      "operator": "/",
+      "loops": 80000,
+      "kozmika_output": "-5.82749978449931127499894500942900777",
+      "python_reference": "-5.82749978449931",
+      "abs_error": 8.881784197001252e-16,
+      "pass_check": true
+    },
+    {
+      "primitive": "i64",
+      "operator": "%",
+      "loops": 80000,
+      "kozmika_output": "43300654",
+      "python_reference": "43300654",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i64",
+      "operator": "^",
+      "loops": 80000,
+      "kozmika_output": "343",
+      "python_reference": "343",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i128",
+      "operator": "+",
+      "loops": 80000,
+      "kozmika_output": "282144416",
+      "python_reference": "282144416",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i128",
+      "operator": "-",
+      "loops": 80000,
+      "kozmika_output": "261766912",
+      "python_reference": "261766912",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i128",
+      "operator": "*",
+      "loops": 80000,
+      "kozmika_output": "-58402435102721792",
+      "python_reference": "-58402435102721792",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i128",
+      "operator": "/",
+      "loops": 80000,
+      "kozmika_output": "0.60123851903038516564237170314299874",
+      "python_reference": "0.601238519030385",
+      "abs_error": 1.1102230246251565e-16,
+      "pass_check": true
+    },
+    {
+      "primitive": "i128",
+      "operator": "%",
+      "loops": 80000,
+      "kozmika_output": "-275104000",
+      "python_reference": "-275104000",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i128",
+      "operator": "^",
+      "loops": 80000,
+      "kozmika_output": "0.00462962962962962937263355911454709712",
+      "python_reference": "0.00462962962962963",
+      "abs_error": 8.673617379884035e-19,
+      "pass_check": true
+    },
+    {
+      "primitive": "i256",
+      "operator": "+",
+      "loops": 80000,
+      "kozmika_output": "1429823396",
+      "python_reference": "1429823396",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i256",
+      "operator": "-",
+      "loops": 80000,
+      "kozmika_output": "466360064",
+      "python_reference": "466360064",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i256",
+      "operator": "*",
+      "loops": 80000,
+      "kozmika_output": "34103479706355780",
+      "python_reference": "34103479706355780",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i256",
+      "operator": "/",
+      "loops": 80000,
+      "kozmika_output": "1.48384373457726170819626076990971342",
+      "python_reference": "1.48384373457726",
+      "abs_error": 1.7763568394002505e-15,
+      "pass_check": true
+    },
+    {
+      "primitive": "i256",
+      "operator": "%",
+      "loops": 80000,
+      "kozmika_output": "1023720274",
+      "python_reference": "1023720274",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i256",
+      "operator": "^",
+      "loops": 80000,
+      "kozmika_output": "-10",
+      "python_reference": "-10",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i512",
+      "operator": "+",
+      "loops": 80000,
+      "kozmika_output": "129272572",
+      "python_reference": "129272572",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i512",
+      "operator": "-",
+      "loops": 80000,
+      "kozmika_output": "-578640128",
+      "python_reference": "-578640128",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i512",
+      "operator": "*",
+      "loops": 80000,
+      "kozmika_output": "-896863807634871804",
+      "python_reference": "-896863807634871804",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i512",
+      "operator": "/",
+      "loops": 80000,
+      "kozmika_output": "-0.0469978301521807237395300660409702687",
+      "python_reference": "-0.0469978301521807",
+      "abs_error": 2.0816681711721685e-17,
+      "pass_check": true
+    },
+    {
+      "primitive": "i512",
+      "operator": "%",
+      "loops": 80000,
+      "kozmika_output": "-8353028",
+      "python_reference": "-8353028",
+      "abs_error": 0.0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i512",
+      "operator": "^",
+      "loops": 80000,
+      "kozmika_output": "-2",
+      "python_reference": "-2",
+      "abs_error": 0.0,
+      "pass_check": true
+    }
+  ],
+  "extreme_mode": true,
+  "extreme_random_cases": 96,
+  "extreme_rows": [
+    {
+      "primitive": "i8",
+      "operator": "+",
+      "cases": 385,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i8",
+      "operator": "-",
+      "cases": 385,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i8",
+      "operator": "*",
+      "cases": 385,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i8",
+      "operator": "/",
+      "cases": 396,
+      "max_abs_error": 4.263256414560601e-14,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i8",
+      "operator": "%",
+      "cases": 396,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i8",
+      "operator": "^",
+      "cases": 234,
+      "max_abs_error": 32.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i16",
+      "operator": "+",
+      "cases": 385,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i16",
+      "operator": "-",
+      "cases": 385,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i16",
+      "operator": "*",
+      "cases": 385,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i16",
+      "operator": "/",
+      "cases": 396,
+      "max_abs_error": 3.456079866737127e-11,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i16",
+      "operator": "%",
+      "cases": 396,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i16",
+      "operator": "^",
+      "cases": 234,
+      "max_abs_error": 805306368.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i32",
+      "operator": "+",
+      "cases": 385,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i32",
+      "operator": "-",
+      "cases": 385,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i32",
+      "operator": "*",
+      "cases": 385,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i32",
+      "operator": "/",
+      "cases": 396,
+      "max_abs_error": 3.5762786865234375e-07,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i32",
+      "operator": "%",
+      "cases": 396,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i32",
+      "operator": "^",
+      "cases": 234,
+      "max_abs_error": 805306368.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i64",
+      "operator": "+",
+      "cases": 385,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i64",
+      "operator": "-",
+      "cases": 385,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i64",
+      "operator": "*",
+      "cases": 385,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i64",
+      "operator": "/",
+      "cases": 396,
+      "max_abs_error": 3.5762786865234375e-07,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i64",
+      "operator": "%",
+      "cases": 396,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i64",
+      "operator": "^",
+      "cases": 234,
+      "max_abs_error": 805306368.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i128",
+      "operator": "+",
+      "cases": 385,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i128",
+      "operator": "-",
+      "cases": 385,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i128",
+      "operator": "*",
+      "cases": 385,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i128",
+      "operator": "/",
+      "cases": 396,
+      "max_abs_error": 3.5762786865234375e-07,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i128",
+      "operator": "%",
+      "cases": 396,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i128",
+      "operator": "^",
+      "cases": 234,
+      "max_abs_error": 805306368.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i256",
+      "operator": "+",
+      "cases": 385,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i256",
+      "operator": "-",
+      "cases": 385,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i256",
+      "operator": "*",
+      "cases": 385,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i256",
+      "operator": "/",
+      "cases": 396,
+      "max_abs_error": 3.5762786865234375e-07,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i256",
+      "operator": "%",
+      "cases": 396,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i256",
+      "operator": "^",
+      "cases": 234,
+      "max_abs_error": 805306368.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i512",
+      "operator": "+",
+      "cases": 385,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i512",
+      "operator": "-",
+      "cases": 385,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i512",
+      "operator": "*",
+      "cases": 385,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i512",
+      "operator": "/",
+      "cases": 396,
+      "max_abs_error": 3.5762786865234375e-07,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i512",
+      "operator": "%",
+      "cases": 396,
+      "max_abs_error": 0.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i512",
+      "operator": "^",
+      "cases": 234,
+      "max_abs_error": 805306368.0,
+      "mismatch_count": 0,
+      "pass_check": true
+    }
+  ],
+  "extreme_failures_preview": []
+}

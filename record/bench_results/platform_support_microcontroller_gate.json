@@ -1,0 +1,375 @@
+{
+  "host_arch": "aarch64",
+  "program": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/scalar_runtime/scalar_sum.k",
+  "preset": "embedded",
+  "include_experimental": false,
+  "include_embedded": true,
+  "targets": [
+    {
+      "target": "arm-none-eabi",
+      "arch": "arm",
+      "family": "arm-mcu",
+      "os_class": "embedded",
+      "tier": "embedded",
+      "mode": "aot",
+      "notes": "Cortex-M bare-metal (requires arm-none-eabi toolchain)",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/platform_support/multiarch/scalar_sum.arm-none-eabi.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/scalar_runtime/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/platform_support/multiarch/scalar_sum.arm-none-eabi.bin",
+        "--target",
+        "arm-none-eabi",
+        "--lto",
+        "thin"
+      ],
+      "compiler": "clang",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/kozmika_build_XXXXXX.c.1x1s28ChG5\n",
+      "effective_target": "arm-none-eabi",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_compiler": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "riscv64-unknown-elf",
+      "arch": "riscv64",
+      "family": "riscv-mcu",
+      "os_class": "embedded",
+      "tier": "embedded",
+      "mode": "aot",
+      "notes": "RISC-V bare-metal (requires riscv64-unknown-elf toolchain)",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/platform_support/multiarch/scalar_sum.riscv64-unknown-elf.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/scalar_runtime/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/platform_support/multiarch/scalar_sum.riscv64-unknown-elf.bin",
+        "--target",
+        "riscv64-unknown-elf",
+        "--lto",
+        "thin"
+      ],
+      "compiler": "clang",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/kozmika_build_XXXXXX.c.gQ3xghTVU8\n",
+      "effective_target": "riscv64-unknown-elf",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_compiler": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "avr-none-elf",
+      "arch": "avr",
+      "family": "avr",
+      "os_class": "embedded",
+      "tier": "embedded",
+      "mode": "aot",
+      "notes": "Arduino AVR bare-metal (requires avr toolchain)",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/platform_support/multiarch/scalar_sum.avr-none-elf.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/scalar_runtime/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/platform_support/multiarch/scalar_sum.avr-none-elf.bin",
+        "--target",
+        "avr-none-elf",
+        "--lto",
+        "thin"
+      ],
+      "compiler": "clang",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/kozmika_build_XXXXXX.c.4IbFWDXU0o\n",
+      "effective_target": "avr-none-elf",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_compiler": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "xtensa-esp32-elf",
+      "arch": "xtensa",
+      "family": "xtensa",
+      "os_class": "embedded",
+      "tier": "embedded",
+      "mode": "aot",
+      "notes": "ESP32 bare-metal/RTOS (requires xtensa-esp32-elf toolchain)",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/platform_support/multiarch/scalar_sum.xtensa-esp32-elf.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/scalar_runtime/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/platform_support/multiarch/scalar_sum.xtensa-esp32-elf.bin",
+        "--target",
+        "xtensa-esp32-elf",
+        "--lto",
+        "thin"
+      ],
+      "compiler": "clang",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/kozmika_build_XXXXXX.c.MftJTnjOpp\n",
+      "effective_target": "xtensa-esp32-elf",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_compiler": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    }
+  ],
+  "passed": true,
+  "microcontroller_gate": {
+    "pass": true,
+    "summary": {
+      "embedded_targets": [
+        "arm-none-eabi",
+        "avr-none-elf",
+        "riscv64-unknown-elf",
+        "xtensa-esp32-elf"
+      ],
+      "plan_modes": [
+        "aot"
+      ],
+      "buildable": 4,
+      "skipped": 0,
+      "interpret_checked": 0,
+      "interpret_ok": 0,
+      "report_rows": {
+        "arm-none-eabi": {
+          "target": "arm-none-eabi",
+          "arch": "arm",
+          "family": "arm-mcu",
+          "os_class": "embedded",
+          "tier": "embedded",
+          "mode": "aot",
+          "notes": "Cortex-M bare-metal (requires arm-none-eabi toolchain)",
+          "build_attempted": true,
+          "build_ok": true,
+          "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/platform_support/multiarch/scalar_sum.arm-none-eabi.bin",
+          "command": [
+            "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+            "build",
+            "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/scalar_runtime/scalar_sum.k",
+            "-o",
+            "/Users/kursatyenidogan/Documents/kozmikaDil/build/platform_support/multiarch/scalar_sum.arm-none-eabi.bin",
+            "--target",
+            "arm-none-eabi",
+            "--lto",
+            "thin"
+          ],
+          "compiler": "clang",
+          "interpret": {
+            "attempted": false,
+            "status_ok": false,
+            "status": 0,
+            "output": ""
+          },
+          "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/kozmika_build_XXXXXX.c.1x1s28ChG5\n",
+          "effective_target": "arm-none-eabi",
+          "fallback_used": false,
+          "fallback_target": "",
+          "fallback_compiler": "",
+          "fallback_status": 0,
+          "fallback_output": "",
+          "smoke": {
+            "attempted": false,
+            "status_ok": false,
+            "output": "",
+            "status": 0
+          }
+        },
+        "riscv64-unknown-elf": {
+          "target": "riscv64-unknown-elf",
+          "arch": "riscv64",
+          "family": "riscv-mcu",
+          "os_class": "embedded",
+          "tier": "embedded",
+          "mode": "aot",
+          "notes": "RISC-V bare-metal (requires riscv64-unknown-elf toolchain)",
+          "build_attempted": true,
+          "build_ok": true,
+          "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/platform_support/multiarch/scalar_sum.riscv64-unknown-elf.bin",
+          "command": [
+            "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+            "build",
+            "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/scalar_runtime/scalar_sum.k",
+            "-o",
+            "/Users/kursatyenidogan/Documents/kozmikaDil/build/platform_support/multiarch/scalar_sum.riscv64-unknown-elf.bin",
+            "--target",
+            "riscv64-unknown-elf",
+            "--lto",
+            "thin"
+          ],
+          "compiler": "clang",
+          "interpret": {
+            "attempted": false,
+            "status_ok": false,
+            "status": 0,
+            "output": ""
+          },
+          "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/kozmika_build_XXXXXX.c.gQ3xghTVU8\n",
+          "effective_target": "riscv64-unknown-elf",
+          "fallback_used": false,
+          "fallback_target": "",
+          "fallback_compiler": "",
+          "fallback_status": 0,
+          "fallback_output": "",
+          "smoke": {
+            "attempted": false,
+            "status_ok": false,
+            "output": "",
+            "status": 0
+          }
+        },
+        "avr-none-elf": {
+          "target": "avr-none-elf",
+          "arch": "avr",
+          "family": "avr",
+          "os_class": "embedded",
+          "tier": "embedded",
+          "mode": "aot",
+          "notes": "Arduino AVR bare-metal (requires avr toolchain)",
+          "build_attempted": true,
+          "build_ok": true,
+          "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/platform_support/multiarch/scalar_sum.avr-none-elf.bin",
+          "command": [
+            "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+            "build",
+            "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/scalar_runtime/scalar_sum.k",
+            "-o",
+            "/Users/kursatyenidogan/Documents/kozmikaDil/build/platform_support/multiarch/scalar_sum.avr-none-elf.bin",
+            "--target",
+            "avr-none-elf",
+            "--lto",
+            "thin"
+          ],
+          "compiler": "clang",
+          "interpret": {
+            "attempted": false,
+            "status_ok": false,
+            "status": 0,
+            "output": ""
+          },
+          "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/kozmika_build_XXXXXX.c.4IbFWDXU0o\n",
+          "effective_target": "avr-none-elf",
+          "fallback_used": false,
+          "fallback_target": "",
+          "fallback_compiler": "",
+          "fallback_status": 0,
+          "fallback_output": "",
+          "smoke": {
+            "attempted": false,
+            "status_ok": false,
+            "output": "",
+            "status": 0
+          }
+        },
+        "xtensa-esp32-elf": {
+          "target": "xtensa-esp32-elf",
+          "arch": "xtensa",
+          "family": "xtensa",
+          "os_class": "embedded",
+          "tier": "embedded",
+          "mode": "aot",
+          "notes": "ESP32 bare-metal/RTOS (requires xtensa-esp32-elf toolchain)",
+          "build_attempted": true,
+          "build_ok": true,
+          "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/platform_support/multiarch/scalar_sum.xtensa-esp32-elf.bin",
+          "command": [
+            "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+            "build",
+            "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/scalar_runtime/scalar_sum.k",
+            "-o",
+            "/Users/kursatyenidogan/Documents/kozmikaDil/build/platform_support/multiarch/scalar_sum.xtensa-esp32-elf.bin",
+            "--target",
+            "xtensa-esp32-elf",
+            "--lto",
+            "thin"
+          ],
+          "compiler": "clang",
+          "interpret": {
+            "attempted": false,
+            "status_ok": false,
+            "status": 0,
+            "output": ""
+          },
+          "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/kozmika_build_XXXXXX.c.MftJTnjOpp\n",
+          "effective_target": "xtensa-esp32-elf",
+          "fallback_used": false,
+          "fallback_target": "",
+          "fallback_compiler": "",
+          "fallback_status": 0,
+          "fallback_output": "",
+          "smoke": {
+            "attempted": false,
+            "status_ok": false,
+            "output": "",
+            "status": 0
+          }
+        }
+      }
+    },
+    "warnings": []
+  }
+}

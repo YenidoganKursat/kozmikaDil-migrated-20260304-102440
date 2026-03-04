@@ -1,0 +1,5 @@
+molecules:
+  - source_unit
+  - diagnostic_entry
+  - backend_operation_capability
+  - target_capability

@@ -1,0 +1,912 @@
+{
+  "host_arch": "aarch64",
+  "program": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+  "preset": "market",
+  "include_experimental": true,
+  "include_embedded": false,
+  "targets": [
+    {
+      "target": "x86_64-linux-gnu",
+      "arch": "x86_64",
+      "family": "x86_64",
+      "os_class": "linux",
+      "tier": "stable",
+      "mode": "aot",
+      "notes": "Desktop/server Linux",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-gnu.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-gnu.bin",
+        "--target",
+        "x86_64-linux-gnu",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "x86_64-linux-gnu",
+      "fallback_used": true,
+      "fallback_target": "x86_64-apple-darwin",
+      "fallback_status": 1,
+      "fallback_output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "aarch64-linux-gnu",
+      "arch": "aarch64",
+      "family": "arm64",
+      "os_class": "linux",
+      "tier": "stable",
+      "mode": "aot",
+      "notes": "ARM64 Linux (Raspberry Pi 64-bit, ARM servers)",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-gnu.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-gnu.bin",
+        "--target",
+        "aarch64-linux-gnu",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "aarch64-linux-gnu",
+      "fallback_used": true,
+      "fallback_target": "arm64-apple-darwin",
+      "fallback_status": 1,
+      "fallback_output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "i686-linux-gnu",
+      "arch": "x86",
+      "family": "x86",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "Legacy 32-bit x86 Linux",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.i686-linux-gnu.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.i686-linux-gnu.bin",
+        "--target",
+        "i686-linux-gnu",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "i686-linux-gnu",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "riscv64-linux-gnu",
+      "arch": "riscv64",
+      "family": "riscv64",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "RISC-V Linux userland",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.riscv64-linux-gnu.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.riscv64-linux-gnu.bin",
+        "--target",
+        "riscv64-linux-gnu",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "riscv64-linux-gnu",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "armv7-linux-gnueabihf",
+      "arch": "armv7",
+      "family": "armv7",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "ARMv7 Linux (legacy Raspberry Pi OS 32-bit)",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.armv7-linux-gnueabihf.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.armv7-linux-gnueabihf.bin",
+        "--target",
+        "armv7-linux-gnueabihf",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "armv7-linux-gnueabihf",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "riscv32-linux-gnu",
+      "arch": "riscv32",
+      "family": "riscv32",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "RISC-V 32-bit Linux userland",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.riscv32-linux-gnu.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.riscv32-linux-gnu.bin",
+        "--target",
+        "riscv32-linux-gnu",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "riscv32-linux-gnu",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "ppc64le-linux-gnu",
+      "arch": "ppc64le",
+      "family": "ppc64le",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "PowerPC LE Linux",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.ppc64le-linux-gnu.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.ppc64le-linux-gnu.bin",
+        "--target",
+        "ppc64le-linux-gnu",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "ppc64le-linux-gnu",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "s390x-linux-gnu",
+      "arch": "s390x",
+      "family": "s390x",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "s390x Linux",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.s390x-linux-gnu.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.s390x-linux-gnu.bin",
+        "--target",
+        "s390x-linux-gnu",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "s390x-linux-gnu",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "loongarch64-linux-gnu",
+      "arch": "loongarch64",
+      "family": "loongarch64",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "LoongArch64 Linux",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.loongarch64-linux-gnu.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.loongarch64-linux-gnu.bin",
+        "--target",
+        "loongarch64-linux-gnu",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "loongarch64-linux-gnu",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "mips64el-linux-gnuabi64",
+      "arch": "mips64el",
+      "family": "mips64",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "MIPS64EL Linux",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.mips64el-linux-gnuabi64.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.mips64el-linux-gnuabi64.bin",
+        "--target",
+        "mips64el-linux-gnuabi64",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "mips64el-linux-gnuabi64",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "mipsel-linux-gnu",
+      "arch": "mips",
+      "family": "mips",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "MIPS32EL Linux",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.mipsel-linux-gnu.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.mipsel-linux-gnu.bin",
+        "--target",
+        "mipsel-linux-gnu",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "mipsel-linux-gnu",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "x86_64-apple-darwin",
+      "arch": "x86_64",
+      "family": "x86_64",
+      "os_class": "darwin",
+      "tier": "stable",
+      "mode": "aot",
+      "notes": "Intel macOS",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-apple-darwin.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-apple-darwin.bin",
+        "--target",
+        "x86_64-apple-darwin",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "x86_64-apple-darwin",
+      "fallback_used": true,
+      "fallback_target": "x86_64-apple-darwin",
+      "fallback_status": 1,
+      "fallback_output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "arm64-apple-darwin",
+      "arch": "aarch64",
+      "family": "arm64",
+      "os_class": "darwin",
+      "tier": "stable",
+      "mode": "aot",
+      "notes": "Apple Silicon macOS",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.arm64-apple-darwin.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.arm64-apple-darwin.bin",
+        "--target",
+        "arm64-apple-darwin",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "arm64-apple-darwin",
+      "fallback_used": true,
+      "fallback_target": "arm64-apple-darwin",
+      "fallback_status": 1,
+      "fallback_output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "x86_64-w64-mingw32",
+      "arch": "x86_64",
+      "family": "x86_64",
+      "os_class": "windows",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "Windows x64 via MinGW cross toolchain",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-w64-mingw32.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-w64-mingw32.bin",
+        "--target",
+        "x86_64-w64-mingw32",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "x86_64-w64-mingw32",
+      "fallback_used": true,
+      "fallback_target": "x86_64-apple-darwin",
+      "fallback_status": 1,
+      "fallback_output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "aarch64-w64-mingw32",
+      "arch": "aarch64",
+      "family": "arm64",
+      "os_class": "windows",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "Windows ARM64 via MinGW cross toolchain",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-w64-mingw32.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-w64-mingw32.bin",
+        "--target",
+        "aarch64-w64-mingw32",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "aarch64-w64-mingw32",
+      "fallback_used": true,
+      "fallback_target": "arm64-apple-darwin",
+      "fallback_status": 1,
+      "fallback_output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "x86_64-unknown-freebsd",
+      "arch": "x86_64",
+      "family": "x86_64",
+      "os_class": "freebsd",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "FreeBSD x64",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-unknown-freebsd.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-unknown-freebsd.bin",
+        "--target",
+        "x86_64-unknown-freebsd",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "x86_64-unknown-freebsd",
+      "fallback_used": true,
+      "fallback_target": "x86_64-apple-darwin",
+      "fallback_status": 1,
+      "fallback_output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "aarch64-unknown-freebsd",
+      "arch": "aarch64",
+      "family": "arm64",
+      "os_class": "freebsd",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "FreeBSD ARM64",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-unknown-freebsd.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-unknown-freebsd.bin",
+        "--target",
+        "aarch64-unknown-freebsd",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "aarch64-unknown-freebsd",
+      "fallback_used": true,
+      "fallback_target": "arm64-apple-darwin",
+      "fallback_status": 1,
+      "fallback_output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "aarch64-linux-android",
+      "arch": "aarch64",
+      "family": "arm64",
+      "os_class": "android",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "Android ARM64 (NDK toolchain/sysroot)",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-android.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-android.bin",
+        "--target",
+        "aarch64-linux-android",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "aarch64-linux-android",
+      "fallback_used": true,
+      "fallback_target": "arm64-apple-darwin",
+      "fallback_status": 1,
+      "fallback_output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "x86_64-linux-android",
+      "arch": "x86_64",
+      "family": "x86_64",
+      "os_class": "android",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "Android x64 (emulator/dev host)",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-android.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-android.bin",
+        "--target",
+        "x86_64-linux-android",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "x86_64-linux-android",
+      "fallback_used": true,
+      "fallback_target": "x86_64-apple-darwin",
+      "fallback_status": 1,
+      "fallback_output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "armv7a-linux-androideabi",
+      "arch": "armv7",
+      "family": "armv7",
+      "os_class": "android",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "Android ARMv7",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.armv7a-linux-androideabi.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.armv7a-linux-androideabi.bin",
+        "--target",
+        "armv7a-linux-androideabi",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "armv7a-linux-androideabi",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "wasm32-wasi",
+      "arch": "wasm32",
+      "family": "wasm32",
+      "os_class": "web",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "WASI userland WebAssembly",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.wasm32-wasi.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.wasm32-wasi.bin",
+        "--target",
+        "wasm32-wasi",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "wasm32-wasi",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "wasm32-unknown-emscripten",
+      "arch": "wasm32",
+      "family": "wasm32",
+      "os_class": "web",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "Browser/WebAssembly via Emscripten",
+      "build_attempted": true,
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.wasm32-unknown-emscripten.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.wasm32-unknown-emscripten.bin",
+        "--target",
+        "wasm32-unknown-emscripten",
+        "--lto",
+        "thin"
+      ],
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\nbuild: native compile failed (exit 69)\n",
+      "effective_target": "wasm32-unknown-emscripten",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    }
+  ],
+  "passed": false
+}

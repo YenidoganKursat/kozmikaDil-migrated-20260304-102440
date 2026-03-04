@@ -1,0 +1,13 @@
+{
+  "primitive": "bf16",
+  "mode": "native",
+  "loops": 20000,
+  "runs": 1,
+  "warmup": 0,
+  "median_sec": 0.28946650000034424,
+  "min_sec": 0.28946650000034424,
+  "max_sec": 0.28946650000034424,
+  "checksum_raw": "0",
+  "baseline_1x_sec": 0.28946650000034424,
+  "speedup_vs_1x": 1.0
+}

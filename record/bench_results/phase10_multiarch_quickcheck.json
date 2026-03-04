@@ -1,0 +1,88 @@
+{
+  "host_arch": "aarch64",
+  "program": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+  "targets": [
+    {
+      "target": "x86_64-linux-gnu",
+      "arch": "x86_64",
+      "build_ok": true,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-gnu.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-gnu.bin",
+        "--target",
+        "x86_64-linux-gnu"
+      ],
+      "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_10077635601037102026_147641274320208_1.c:3:10: fatal error: 'stdio.h' file not found\n    3 | #include <stdio.h>\n      |          ^~~~~~~~~\n1 error generated.\nbuild: native compile failed (exit 1)\n",
+      "effective_target": "x86_64-apple-darwin",
+      "fallback_used": true,
+      "fallback_target": "x86_64-apple-darwin",
+      "fallback_status": 0,
+      "fallback_output": "built: \"/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-gnu.bin\"\n",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "aarch64-linux-gnu",
+      "arch": "aarch64",
+      "build_ok": true,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-gnu.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-gnu.bin",
+        "--target",
+        "aarch64-linux-gnu"
+      ],
+      "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_8812536208266231203_147641602958875_1.c:3:10: fatal error: 'stdio.h' file not found\n    3 | #include <stdio.h>\n      |          ^~~~~~~~~\n1 error generated.\nbuild: native compile failed (exit 1)\n",
+      "effective_target": "arm64-apple-darwin",
+      "fallback_used": true,
+      "fallback_target": "arm64-apple-darwin",
+      "fallback_status": 0,
+      "fallback_output": "built: \"/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-gnu.bin\"\n",
+      "smoke": {
+        "attempted": true,
+        "status_ok": true,
+        "output": "19999900000\n",
+        "status": 0
+      }
+    },
+    {
+      "target": "riscv64-linux-gnu",
+      "arch": "riscv64",
+      "build_ok": false,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.riscv64-linux-gnu.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.riscv64-linux-gnu.bin",
+        "--target",
+        "riscv64-linux-gnu"
+      ],
+      "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_13358650297168666366_147642433381208_1.c:3:10: fatal error: 'stdio.h' file not found\n    3 | #include <stdio.h>\n      |          ^~~~~~~~~\n1 error generated.\nbuild: native compile failed (exit 1)\n",
+      "effective_target": "riscv64-linux-gnu",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    }
+  ],
+  "passed": false
+}

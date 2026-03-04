@@ -1,0 +1,7 @@
+{
+  "program": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/pgo_call_chain_large.k",
+  "lto_mode": "full",
+  "skipped": true,
+  "reason": "perf and/or llvm-profgen not found",
+  "speedup_vs_baseline": 0.0
+}

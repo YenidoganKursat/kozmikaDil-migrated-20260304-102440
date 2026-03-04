@@ -1,0 +1,99 @@
+{
+  "runs": 3,
+  "warmup": 1,
+  "records": [
+    {
+      "name": "cuda",
+      "api": "CUDA",
+      "tier": "experimental",
+      "available": false,
+      "reason": "os_not_supported:Darwin",
+      "detect_runs": 3,
+      "detect_median_ms": 0.0009,
+      "detect_mean_ms": 0.0009,
+      "detect_p95_ms": 0.0013,
+      "probe_commands": []
+    },
+    {
+      "name": "rocm_hip",
+      "api": "HIP/ROCm",
+      "tier": "experimental",
+      "available": false,
+      "reason": "os_not_supported:Darwin",
+      "detect_runs": 3,
+      "detect_median_ms": 0.0003,
+      "detect_mean_ms": 0.0003,
+      "detect_p95_ms": 0.0004,
+      "probe_commands": []
+    },
+    {
+      "name": "oneapi_sycl",
+      "api": "SYCL",
+      "tier": "experimental",
+      "available": false,
+      "reason": "os_not_supported:Darwin",
+      "detect_runs": 3,
+      "detect_median_ms": 0.0003,
+      "detect_mean_ms": 0.0008,
+      "detect_p95_ms": 0.0017,
+      "probe_commands": []
+    },
+    {
+      "name": "opencl",
+      "api": "OpenCL",
+      "tier": "experimental",
+      "available": false,
+      "reason": "tool_not_found",
+      "detect_runs": 3,
+      "detect_median_ms": 0.0498,
+      "detect_mean_ms": 0.0479,
+      "detect_p95_ms": 0.0508,
+      "probe_commands": []
+    },
+    {
+      "name": "vulkan_compute",
+      "api": "Vulkan",
+      "tier": "experimental",
+      "available": false,
+      "reason": "os_not_supported:Darwin",
+      "detect_runs": 3,
+      "detect_median_ms": 0.0003,
+      "detect_mean_ms": 0.0002,
+      "detect_p95_ms": 0.0003,
+      "probe_commands": []
+    },
+    {
+      "name": "metal",
+      "api": "Metal",
+      "tier": "stable",
+      "available": true,
+      "reason": "probe_ok:xcrun -f metal",
+      "detect_runs": 3,
+      "detect_median_ms": 8.2315,
+      "detect_mean_ms": 8.2724,
+      "detect_p95_ms": 8.5096,
+      "probe_commands": [
+        {
+          "command": "xcrun -f metal",
+          "success_runs": 3,
+          "runs": 3,
+          "median_ms": 8.2944,
+          "mean_ms": 8.1728,
+          "p95_ms": 8.3642
+        }
+      ]
+    },
+    {
+      "name": "webgpu",
+      "api": "WebGPU",
+      "tier": "planning",
+      "available": false,
+      "reason": "planning_only",
+      "detect_runs": 3,
+      "detect_median_ms": 0.0008,
+      "detect_mean_ms": 0.0006,
+      "detect_p95_ms": 0.0008,
+      "probe_commands": []
+    }
+  ]
+}

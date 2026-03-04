@@ -15,6 +15,7 @@ def run_kozmika(
     primitive: str,
     operator: str,
     loops: int,
+    batch: int,
     runs: int,
     mode: str,
     a_lit: str,
@@ -29,7 +30,7 @@ def run_kozmika(
         tmpdir = pathlib.Path(tmp)
         program = tmpdir / "single_op.k"
         binary = tmpdir / "single_op.bin"
-        make_kozmika_program(program, primitive, operator, loops, a_lit, b_lit, tick_mode)
+        make_kozmika_program(program, primitive, operator, loops, batch, a_lit, b_lit, tick_mode)
 
         env: dict[str, str] = {
             "OPENBLAS_NUM_THREADS": "1",
@@ -43,16 +44,21 @@ def run_kozmika(
         if mode == "native":
             env.update(
                 {
+                    "SPARK_OPT_PROFILE": "max",
                     "SPARK_CFLAGS": "-std=c11 -O3 -DNDEBUG -march=native -mtune=native "
                     "-fomit-frame-pointer -fstrict-aliasing -funroll-loops "
                     "-fvectorize -fslp-vectorize -fno-math-errno",
                     "SPARK_LTO": "full",
                 }
             )
-            run_checked(["./k", "build", str(program), "-o", str(binary)], REPO_ROOT, env=env)
+            run_checked(
+                ["./k", "build", str(program), "-o", str(binary), "--profile", "max"],
+                REPO_ROOT,
+                env=env,
+            )
             runner = [str(binary)]
         else:
-            runner = ["./k", "run", "--interpret", str(program)]
+            runner = ["./k", "run", str(program)]
 
         # one warmup for stable timer conversion
         run_checked(runner, REPO_ROOT, env=env)
@@ -71,14 +77,16 @@ def run_kozmika(
                 raw_total = int(lines[-2])
                 checksum = lines[-1]
                 scale = float(tick_num) / float(tick_den) if tick_den != 0 else 1.0
-                floor_samples.append((floor_total * scale) / loops)
-                raw_samples.append((raw_total * scale) / loops)
+                denom = float(loops * batch)
+                floor_samples.append((floor_total * scale) / denom)
+                raw_samples.append((raw_total * scale) / denom)
             else:
                 floor_total = int(lines[-3])
                 raw_total = int(lines[-2])
                 checksum = lines[-1]
-                floor_samples.append(floor_total / loops)
-                raw_samples.append(raw_total / loops)
+                denom = float(loops * batch)
+                floor_samples.append(floor_total / denom)
+                raw_samples.append(raw_total / denom)
 
     floor_ns = statistics.median(floor_samples)
     raw_ns = statistics.median(raw_samples)
@@ -89,10 +97,10 @@ def run_kozmika(
         primitive=primitive,
         operator=operator,
         loops=loops,
+        batch=batch,
         runs=runs,
         floor_ns=floor_ns,
         raw_ns=raw_ns,
         net_ns=net_ns,
         checksum=checksum,
     )
-

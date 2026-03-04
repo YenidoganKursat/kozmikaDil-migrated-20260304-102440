@@ -1,0 +1,6 @@
+[full-perf] Phase 8 benchmark matrix :: start
+phase8 records: 16/16 passed
+phase8 comparisons: 4/4 passed
+results json: /Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase8_benchmarks.json
+results csv: /Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase8_benchmarks.csv
+[full-perf] Phase 8 benchmark matrix :: ok

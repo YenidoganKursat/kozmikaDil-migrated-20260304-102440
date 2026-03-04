@@ -1,0 +1,80 @@
+{
+  "selected": [
+    "cuda",
+    "rocm_hip",
+    "oneapi_sycl",
+    "opencl",
+    "vulkan_compute",
+    "metal",
+    "webgpu"
+  ],
+  "include_planning": true,
+  "required_available": [],
+  "passed": true,
+  "failing_required": [],
+  "records": [
+    {
+      "name": "cuda",
+      "api": "CUDA",
+      "tier": "experimental",
+      "mode": "native_accel",
+      "available": false,
+      "reason": "os_not_supported:Darwin",
+      "notes": "NVIDIA CUDA backend (requires CUDA toolkit + driver)"
+    },
+    {
+      "name": "rocm_hip",
+      "api": "HIP/ROCm",
+      "tier": "experimental",
+      "mode": "native_accel",
+      "available": false,
+      "reason": "os_not_supported:Darwin",
+      "notes": "AMD ROCm HIP backend"
+    },
+    {
+      "name": "oneapi_sycl",
+      "api": "SYCL",
+      "tier": "experimental",
+      "mode": "native_accel",
+      "available": false,
+      "reason": "os_not_supported:Darwin",
+      "notes": "Intel/oneAPI SYCL backend"
+    },
+    {
+      "name": "opencl",
+      "api": "OpenCL",
+      "tier": "experimental",
+      "mode": "native_accel",
+      "available": false,
+      "reason": "tool_not_found",
+      "notes": "Portable OpenCL compute backend"
+    },
+    {
+      "name": "vulkan_compute",
+      "api": "Vulkan",
+      "tier": "experimental",
+      "mode": "native_accel",
+      "available": false,
+      "reason": "os_not_supported:Darwin",
+      "notes": "Vulkan compute backend"
+    },
+    {
+      "name": "metal",
+      "api": "Metal",
+      "tier": "stable",
+      "mode": "native_accel",
+      "available": true,
+      "reason": "probe_ok:xcrun -f metal",
+      "notes": "Apple Metal backend"
+    },
+    {
+      "name": "webgpu",
+      "api": "WebGPU",
+      "tier": "planning",
+      "mode": "planning_only",
+      "available": false,
+      "reason": "planning_only",
+      "notes": "Browser/WebGPU backend planning target"
+    }
+  ]
+}

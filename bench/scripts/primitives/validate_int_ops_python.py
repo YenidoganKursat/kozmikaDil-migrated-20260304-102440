@@ -66,13 +66,22 @@ class ExtremeValidationSummary:
 
 
 def run_checked(cmd: List[str]) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        cmd,
-        cwd=str(REPO_ROOT),
-        capture_output=True,
-        text=True,
-        check=True,
-    )
+    try:
+        return subprocess.run(
+            cmd,
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        stdout = exc.stdout or ""
+        stderr = exc.stderr or ""
+        raise RuntimeError(
+            "command failed: "
+            + " ".join(cmd)
+            + f"\nstdout:\n{stdout}\nstderr:\n{stderr}"
+        ) from exc
 
 
 def parse_last_line(stdout: str) -> str:
@@ -100,6 +109,14 @@ def bounds_for_bits(bits: int) -> Tuple[int, int]:
     return lo, hi
 
 
+def derive_seed(seed_base: int, material: str) -> int:
+    acc = (seed_base & 0xFFFFFFFF) ^ 0x85EB_CA6B
+    for idx, ch in enumerate(material):
+        acc ^= (ord(ch) << ((idx % 4) * 8))
+        acc = (acc * 1664525 + 1013904223) & 0x7FFFFFFF
+    return acc
+
+
 def clamp_signed(value: int, bits: int) -> int:
     lo, hi = bounds_for_bits(bits)
     if value < lo:
@@ -109,6 +126,11 @@ def clamp_signed(value: int, bits: int) -> int:
     return value
 
 
+def signed_div_overflow(lhs: int, rhs: int, bits: int) -> bool:
+    lo, _ = bounds_for_bits(bits)
+    return rhs == -1 and lhs == lo
+
+
 def c_style_mod(lhs: int, rhs: int) -> int:
     if rhs == 0:
         raise ZeroDivisionError("modulo by zero")
@@ -116,10 +138,16 @@ def c_style_mod(lhs: int, rhs: int) -> int:
     return lhs - q * rhs
 
 
-def python_reference(primitive: str, operator: str, loops: int) -> str:
+def python_reference(
+    primitive: str,
+    operator: str,
+    loops: int,
+    seed_x_init: int,
+    seed_y_init: int,
+) -> str:
     bits = effective_bits(primitive)
-    seed_x = 123456789
-    seed_y = 362436069
+    seed_x = seed_x_init
+    seed_y = seed_y_init
     acc_int = 0
     acc_float = 0.0
     is_float = operator == "/"
@@ -130,6 +158,8 @@ def python_reference(primitive: str, operator: str, loops: int) -> str:
         x = clamp_signed(seed_x - 1073741824, bits)
         y = clamp_signed(seed_y - 1073741824, bits)
         if operator in ("/", "%") and y == 0:
+            y = 1
+        if operator in ("/", "%") and signed_div_overflow(x, y, bits):
             y = 1
         if operator == "^":
             # Keep integer-power validation in a stable finite domain.
@@ -172,6 +202,8 @@ def python_reference_case(primitive: str, operator: str, x: int, y: int) -> str:
 
     if operator in ("/", "%") and y == 0:
         y = 1
+    if operator in ("/", "%") and signed_div_overflow(x, y, bits):
+        y = 1
     if operator == "^" and x == 0 and y < 0:
         y = 1
 
@@ -190,11 +222,21 @@ def python_reference_case(primitive: str, operator: str, x: int, y: int) -> str:
     raise ValueError(f"unsupported operator: {operator}")
 
 
-def make_program(path: pathlib.Path, primitive: str, operator: str, loops: int) -> None:
+def make_program(
+    path: pathlib.Path,
+    primitive: str,
+    operator: str,
+    loops: int,
+    seed_x_init: int,
+    seed_y_init: int,
+) -> None:
+    bits = effective_bits(primitive)
+    lo, _ = bounds_for_bits(bits)
+    acc_decl = "f64(0)" if operator in ("/", "^") else f"{primitive}(0)"
     lines = [
-        "seed_x = i64(123456789)",
-        "seed_y = i64(362436069)",
-        f"acc = {primitive}(0)",
+        f"seed_x = i64({seed_x_init})",
+        f"seed_y = i64({seed_y_init})",
+        f"acc = {acc_decl}",
         "i = 0",
         f"while i < {loops}:",
         "  seed_x = (seed_x * 1664525 + 1013904223) % 2147483648",
@@ -205,6 +247,8 @@ def make_program(path: pathlib.Path, primitive: str, operator: str, loops: int) 
     if operator in ("/", "%"):
         lines += [
             "  if y == 0:",
+            f"    y = {primitive}(1)",
+            f"  if x == {primitive}({lo}) and y == {primitive}(-1):",
             f"    y = {primitive}(1)",
         ]
     if operator == "^":
@@ -223,15 +267,27 @@ def make_program(path: pathlib.Path, primitive: str, operator: str, loops: int) 
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
-def run_kozmika(primitive: str, op_name: str, operator: str, loops: int) -> str:
+def run_kozmika(
+    primitive: str,
+    op_name: str,
+    operator: str,
+    loops: int,
+    seed_x_init: int,
+    seed_y_init: int,
+) -> str:
     with tempfile.TemporaryDirectory(prefix=f"kozmika-int-val-{primitive}-{op_name}-") as tmp:
         program = pathlib.Path(tmp) / f"{primitive}_{op_name}.k"
-        make_program(program, primitive, operator, loops)
-        proc = run_checked(["./k", "run", "--interpret", str(program)])
+        make_program(program, primitive, operator, loops, seed_x_init, seed_y_init)
+        proc = run_checked(["./k", "run", str(program)])
         return parse_last_line(proc.stdout)
 
 
-def generate_extreme_cases(primitive: str, operator: str, random_cases: int) -> List[Tuple[int, int]]:
+def generate_extreme_cases(
+    primitive: str,
+    operator: str,
+    random_cases: int,
+    seed_base: int,
+) -> List[Tuple[int, int]]:
     bits = effective_bits(primitive)
     lo, hi = bounds_for_bits(bits)
     parser_safe = min(2_147_483_647, hi, -lo)
@@ -256,18 +312,21 @@ def generate_extreme_cases(primitive: str, operator: str, random_cases: int) -> 
         for x in num_values:
             for y in den_values:
                 pairs.append((x, y))
-                pairs.append((x, -y))
+                if not signed_div_overflow(x, -y, bits):
+                    pairs.append((x, -y))
     else:
         core_values = [lo_eff, near_lo, -4096, -1024, -255, -16, -2, -1, 0, 1, 2, 16, 255, 1024, 4096, near_hi, hi_eff]
         for x in core_values:
             for y in core_values:
                 pairs.append((x, y))
 
-    rng = random.Random(0x5A17_1CE + bits * 131 + ord(operator[0]))
+    rng = random.Random(derive_seed(seed_base, f"extreme:{primitive}:{operator}:{bits}"))
     for _ in range(max(0, random_cases)):
         x = rng.randint(lo_eff, hi_eff)
         y = rng.randint(lo_eff, hi_eff)
         if operator in ("/", "%") and y == 0:
+            y = 1
+        if operator in ("/", "%") and signed_div_overflow(x, y, bits):
             y = 1
         if operator == "^":
             x = rng.randint(-32, 32)
@@ -279,12 +338,16 @@ def generate_extreme_cases(primitive: str, operator: str, random_cases: int) -> 
 
 
 def make_extreme_program(path: pathlib.Path, primitive: str, operator: str, cases: List[Tuple[int, int]]) -> None:
+    bits = effective_bits(primitive)
+    lo, _ = bounds_for_bits(bits)
     lines: List[str] = []
     for i, (x, y) in enumerate(cases):
         lines.append(f"x{i} = {primitive}({x})")
         lines.append(f"y{i} = {primitive}({y})")
         if operator in ("/", "%"):
             lines.append(f"if y{i} == 0:")
+            lines.append(f"  y{i} = {primitive}(1)")
+            lines.append(f"if x{i} == {primitive}({lo}) and y{i} == {primitive}(-1):")
             lines.append(f"  y{i} = {primitive}(1)")
         if operator == "^":
             lines.append(f"if x{i} == 0 and y{i} < 0:")
@@ -299,7 +362,7 @@ def run_kozmika_extreme_batch(primitive: str, op_name: str, operator: str, cases
     with tempfile.TemporaryDirectory(prefix=f"kozmika-int-extreme-{primitive}-{op_name}-") as tmp:
         program = pathlib.Path(tmp) / f"{primitive}_{op_name}_extreme.k"
         make_extreme_program(program, primitive, operator, cases)
-        proc = run_checked(["./k", "run", "--interpret", str(program)])
+        proc = run_checked(["./k", "run", str(program)])
         return parse_lines(proc.stdout)
 
 
@@ -322,7 +385,14 @@ def main() -> int:
         action="store_true",
         help="Return non-zero exit code when any primitive/operator check fails.",
     )
+    parser.add_argument("--random-seed", type=int, default=None)
+    parser.add_argument("--randomize-seed", action="store_true")
     args = parser.parse_args()
+
+    seed_base = args.random_seed
+    if seed_base is None:
+        seed_base = random.SystemRandom().randrange(1, 2**31) if args.randomize_seed else 0
+    print(f"random_seed_base={seed_base}")
 
     RESULT_DIR.mkdir(parents=True, exist_ok=True)
     rows: List[ValidationRow] = []
@@ -331,8 +401,14 @@ def main() -> int:
 
     for primitive in INT_PRIMITIVES:
         for op_name, operator in OPS:
-            k_out = run_kozmika(primitive, op_name, operator, args.loops)
-            py_out = python_reference(primitive, operator, args.loops)
+            seed_x = derive_seed(seed_base, f"stream-x:{primitive}:{operator}") % 2147483648
+            seed_y = derive_seed(seed_base, f"stream-y:{primitive}:{operator}") % 2147483648
+            if seed_x == 0:
+                seed_x = 123456789
+            if seed_y == 0:
+                seed_y = 362436069
+            k_out = run_kozmika(primitive, op_name, operator, args.loops, seed_x, seed_y)
+            py_out = python_reference(primitive, operator, args.loops, seed_x, seed_y)
             try:
                 abs_err = abs(float(k_out) - float(py_out))
             except ValueError:
@@ -355,7 +431,7 @@ def main() -> int:
             )
 
             if args.include_extremes:
-                cases = generate_extreme_cases(primitive, operator, args.extreme_random_cases)
+                cases = generate_extreme_cases(primitive, operator, args.extreme_random_cases, seed_base)
                 got = run_kozmika_extreme_batch(primitive, op_name, operator, cases)
                 if len(got) != len(cases):
                     raise RuntimeError(
@@ -411,6 +487,8 @@ def main() -> int:
 
     out = {
         "loops": args.loops,
+        "random_seed_base": seed_base,
+        "randomize_seed": bool(args.randomize_seed),
         "rows": [asdict(row) for row in rows],
         "extreme_mode": args.include_extremes,
         "extreme_random_cases": args.extreme_random_cases,

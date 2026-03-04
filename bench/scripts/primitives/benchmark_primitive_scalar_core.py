@@ -129,7 +129,7 @@ def run_benchmark(
             if resolved_mode == "native":
                 run_checked([str(binary)])
             else:
-                run_checked(["./k", "run", "--interpret", str(program)])
+                run_checked(["./k", "run", str(program)])
 
         samples: List[float] = []
         checksum = ""
@@ -138,7 +138,7 @@ def run_benchmark(
             if resolved_mode == "native":
                 proc = run_checked([str(binary)])
             else:
-                proc = run_checked(["./k", "run", "--interpret", str(program)])
+                proc = run_checked(["./k", "run", str(program)])
             t1 = time.perf_counter()
             samples.append(t1 - t0)
             checksum = parse_last_line(proc.stdout)

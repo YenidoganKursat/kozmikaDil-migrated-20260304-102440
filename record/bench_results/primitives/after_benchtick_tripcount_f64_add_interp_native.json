@@ -1,0 +1,38 @@
+{
+  "method": "window: t1=now(); repeat(batch){c=a op b}; t2=now(); floor=assign-only",
+  "primitive": "f64",
+  "operator": "+",
+  "loops": 500000,
+  "batch": 1,
+  "runs": 5,
+  "results": [
+    {
+      "language": "kozmika",
+      "mode": "interpret",
+      "primitive": "f64",
+      "operator": "+",
+      "loops": 500000,
+      "batch": 1,
+      "runs": 5,
+      "floor_ns": 239.276628,
+      "raw_ns": 260.77081,
+      "net_ns": 21.494181999999995,
+      "checksum": "2.00012345678999992060198565013706684",
+      "notes": ""
+    },
+    {
+      "language": "kozmika",
+      "mode": "native",
+      "primitive": "f64",
+      "operator": "+",
+      "loops": 500000,
+      "batch": 1,
+      "runs": 5,
+      "floor_ns": 8.181916666666666,
+      "raw_ns": 8.249666666666666,
+      "net_ns": 0.0677500000000002,
+      "checksum": "2.00012345679",
+      "notes": ""
+    }
+  ]
+}

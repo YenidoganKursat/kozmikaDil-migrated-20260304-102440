@@ -1,0 +1,1 @@
+architecture_guard_summary errors=0 warnings=0 max_lines=1800

@@ -1,0 +1,121 @@
+{
+  "config": {
+    "n": 1000,
+    "repeats": 1,
+    "runs": 3,
+    "warmup": 1,
+    "spark_threads": 1,
+    "mode": "full",
+    "spark_compute_mode": "fused_sum",
+    "case_set": "all",
+    "baseline": "C (clang -O3 blocked)",
+    "single_thread": true
+  },
+  "results": [
+    {
+      "name": "Kozmika interpret (own)",
+      "median_sec": 0.019269084004918113,
+      "min_sec": 0.01890304102562368,
+      "max_sec": 0.019624374981503934,
+      "runs": 3,
+      "checksum_raw": "59658792072710.445",
+      "checksum": 59658792072710.445,
+      "vs_c": 20.517458167504163,
+      "mode": "full",
+      "compute_median_sec": null,
+      "init_median_sec": null
+    },
+    {
+      "name": "Kozmika interpret (blas)",
+      "median_sec": 0.019550708995666355,
+      "min_sec": 0.01897266600281,
+      "max_sec": 0.019680333003634587,
+      "runs": 3,
+      "checksum_raw": "59658792072710.445",
+      "checksum": 59658792072710.445,
+      "vs_c": 20.221907301912452,
+      "mode": "full",
+      "compute_median_sec": null,
+      "init_median_sec": null
+    },
+    {
+      "name": "Kozmika interpret (auto)",
+      "median_sec": 0.01942037499975413,
+      "min_sec": 0.019354541989741847,
+      "max_sec": 0.019667415996082127,
+      "runs": 3,
+      "checksum_raw": "59658792072710.445",
+      "checksum": 59658792072710.445,
+      "vs_c": 20.35762054038793,
+      "mode": "full",
+      "compute_median_sec": null,
+      "init_median_sec": null
+    },
+    {
+      "name": "C (clang -O3 blocked)",
+      "median_sec": 0.39535262499703094,
+      "min_sec": 0.3934690410096664,
+      "max_sec": 0.39792479199240915,
+      "runs": 3,
+      "checksum_raw": "59658792072707.60156250000000000",
+      "checksum": 59658792072707.6,
+      "vs_c": 1.0,
+      "mode": "full",
+      "compute_median_sec": null,
+      "init_median_sec": null
+    },
+    {
+      "name": "C (BLAS dgemm chain)",
+      "median_sec": 0.022449166979640722,
+      "min_sec": 0.022162374982144684,
+      "max_sec": 0.022595624992391095,
+      "runs": 3,
+      "checksum_raw": "59658792072707.60156250000000000",
+      "checksum": 59658792072707.6,
+      "vs_c": 17.611015382244627,
+      "mode": "full",
+      "compute_median_sec": null,
+      "init_median_sec": null
+    },
+    {
+      "name": "Python+NumPy multi_dot",
+      "median_sec": 0.09488183300709352,
+      "min_sec": 0.09362662499188446,
+      "max_sec": 0.09572920799837448,
+      "runs": 3,
+      "checksum_raw": "59658792072710.27343750000000000",
+      "checksum": 59658792072710.27,
+      "vs_c": 4.166789494543953,
+      "mode": "full",
+      "compute_median_sec": null,
+      "init_median_sec": null
+    },
+    {
+      "name": "C (clang -O3 naive)",
+      "median_sec": 2.336851416999707,
+      "min_sec": 2.332319917011773,
+      "max_sec": 2.375351958005922,
+      "runs": 3,
+      "checksum_raw": "59658792072707.60156250000000000",
+      "checksum": 59658792072707.6,
+      "vs_c": 0.16918175546848666,
+      "mode": "full",
+      "compute_median_sec": null,
+      "init_median_sec": null
+    },
+    {
+      "name": "Java (naive loops)",
+      "median_sec": 2.407933332986431,
+      "min_sec": 2.389893333980581,
+      "max_sec": 2.4751966249896213,
+      "runs": 3,
+      "checksum_raw": "59658792072707.60000000000000000",
+      "checksum": 59658792072707.6,
+      "vs_c": 0.1641875294390714,
+      "mode": "full",
+      "compute_median_sec": null,
+      "init_median_sec": null
+    }
+  ],
+  "checksum_reference": 59658792072707.6
+}

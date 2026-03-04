@@ -22,7 +22,7 @@ sudo apt-get install -y llvm-18-dev clang-18 lld-18 libmlir-18-dev
 cat <<'EOF2'
 Toolchain bootstrap complete.
 Recommended Phase 1 build commands:
-  cmake -S . -B .build_phase1 -G Ninja -DSPARK_BUILD_BENCHMARKS=ON
-  cmake --build .build_phase1
-  bash bench/scripts/run_phase1_baselines.sh
+  cmake -S . -B .build_bootstrap -G Ninja -DSPARK_BUILD_BENCHMARKS=ON
+  cmake --build .build_bootstrap
+  bash bench/scripts/run_bootstrap_baselines.sh
 EOF2

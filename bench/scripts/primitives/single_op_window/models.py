@@ -12,10 +12,10 @@ class WindowResult:
     primitive: str
     operator: str
     loops: int
+    batch: int
     runs: int
     floor_ns: float
     raw_ns: float
     net_ns: float
     checksum: str
     notes: str = ""
-

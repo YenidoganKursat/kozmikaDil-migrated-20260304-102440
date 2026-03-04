@@ -1,0 +1,14 @@
+[full-perf] GPU runtime perf matrix (matmul core f64) :: start
+[gpu-runtime] requested=auto           effective=own  median=0.019222s pass=True
+[gpu-runtime] requested=own            effective=own  median=0.017069s pass=True
+[gpu-runtime] requested=blas           effective=blas median=0.017201s pass=True
+[gpu-runtime] requested=cuda           effective=blas median=0.017471s pass=True
+[gpu-runtime] requested=rocm_hip       effective=blas median=0.017493s pass=True
+[gpu-runtime] requested=oneapi_sycl    effective=blas median=0.017569s pass=True
+[gpu-runtime] requested=opencl         effective=blas median=0.017399s pass=True
+[gpu-runtime] requested=vulkan_compute effective=blas median=0.017654s pass=True
+[gpu-runtime] requested=metal          effective=blas median=0.017419s pass=True
+[gpu-runtime] requested=webgpu         effective=blas median=0.017303s pass=True
+gpu runtime perf json: /Users/kursatyenidogan/Documents/kozmikaDil/bench/results/full_performance_audit/phase10_gpu_runtime_perf_all.json
+gpu runtime perf csv: /Users/kursatyenidogan/Documents/kozmikaDil/bench/results/full_performance_audit/phase10_gpu_runtime_perf_all.csv
+[full-perf] GPU runtime perf matrix (matmul core f64) :: ok

@@ -1,0 +1,8 @@
+compounds:
+  - program_bundle
+  - pipeline_products
+  - build_tuning
+  - platform_support_snapshot
+  - operation_route
+  - performance_gate_policy
+  - correctness_gate_policy

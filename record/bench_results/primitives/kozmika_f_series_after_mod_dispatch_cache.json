@@ -1,0 +1,170 @@
+{
+  "f8": {
+    "method": "window: t1=now(); repeat(batch){c=a op b}; t2=now(); floor=assign-only",
+    "primitive": "f8",
+    "operator": "+",
+    "loops": 200000,
+    "batch": 1,
+    "runs": 5,
+    "results": [
+      {
+        "language": "kozmika",
+        "mode": "interpret",
+        "primitive": "f8",
+        "operator": "+",
+        "loops": 200000,
+        "batch": 1,
+        "runs": 5,
+        "floor_ns": 96.93376,
+        "raw_ns": 111.491945,
+        "net_ns": 14.558184999999995,
+        "checksum": "2",
+        "notes": ""
+      }
+    ]
+  },
+  "f16": {
+    "method": "window: t1=now(); repeat(batch){c=a op b}; t2=now(); floor=assign-only",
+    "primitive": "f16",
+    "operator": "+",
+    "loops": 200000,
+    "batch": 1,
+    "runs": 5,
+    "results": [
+      {
+        "language": "kozmika",
+        "mode": "interpret",
+        "primitive": "f16",
+        "operator": "+",
+        "loops": 200000,
+        "batch": 1,
+        "runs": 5,
+        "floor_ns": 98.20897,
+        "raw_ns": 110.468205,
+        "net_ns": 12.259235000000004,
+        "checksum": "2",
+        "notes": ""
+      }
+    ]
+  },
+  "f32": {
+    "method": "window: t1=now(); repeat(batch){c=a op b}; t2=now(); floor=assign-only",
+    "primitive": "f32",
+    "operator": "+",
+    "loops": 200000,
+    "batch": 1,
+    "runs": 5,
+    "results": [
+      {
+        "language": "kozmika",
+        "mode": "interpret",
+        "primitive": "f32",
+        "operator": "+",
+        "loops": 200000,
+        "batch": 1,
+        "runs": 5,
+        "floor_ns": 95.442355,
+        "raw_ns": 110.397645,
+        "net_ns": 14.95528999999999,
+        "checksum": "2.000123500823974609375",
+        "notes": ""
+      }
+    ]
+  },
+  "f64": {
+    "method": "window: t1=now(); repeat(batch){c=a op b}; t2=now(); floor=assign-only",
+    "primitive": "f64",
+    "operator": "+",
+    "loops": 200000,
+    "batch": 1,
+    "runs": 5,
+    "results": [
+      {
+        "language": "kozmika",
+        "mode": "interpret",
+        "primitive": "f64",
+        "operator": "+",
+        "loops": 200000,
+        "batch": 1,
+        "runs": 5,
+        "floor_ns": 96.920095,
+        "raw_ns": 111.76717,
+        "net_ns": 14.84707499999999,
+        "checksum": "2.00012345678999992060198565013706684",
+        "notes": ""
+      }
+    ]
+  },
+  "f128": {
+    "method": "window: t1=now(); repeat(batch){c=a op b}; t2=now(); floor=assign-only",
+    "primitive": "f128",
+    "operator": "+",
+    "loops": 200000,
+    "batch": 1,
+    "runs": 5,
+    "results": [
+      {
+        "language": "kozmika",
+        "mode": "interpret",
+        "primitive": "f128",
+        "operator": "+",
+        "loops": 200000,
+        "batch": 1,
+        "runs": 5,
+        "floor_ns": 102.479535,
+        "raw_ns": 139.154165,
+        "net_ns": 36.67463000000001,
+        "checksum": "2.000123456789999999999999999999999943",
+        "notes": ""
+      }
+    ]
+  },
+  "f256": {
+    "method": "window: t1=now(); repeat(batch){c=a op b}; t2=now(); floor=assign-only",
+    "primitive": "f256",
+    "operator": "+",
+    "loops": 200000,
+    "batch": 1,
+    "runs": 5,
+    "results": [
+      {
+        "language": "kozmika",
+        "mode": "interpret",
+        "primitive": "f256",
+        "operator": "+",
+        "loops": 200000,
+        "batch": 1,
+        "runs": 5,
+        "floor_ns": 99.67728,
+        "raw_ns": 135.126525,
+        "net_ns": 35.44924499999999,
+        "checksum": "2.0001234567899999999999999999999999999999999999999999999999999999999999996",
+        "notes": ""
+      }
+    ]
+  },
+  "f512": {
+    "method": "window: t1=now(); repeat(batch){c=a op b}; t2=now(); floor=assign-only",
+    "primitive": "f512",
+    "operator": "+",
+    "loops": 200000,
+    "batch": 1,
+    "runs": 5,
+    "results": [
+      {
+        "language": "kozmika",
+        "mode": "interpret",
+        "primitive": "f512",
+        "operator": "+",
+        "loops": 200000,
+        "batch": 1,
+        "runs": 5,
+        "floor_ns": 99.564645,
+        "raw_ns": 133.89768,
+        "net_ns": 34.33303500000001,
+        "checksum": "2.000123456790000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005",
+        "notes": ""
+      }
+    ]
+  }
+}

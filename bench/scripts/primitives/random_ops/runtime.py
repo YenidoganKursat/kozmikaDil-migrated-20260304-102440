@@ -87,7 +87,7 @@ def run_profile_once(
             if resolved_mode == "native":
                 run_checked([str(binary)], env=env)
             else:
-                run_checked(["./k", "run", "--interpret", str(program)], env=env)
+                run_checked(["./k", "run", str(program)], env=env)
 
         samples: list[float] = []
         checksum = ""
@@ -96,7 +96,7 @@ def run_profile_once(
             if resolved_mode == "native":
                 proc = run_checked([str(binary)], env=env)
             else:
-                proc = run_checked(["./k", "run", "--interpret", str(program)], env=env)
+                proc = run_checked(["./k", "run", str(program)], env=env)
             t1 = time.perf_counter()
             samples.append(t1 - t0)
             checksum = parse_last_line(proc.stdout)

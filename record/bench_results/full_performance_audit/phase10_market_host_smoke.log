@@ -1,0 +1,4 @@
+[full-perf] Multiarch host smoke (market preset) :: start
+phase10 multiarch: 10/16 builds passed, skipped=4
+results json: /Users/kursatyenidogan/Documents/kozmikaDil/bench/results/full_performance_audit/phase10_market_host_smoke.json
+[full-perf] Multiarch host smoke (market preset) :: ok

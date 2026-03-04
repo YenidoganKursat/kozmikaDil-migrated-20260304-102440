@@ -1,0 +1,628 @@
+{
+  "host": {
+    "system": "Darwin",
+    "machine": "arm64",
+    "platform": "macOS-26.3-arm64-arm-64bit-Mach-O"
+  },
+  "config": {
+    "preset": "market",
+    "explicit_targets": [],
+    "include_experimental": true,
+    "include_embedded": true,
+    "include_gpu_experimental": true,
+    "include_gpu_planning": true,
+    "run_multiarch_probe": true,
+    "multiarch_lto": "thin"
+  },
+  "cpu": {
+    "summary": {
+      "total": 26,
+      "stable": 4,
+      "experimental": 18,
+      "embedded": 4,
+      "build_attempted": 22,
+      "build_ok": 10,
+      "skipped": 4,
+      "interpret_attempted": 4,
+      "interpret_ok": 4
+    },
+    "targets": [
+      {
+        "target": "x86_64-linux-gnu",
+        "family": "x86_64",
+        "os_class": "linux",
+        "tier": "stable",
+        "mode": "aot",
+        "notes": "Desktop/server Linux",
+        "build_attempted": true,
+        "build_ok": true,
+        "effective_target": "x86_64-apple-darwin",
+        "fallback_used": true,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "aarch64-linux-gnu",
+        "family": "arm64",
+        "os_class": "linux",
+        "tier": "stable",
+        "mode": "aot",
+        "notes": "ARM64 Linux (Raspberry Pi 64-bit, ARM servers)",
+        "build_attempted": true,
+        "build_ok": true,
+        "effective_target": "arm64-apple-darwin",
+        "fallback_used": true,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "i686-linux-gnu",
+        "family": "x86",
+        "os_class": "linux",
+        "tier": "experimental",
+        "mode": "aot",
+        "notes": "Legacy 32-bit x86 Linux",
+        "build_attempted": true,
+        "build_ok": false,
+        "effective_target": "i686-linux-gnu",
+        "fallback_used": false,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "riscv64-linux-gnu",
+        "family": "riscv64",
+        "os_class": "linux",
+        "tier": "experimental",
+        "mode": "aot",
+        "notes": "RISC-V Linux userland",
+        "build_attempted": true,
+        "build_ok": false,
+        "effective_target": "riscv64-linux-gnu",
+        "fallback_used": false,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "armv7-linux-gnueabihf",
+        "family": "armv7",
+        "os_class": "linux",
+        "tier": "experimental",
+        "mode": "aot",
+        "notes": "ARMv7 Linux (legacy Raspberry Pi OS 32-bit)",
+        "build_attempted": true,
+        "build_ok": false,
+        "effective_target": "armv7-linux-gnueabihf",
+        "fallback_used": false,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "riscv32-linux-gnu",
+        "family": "riscv32",
+        "os_class": "linux",
+        "tier": "experimental",
+        "mode": "aot",
+        "notes": "RISC-V 32-bit Linux userland",
+        "build_attempted": true,
+        "build_ok": false,
+        "effective_target": "riscv32-linux-gnu",
+        "fallback_used": false,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "ppc64le-linux-gnu",
+        "family": "ppc64le",
+        "os_class": "linux",
+        "tier": "experimental",
+        "mode": "aot",
+        "notes": "PowerPC LE Linux",
+        "build_attempted": true,
+        "build_ok": false,
+        "effective_target": "ppc64le-linux-gnu",
+        "fallback_used": false,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "s390x-linux-gnu",
+        "family": "s390x",
+        "os_class": "linux",
+        "tier": "experimental",
+        "mode": "aot",
+        "notes": "s390x Linux",
+        "build_attempted": true,
+        "build_ok": false,
+        "effective_target": "s390x-linux-gnu",
+        "fallback_used": false,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "loongarch64-linux-gnu",
+        "family": "loongarch64",
+        "os_class": "linux",
+        "tier": "experimental",
+        "mode": "aot",
+        "notes": "LoongArch64 Linux",
+        "build_attempted": true,
+        "build_ok": false,
+        "effective_target": "loongarch64-linux-gnu",
+        "fallback_used": false,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "mips64el-linux-gnuabi64",
+        "family": "mips64",
+        "os_class": "linux",
+        "tier": "experimental",
+        "mode": "aot",
+        "notes": "MIPS64EL Linux",
+        "build_attempted": true,
+        "build_ok": false,
+        "effective_target": "mips64el-linux-gnuabi64",
+        "fallback_used": false,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "mipsel-linux-gnu",
+        "family": "mips",
+        "os_class": "linux",
+        "tier": "experimental",
+        "mode": "aot",
+        "notes": "MIPS32EL Linux",
+        "build_attempted": true,
+        "build_ok": false,
+        "effective_target": "mipsel-linux-gnu",
+        "fallback_used": false,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "x86_64-apple-darwin",
+        "family": "x86_64",
+        "os_class": "darwin",
+        "tier": "stable",
+        "mode": "aot",
+        "notes": "Intel macOS",
+        "build_attempted": true,
+        "build_ok": true,
+        "effective_target": "x86_64-apple-darwin",
+        "fallback_used": false,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "arm64-apple-darwin",
+        "family": "arm64",
+        "os_class": "darwin",
+        "tier": "stable",
+        "mode": "aot",
+        "notes": "Apple Silicon macOS",
+        "build_attempted": true,
+        "build_ok": true,
+        "effective_target": "arm64-apple-darwin",
+        "fallback_used": false,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "x86_64-w64-mingw32",
+        "family": "x86_64",
+        "os_class": "windows",
+        "tier": "experimental",
+        "mode": "aot",
+        "notes": "Windows x64 via MinGW cross toolchain",
+        "build_attempted": true,
+        "build_ok": true,
+        "effective_target": "x86_64-apple-darwin",
+        "fallback_used": true,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "aarch64-w64-mingw32",
+        "family": "arm64",
+        "os_class": "windows",
+        "tier": "experimental",
+        "mode": "aot",
+        "notes": "Windows ARM64 via MinGW cross toolchain",
+        "build_attempted": true,
+        "build_ok": true,
+        "effective_target": "arm64-apple-darwin",
+        "fallback_used": true,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "x86_64-unknown-freebsd",
+        "family": "x86_64",
+        "os_class": "freebsd",
+        "tier": "experimental",
+        "mode": "aot",
+        "notes": "FreeBSD x64",
+        "build_attempted": true,
+        "build_ok": true,
+        "effective_target": "x86_64-apple-darwin",
+        "fallback_used": true,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "aarch64-unknown-freebsd",
+        "family": "arm64",
+        "os_class": "freebsd",
+        "tier": "experimental",
+        "mode": "aot",
+        "notes": "FreeBSD ARM64",
+        "build_attempted": true,
+        "build_ok": true,
+        "effective_target": "arm64-apple-darwin",
+        "fallback_used": true,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "aarch64-linux-android",
+        "family": "arm64",
+        "os_class": "android",
+        "tier": "experimental",
+        "mode": "aot",
+        "notes": "Android ARM64 (NDK toolchain/sysroot)",
+        "build_attempted": true,
+        "build_ok": true,
+        "effective_target": "arm64-apple-darwin",
+        "fallback_used": true,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "x86_64-linux-android",
+        "family": "x86_64",
+        "os_class": "android",
+        "tier": "experimental",
+        "mode": "aot",
+        "notes": "Android x64 (emulator/dev host)",
+        "build_attempted": true,
+        "build_ok": true,
+        "effective_target": "x86_64-apple-darwin",
+        "fallback_used": true,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "armv7a-linux-androideabi",
+        "family": "armv7",
+        "os_class": "android",
+        "tier": "experimental",
+        "mode": "aot",
+        "notes": "Android ARMv7",
+        "build_attempted": true,
+        "build_ok": false,
+        "effective_target": "armv7a-linux-androideabi",
+        "fallback_used": false,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "wasm32-wasi",
+        "family": "wasm32",
+        "os_class": "web",
+        "tier": "experimental",
+        "mode": "aot",
+        "notes": "WASI userland WebAssembly",
+        "build_attempted": true,
+        "build_ok": false,
+        "effective_target": "wasm32-wasi",
+        "fallback_used": false,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "wasm32-unknown-emscripten",
+        "family": "wasm32",
+        "os_class": "web",
+        "tier": "experimental",
+        "mode": "aot",
+        "notes": "Browser/WebAssembly via Emscripten",
+        "build_attempted": true,
+        "build_ok": false,
+        "effective_target": "wasm32-unknown-emscripten",
+        "fallback_used": false,
+        "interpret": {
+          "attempted": false,
+          "status_ok": false,
+          "status": 0,
+          "output": ""
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "arm-none-eabi",
+        "family": "arm-mcu",
+        "os_class": "embedded",
+        "tier": "embedded",
+        "mode": "interpret_only",
+        "notes": "Cortex-M bare-metal (runtime not yet portable)",
+        "build_attempted": false,
+        "build_ok": false,
+        "effective_target": "arm-none-eabi",
+        "fallback_used": false,
+        "interpret": {
+          "attempted": true,
+          "status_ok": true,
+          "status": 0,
+          "output": "19999900000\n"
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "riscv64-unknown-elf",
+        "family": "riscv-mcu",
+        "os_class": "embedded",
+        "tier": "embedded",
+        "mode": "interpret_only",
+        "notes": "RISC-V bare-metal (runtime not yet portable)",
+        "build_attempted": false,
+        "build_ok": false,
+        "effective_target": "riscv64-unknown-elf",
+        "fallback_used": false,
+        "interpret": {
+          "attempted": true,
+          "status_ok": true,
+          "status": 0,
+          "output": "19999900000\n"
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "avr-none-elf",
+        "family": "avr",
+        "os_class": "embedded",
+        "tier": "embedded",
+        "mode": "interpret_only",
+        "notes": "Arduino AVR bare-metal (runtime not yet portable)",
+        "build_attempted": false,
+        "build_ok": false,
+        "effective_target": "avr-none-elf",
+        "fallback_used": false,
+        "interpret": {
+          "attempted": true,
+          "status_ok": true,
+          "status": 0,
+          "output": "19999900000\n"
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      },
+      {
+        "target": "xtensa-esp32-elf",
+        "family": "xtensa",
+        "os_class": "embedded",
+        "tier": "embedded",
+        "mode": "interpret_only",
+        "notes": "ESP32 bare-metal/RTOS (runtime not yet portable)",
+        "build_attempted": false,
+        "build_ok": false,
+        "effective_target": "xtensa-esp32-elf",
+        "fallback_used": false,
+        "interpret": {
+          "attempted": true,
+          "status_ok": true,
+          "status": 0,
+          "output": "19999900000\n"
+        },
+        "smoke_attempted": false,
+        "smoke_ok": false
+      }
+    ],
+    "probe_output": "phase10 multiarch: 10/22 builds passed, skipped=4\nphase10 multiarch interpret smoke: 4/4 passed\nresults json: /Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10_platform_matrix_multiarch_probe.json\n"
+  },
+  "gpu": {
+    "summary": {
+      "total": 7,
+      "stable": 1,
+      "experimental": 5,
+      "planning": 1,
+      "available": 1,
+      "unavailable": 6
+    },
+    "backends": [
+      {
+        "name": "cuda",
+        "api": "CUDA",
+        "tier": "experimental",
+        "mode": "native_accel",
+        "available": false,
+        "reason": "os_not_supported:Darwin",
+        "notes": "NVIDIA CUDA backend (requires CUDA toolkit + driver)"
+      },
+      {
+        "name": "rocm_hip",
+        "api": "HIP/ROCm",
+        "tier": "experimental",
+        "mode": "native_accel",
+        "available": false,
+        "reason": "os_not_supported:Darwin",
+        "notes": "AMD ROCm HIP backend"
+      },
+      {
+        "name": "oneapi_sycl",
+        "api": "SYCL",
+        "tier": "experimental",
+        "mode": "native_accel",
+        "available": false,
+        "reason": "os_not_supported:Darwin",
+        "notes": "Intel/oneAPI SYCL backend"
+      },
+      {
+        "name": "opencl",
+        "api": "OpenCL",
+        "tier": "experimental",
+        "mode": "native_accel",
+        "available": false,
+        "reason": "tool_not_found",
+        "notes": "Portable OpenCL compute backend"
+      },
+      {
+        "name": "vulkan_compute",
+        "api": "Vulkan",
+        "tier": "experimental",
+        "mode": "native_accel",
+        "available": false,
+        "reason": "os_not_supported:Darwin",
+        "notes": "Vulkan compute backend"
+      },
+      {
+        "name": "metal",
+        "api": "Metal",
+        "tier": "stable",
+        "mode": "native_accel",
+        "available": true,
+        "reason": "probe_ok:xcrun -f metal",
+        "notes": "Apple Metal backend"
+      },
+      {
+        "name": "webgpu",
+        "api": "WebGPU",
+        "tier": "planning",
+        "mode": "planning_only",
+        "available": false,
+        "reason": "planning_only",
+        "notes": "Browser/WebGPU backend planning target"
+      }
+    ]
+  }
+}

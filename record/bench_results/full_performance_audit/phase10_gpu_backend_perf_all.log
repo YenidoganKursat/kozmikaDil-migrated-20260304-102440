@@ -1,0 +1,10 @@
+[full-perf] GPU probe perf matrix (all backends) :: start
+[gpu-perf] cuda: available=False detect_median=0.0003ms reason=os_not_supported:Darwin
+[gpu-perf] rocm_hip: available=False detect_median=0.0003ms reason=os_not_supported:Darwin
+[gpu-perf] oneapi_sycl: available=False detect_median=0.0003ms reason=os_not_supported:Darwin
+[gpu-perf] opencl: available=False detect_median=0.0388ms reason=tool_not_found
+[gpu-perf] vulkan_compute: available=False detect_median=0.0002ms reason=os_not_supported:Darwin
+[gpu-perf] metal: available=True detect_median=8.6193ms reason=probe_ok:xcrun -f metal
+[gpu-perf] webgpu: available=False detect_median=0.0003ms reason=planning_only
+gpu_perf json: /Users/kursatyenidogan/Documents/kozmikaDil/bench/results/full_performance_audit/phase10_gpu_backend_perf_all.json
+[full-perf] GPU probe perf matrix (all backends) :: ok

@@ -1,0 +1,36 @@
+{
+  "canonical_src_root": "src",
+  "canonical_include_root": "include",
+  "core_pipeline_aliases": [
+    "async_runtime",
+    "bootstrap",
+    "hetero_runtime",
+    "lowering",
+    "parsing",
+    "scalar_runtime",
+    "schedule_gpu",
+    "semantic_runtime",
+    "stream_pipeline"
+  ],
+  "driver_parsing_dirs": [
+    "src/core/driver/parsing/bootstrap",
+    "src/core/driver/parsing/parsing"
+  ],
+  "logic_runtime_dirs": [
+    "src/core/logic/runtime/hetero_runtime",
+    "src/core/logic/runtime/scalar_runtime"
+  ],
+  "logic_pipeline_dirs": [
+    "src/core/logic/pipeline/async_runtime",
+    "src/core/logic/pipeline/stream_pipeline"
+  ],
+  "logic_schedule_dirs": [
+    "src/core/logic/schedule/schedule_gpu"
+  ],
+  "manager_typecheck_dirs": [
+    "src/core/manager/typecheck/semantic_runtime"
+  ],
+  "servis_codegen_dirs": [
+    "src/core/servis/codegen/lowering"
+  ]
+}

@@ -20,6 +20,35 @@ Modular controller layout:
     - `single_op_window/csharp_runner.py`
     - `single_op_window/builders.py`
     - `single_op_window/common.py`
+  - supports batched operation windows via `--batch` (default `1`):
+    - measures `repeat(batch){ c = a op b }` and subtracts assign-only floor path per op.
+    - useful for stabilizing very small ns/op measurements without changing operation semantics.
+
+- `benchmark_int_crosslang_fair_runtime.py`
+  - thin entrypoint only
+  - fair integer runtime controller modules:
+    - `int_crosslang_fair/cli.py`
+    - `int_crosslang_fair/runners.py`
+    - `int_crosslang_fair/builders.py`
+    - `int_crosslang_fair/common.py`
+  - measures full-loop runtime (not per-iteration timer windows) with deterministic integer streams.
+  - reports:
+    - Kozmika i-series (`i8..i512`) for `interpret` and/or `native` modes,
+    - cross-language i64 (`c`, `cpp`, `go`, `csharp`, `java`) when toolchains are available.
+  - outputs JSON: `bench/results/primitives/int_crosslang_fair_runtime.json`
+
+- `benchmark_float_crosslang_fair_runtime.py`
+  - thin entrypoint only
+  - fair float runtime controller modules:
+    - `float_crosslang_fair/cli.py`
+    - `float_crosslang_fair/runners.py`
+    - `float_crosslang_fair/builders.py`
+    - `float_crosslang_fair/common.py`
+  - measures full-loop runtime (not per-iteration timer windows) with deterministic float streams.
+  - reports:
+    - Kozmika f-series (`f8..f512`) for `interpret` and/or `native` modes,
+    - cross-language f64 (`c`, `cpp`, `go`, `csharp`, `java`) when toolchains are available.
+  - outputs JSON: `bench/results/primitives/float_crosslang_fair_runtime.json`
 
 - `benchmark_primitive_scalar_core.py`
   - Shared helper for timing and JSON output.
@@ -131,6 +160,13 @@ Integer correctness checks (Python reference):
     - deterministic boundary vectors (min/max/near-boundary/zero/sign flips),
     - plus extra seeded edge-random vectors per primitive/operator.
   - outputs JSON: `bench/results/primitives/int_ops_python_validation.json`
+
+Integer init/op cross-language checks (Java BigInteger reference):
+- `validate_int_init_ops_java_bigint.py`
+  - validates `i8..i512` constructor/init behavior and integer ops (`+,-,*,%,^`) against Java `BigInteger`.
+  - includes deterministic boundary/out-of-range vectors and seeded random vectors.
+  - models signed clamping semantics for each integer width.
+  - outputs JSON: `bench/results/primitives/int_init_ops_java_bigint_validation.json`
 
 Float extreme-case cross-language checks:
 - `validate_float_extreme_bigdecimal.py`

@@ -1,0 +1,24 @@
+{
+  "method": "batched window: t1=now(); repeat(batch){c=a op b}; t2=now(); floor=assign-only",
+  "primitive": "f16",
+  "operator": "+",
+  "loops": 200000,
+  "batch": 32,
+  "runs": 5,
+  "results": [
+    {
+      "language": "kozmika",
+      "mode": "native",
+      "primitive": "f16",
+      "operator": "+",
+      "loops": 200000,
+      "batch": 32,
+      "runs": 5,
+      "floor_ns": 0.21233072916666665,
+      "raw_ns": 0.2328515625,
+      "net_ns": 0.02052083333333335,
+      "checksum": "2",
+      "notes": ""
+    }
+  ]
+}

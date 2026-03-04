@@ -1,0 +1,13 @@
+{
+  "primitive": "f128",
+  "mode": "native",
+  "loops": 200000,
+  "runs": 3,
+  "warmup": 1,
+  "median_sec": 0.12191549999988638,
+  "min_sec": 0.12178962500001944,
+  "max_sec": 0.12310875000002852,
+  "checksum_raw": "0",
+  "baseline_1x_sec": 0.12191549999988638,
+  "speedup_vs_1x": 1.0
+}

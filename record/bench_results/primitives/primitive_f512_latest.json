@@ -1,0 +1,13 @@
+{
+  "primitive": "f512",
+  "mode": "interpret",
+  "loops": 20000,
+  "runs": 1,
+  "warmup": 0,
+  "median_sec": 0.05624616699788021,
+  "min_sec": 0.05624616699788021,
+  "max_sec": 0.05624616699788021,
+  "checksum_raw": "0",
+  "baseline_1x_sec": 2.238598291998642,
+  "speedup_vs_1x": 39.80001503183336
+}

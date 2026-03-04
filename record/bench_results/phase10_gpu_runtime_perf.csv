@@ -1,0 +1,2 @@
+requested_backend,effective_backend,status_ok,parse_ok,program_pass,median_time_sec,mean_time_sec,diff,backend_id,own_calls,blas_calls,tile_m,tile_n,tile_k
+all,own,1,1,1,0.03927291701256763,0.03927291701256763,2.9802322387695312e-08,0.0,3.0,0.0,96.0,96.0,96.0

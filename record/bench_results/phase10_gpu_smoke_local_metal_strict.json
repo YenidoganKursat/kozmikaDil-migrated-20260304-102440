@@ -1,0 +1,22 @@
+{
+  "selected": [
+    "metal"
+  ],
+  "include_planning": false,
+  "required_available": [
+    "metal"
+  ],
+  "passed": true,
+  "failing_required": [],
+  "records": [
+    {
+      "name": "metal",
+      "api": "Metal",
+      "tier": "stable",
+      "mode": "native_accel",
+      "available": true,
+      "reason": "probe_ok:xcrun -f metal",
+      "notes": "Apple Metal backend"
+    }
+  ]
+}

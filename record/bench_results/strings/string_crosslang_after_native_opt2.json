@@ -1,0 +1,78 @@
+{
+  "workload": "deterministic string concat/compare/len loop",
+  "loops": 200000,
+  "runs": 3,
+  "warmup": 1,
+  "rows": [
+    {
+      "language": "cpp",
+      "ns_op": 32.692915,
+      "max_rss_kb": 3044.0,
+      "checksum": "2755277",
+      "runs": 3,
+      "warmup": 1,
+      "vs_fastest_x": 1.0,
+      "vs_lowest_mem_x": 2.327217125382263
+    },
+    {
+      "language": "go",
+      "ns_op": 51.62646,
+      "max_rss_kb": 7544.0,
+      "checksum": "2755277",
+      "runs": 3,
+      "warmup": 1,
+      "vs_fastest_x": 1.5791329711651592,
+      "vs_lowest_mem_x": 5.767584097859327
+    },
+    {
+      "language": "c",
+      "ns_op": 83.18125,
+      "max_rss_kb": 1308.0,
+      "checksum": "2755277",
+      "runs": 3,
+      "warmup": 1,
+      "vs_fastest_x": 2.54432038256607,
+      "vs_lowest_mem_x": 1.0
+    },
+    {
+      "language": "java",
+      "ns_op": 136.014585,
+      "max_rss_kb": 74488.0,
+      "checksum": "2755277",
+      "runs": 3,
+      "warmup": 1,
+      "vs_fastest_x": 4.16036884444229,
+      "vs_lowest_mem_x": 56.948012232415905
+    },
+    {
+      "language": "python",
+      "ns_op": 332.409375,
+      "max_rss_kb": 8524.0,
+      "checksum": "2755277",
+      "runs": 3,
+      "warmup": 1,
+      "vs_fastest_x": 10.167627297841138,
+      "vs_lowest_mem_x": 6.516819571865444
+    },
+    {
+      "language": "kozmika_native",
+      "ns_op": 13842.836255,
+      "max_rss_kb": 23232.0,
+      "checksum": "2755277",
+      "runs": 3,
+      "warmup": 1,
+      "vs_fastest_x": 423.420066855464,
+      "vs_lowest_mem_x": 17.761467889908257
+    },
+    {
+      "language": "kozmika_interpret",
+      "ns_op": 14023.392715,
+      "max_rss_kb": 23288.0,
+      "checksum": "2755277",
+      "runs": 3,
+      "warmup": 1,
+      "vs_fastest_x": 428.9428677436686,
+      "vs_lowest_mem_x": 17.804281345565748
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "host": {
+    "system": "Darwin",
+    "machine": "arm64",
+    "platform": "macOS-26.3-arm64-arm-64bit-Mach-O"
+  },
+  "config": {
+    "preset": "core",
+    "explicit_targets": [],
+    "include_experimental": false,
+    "include_embedded": false,
+    "include_gpu_experimental": false,
+    "include_gpu_planning": false,
+    "run_multiarch_probe": false,
+    "multiarch_lto": "off"
+  },
+  "cpu": {
+    "summary": {
+      "total": 2,
+      "stable": 2,
+      "experimental": 0,
+      "embedded": 0,
+      "build_attempted": 0,
+      "build_ok": 0,
+      "skipped": 2,
+      "interpret_attempted": 0,
+      "interpret_ok": 0
+    },
+    "targets": [
+      {
+        "target": "x86_64-linux-gnu",
+        "family": "x86_64",
+        "os_class": "linux",
+        "tier": "stable",
+        "mode": "aot",
+        "notes": "Desktop/server Linux",
+        "build_attempted": false,
+        "build_ok": false
+      },
+      {
+        "target": "aarch64-linux-gnu",
+        "family": "arm64",
+        "os_class": "linux",
+        "tier": "stable",
+        "mode": "aot",
+        "notes": "ARM64 Linux (Raspberry Pi 64-bit, ARM servers)",
+        "build_attempted": false,
+        "build_ok": false
+      }
+    ],
+    "probe_output": ""
+  },
+  "gpu": {
+    "summary": {
+      "total": 1,
+      "stable": 1,
+      "experimental": 0,
+      "planning": 0,
+      "available": 1,
+      "unavailable": 0
+    },
+    "backends": [
+      {
+        "name": "metal",
+        "api": "Metal",
+        "tier": "stable",
+        "mode": "native_accel",
+        "available": true,
+        "reason": "probe_ok:xcrun -f metal",
+        "notes": "Apple Metal backend"
+      }
+    ]
+  }
+}

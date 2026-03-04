@@ -1,0 +1,117 @@
+name: CPU22 GitHub Matrix
+
+on:
+  push:
+    branches: [ "codex/**" ]
+    paths:
+      - ".github/workflows/cpu22-github-matrix.yml"
+      - "scripts/core/platform/runtime/multiarch_build.py"
+      - "scripts/core/platform/runtime/target_catalog.py"
+      - "src/**"
+      - "k"
+      - "CMakeLists.txt"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cpu22-build-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install toolchains
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get -o Acquire::Retries=3 install -y \
+            cmake ninja-build clang g++ make python3 python3-pip \
+            libmpfr-dev libgmp-dev default-jdk curl xz-utils
+
+          optional_pkgs=(
+            gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu libc6-dev-arm64-cross
+            gcc-i686-linux-gnu g++-i686-linux-gnu libc6-dev-i386-cross
+            gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf binutils-arm-linux-gnueabihf libc6-dev-armhf-cross
+            gcc-riscv64-linux-gnu g++-riscv64-linux-gnu binutils-riscv64-linux-gnu libc6-dev-riscv64-cross
+            gcc-riscv32-linux-gnu g++-riscv32-linux-gnu gcc-riscv64-unknown-elf binutils-riscv64-unknown-elf
+            gcc-powerpc64le-linux-gnu g++-powerpc64le-linux-gnu binutils-powerpc64le-linux-gnu libc6-dev-ppc64el-cross
+            gcc-s390x-linux-gnu g++-s390x-linux-gnu binutils-s390x-linux-gnu libc6-dev-s390x-cross
+            gcc-mipsel-linux-gnu g++-mipsel-linux-gnu binutils-mipsel-linux-gnu libc6-dev-mipsel-cross
+            gcc-mips64el-linux-gnuabi64 g++-mips64el-linux-gnuabi64 binutils-mips64el-linux-gnuabi64 libc6-dev-mips64el-cross
+            gcc-loongarch64-linux-gnu g++-loongarch64-linux-gnu binutils-loongarch64-linux-gnu libc6-dev-loong64-cross
+            gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64
+            gcc-mingw-w64-aarch64 g++-mingw-w64-aarch64
+            emscripten wasi-libc
+          )
+
+          for pkg in "${optional_pkgs[@]}"; do
+            if apt-cache show "$pkg" >/dev/null 2>&1; then
+              sudo apt-get -o Acquire::Retries=3 install -y "$pkg"
+            else
+              echo "optional package not found: $pkg"
+            fi
+          done
+
+          if ! command -v zig >/dev/null 2>&1; then
+            curl -fsSL -o /tmp/zig.tar.xz https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz
+            sudo tar -C /opt -xf /tmp/zig.tar.xz
+            sudo ln -sf /opt/zig-linux-x86_64-0.13.0/zig /usr/local/bin/zig
+          fi
+
+          mkdir -p "$GITHUB_WORKSPACE/.github/tools"
+          cat > "$GITHUB_WORKSPACE/.github/tools/zig-cc" <<'SH'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          exec zig cc "$@"
+          SH
+          chmod +x "$GITHUB_WORKSPACE/.github/tools/zig-cc"
+          echo "$GITHUB_WORKSPACE/.github/tools" >> "$GITHUB_PATH"
+
+      - name: Build sparkc
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSPARK_BUILD_TESTS=OFF
+          cmake --build build --parallel 4 --target sparkc
+
+      - name: Run explicit CPU22 multiarch build matrix
+        shell: bash
+        run: |
+          CPU22_TARGETS="x86_64-linux-gnu,aarch64-linux-gnu,i686-linux-gnu,riscv64-linux-gnu,armv7-linux-gnueabihf,riscv32-linux-gnu,ppc64le-linux-gnu,s390x-linux-gnu,loongarch64-linux-gnu,mips64el-linux-gnuabi64,mipsel-linux-gnu,x86_64-apple-darwin,arm64-apple-darwin,x86_64-w64-mingw32,aarch64-w64-mingw32,x86_64-unknown-freebsd,aarch64-unknown-freebsd,aarch64-linux-android,x86_64-linux-android,armv7a-linux-androideabi,wasm32-wasi,wasm32-unknown-emscripten"
+          python3 scripts/core/platform/runtime/multiarch_build.py \
+            --targets "$CPU22_TARGETS" \
+            --lto off \
+            --json-out bench/results/github_cpu22_build_matrix.json
+
+      - name: Summarize CPU22 results and enforce full pass
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("bench/results/github_cpu22_build_matrix.json")
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          rows = payload.get("targets", [])
+
+          total = len(rows)
+          passed = sum(1 for r in rows if bool(r.get("build_ok")))
+
+          print(f"CPU22 build pass: {passed}/{total}")
+          print("target\tbuild_ok\teffective_target\tcompiler")
+          for r in rows:
+            print(f"{r.get('target','')}\t{bool(r.get('build_ok'))}\t{r.get('effective_target','')}\t{r.get('compiler','')}")
+
+          if passed != total:
+            raise SystemExit(1)
+          PY
+
+      - name: Upload CPU22 artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu22-github-matrix
+          path: |
+            bench/results/github_cpu22_build_matrix.json
+          if-no-files-found: warn

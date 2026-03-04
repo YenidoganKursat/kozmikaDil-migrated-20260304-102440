@@ -1,0 +1,22 @@
+{
+  "method": "t1=now(); c=a op b; t2=now(); floor=now->now",
+  "primitive": "f8",
+  "operator": "+",
+  "loops": 120000,
+  "runs": 3,
+  "results": [
+    {
+      "language": "kozmika",
+      "mode": "native",
+      "primitive": "f8",
+      "operator": "+",
+      "loops": 120000,
+      "runs": 3,
+      "floor_ns": 5.655555555555555,
+      "raw_ns": 5.524305555555555,
+      "net_ns": 0.0,
+      "checksum": "2",
+      "notes": ""
+    }
+  ]
+}

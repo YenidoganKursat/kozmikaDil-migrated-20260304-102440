@@ -18,6 +18,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--primitive", default="f64", help="Kozmika primitive (default: f64)")
     parser.add_argument("--operator", default="+", choices=["+", "-", "*", "/", "%", "^"])
     parser.add_argument("--loops", type=int, default=200_000)
+    parser.add_argument("--batch", type=int, default=1)
     parser.add_argument("--runs", type=int, default=5)
     parser.add_argument("--a", default="1.000123456789")
     parser.add_argument("--b", default="1.000000000001")
@@ -58,6 +59,7 @@ def main() -> int:
                 a_lit=args.a,
                 b_lit=args.b,
                 tick_mode=args.kozmika_tick_mode,
+                batch=args.batch,
             )
         )
     if "kozmika-native" in selected:
@@ -71,18 +73,19 @@ def main() -> int:
                 a_lit=args.a,
                 b_lit=args.b,
                 tick_mode=args.kozmika_tick_mode,
+                batch=args.batch,
             )
         )
     if "c" in selected:
-        row = run_c_like("c", args.operator, args.loops, args.runs, args.a, args.b)
+        row = run_c_like("c", args.operator, args.loops, args.batch, args.runs, args.a, args.b)
         if row:
             results.append(row)
     if "cpp" in selected:
-        row = run_c_like("cpp", args.operator, args.loops, args.runs, args.a, args.b)
+        row = run_c_like("cpp", args.operator, args.loops, args.batch, args.runs, args.a, args.b)
         if row:
             results.append(row)
     if "csharp" in selected:
-        row = run_csharp(args.operator, args.loops, args.runs, args.a, args.b)
+        row = run_csharp(args.operator, args.loops, args.batch, args.runs, args.a, args.b)
         if row:
             results.append(row)
 
@@ -90,10 +93,11 @@ def main() -> int:
     out_path.write_text(
         json.dumps(
             {
-                "method": "t1=now(); c=a op b; t2=now(); floor=now->now",
+                "method": "window: t1=now(); repeat(batch){c=a op b}; t2=now(); floor=assign-only",
                 "primitive": args.primitive,
                 "operator": args.operator,
                 "loops": args.loops,
+                "batch": args.batch,
                 "runs": args.runs,
                 "results": [asdict(row) for row in results],
             },
@@ -110,4 +114,3 @@ def main() -> int:
         )
     print(f"result_json: {out_path}")
     return 0
-

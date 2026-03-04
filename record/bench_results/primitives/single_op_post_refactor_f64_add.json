@@ -1,0 +1,80 @@
+{
+  "method": "window: t1=now(); repeat(batch){c=a op b}; t2=now(); floor=assign-only",
+  "primitive": "f64",
+  "operator": "+",
+  "loops": 200000,
+  "batch": 1,
+  "runs": 5,
+  "results": [
+    {
+      "language": "kozmika",
+      "mode": "interpret",
+      "primitive": "f64",
+      "operator": "+",
+      "loops": 200000,
+      "batch": 1,
+      "runs": 5,
+      "floor_ns": 2.43301,
+      "raw_ns": 4.74582,
+      "net_ns": 2.3128100000000003,
+      "checksum": "2.00012345678999992060198565013706684",
+      "notes": ""
+    },
+    {
+      "language": "kozmika",
+      "mode": "native",
+      "primitive": "f64",
+      "operator": "+",
+      "loops": 200000,
+      "batch": 1,
+      "runs": 5,
+      "floor_ns": 6.5910416666666665,
+      "raw_ns": 6.563333333333333,
+      "net_ns": 0.0,
+      "checksum": "2.00012345679",
+      "notes": ""
+    },
+    {
+      "language": "c",
+      "mode": "native",
+      "primitive": "f64",
+      "operator": "+",
+      "loops": 200000,
+      "batch": 1,
+      "runs": 5,
+      "floor_ns": 13.595895,
+      "raw_ns": 13.58135,
+      "net_ns": 0.0,
+      "checksum": "2.0001234567899999",
+      "notes": ""
+    },
+    {
+      "language": "cpp",
+      "mode": "native",
+      "primitive": "f64",
+      "operator": "+",
+      "loops": 200000,
+      "batch": 1,
+      "runs": 5,
+      "floor_ns": 12.251415,
+      "raw_ns": 12.366105,
+      "net_ns": 0.11468999999999951,
+      "checksum": "2.0001234567899999",
+      "notes": ""
+    },
+    {
+      "language": "csharp",
+      "mode": "release",
+      "primitive": "double",
+      "operator": "+",
+      "loops": 200000,
+      "batch": 1,
+      "runs": 5,
+      "floor_ns": 12.152435,
+      "raw_ns": 12.11025,
+      "net_ns": 0.0,
+      "checksum": "2.00012345679",
+      "notes": ""
+    }
+  ]
+}

@@ -1,0 +1,912 @@
+{
+  "host_arch": "x86_64",
+  "program": "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+  "preset": "",
+  "include_experimental": false,
+  "include_embedded": false,
+  "targets": [
+    {
+      "target": "x86_64-linux-gnu",
+      "arch": "x86_64",
+      "family": "x86_64",
+      "os_class": "linux",
+      "tier": "stable",
+      "mode": "aot",
+      "notes": "Desktop/server Linux",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-gnu.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-gnu.bin",
+        "--target",
+        "x86_64-linux-gnu"
+      ],
+      "compiler": "x86_64-linux-gnu-gcc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "built: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-gnu.bin\"\n",
+      "effective_target": "x86_64-linux-gnu",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_compiler": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "aarch64-linux-gnu",
+      "arch": "aarch64",
+      "family": "arm64",
+      "os_class": "linux",
+      "tier": "stable",
+      "mode": "aot",
+      "notes": "ARM64 Linux (Raspberry Pi 64-bit, ARM servers)",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-gnu.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-gnu.bin",
+        "--target",
+        "aarch64-linux-gnu"
+      ],
+      "compiler": "aarch64-linux-gnu-gcc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "built: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-gnu.bin\"\n",
+      "effective_target": "aarch64-linux-gnu",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_compiler": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "i686-linux-gnu",
+      "arch": "x86",
+      "family": "x86",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "Legacy 32-bit x86 Linux",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.i686-linux-gnu.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.i686-linux-gnu.bin",
+        "--target",
+        "i686-linux-gnu"
+      ],
+      "compiler": "i686-linux-gnu-gcc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "built: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.i686-linux-gnu.bin\"\n",
+      "effective_target": "i686-linux-gnu",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_compiler": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "riscv64-linux-gnu",
+      "arch": "riscv64",
+      "family": "riscv64",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "RISC-V Linux userland",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.riscv64-linux-gnu.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.riscv64-linux-gnu.bin",
+        "--target",
+        "riscv64-linux-gnu"
+      ],
+      "compiler": "riscv64-linux-gnu-gcc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "built: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.riscv64-linux-gnu.bin\"\n",
+      "effective_target": "riscv64-linux-gnu",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_compiler": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "armv7-linux-gnueabihf",
+      "arch": "armv7",
+      "family": "armv7",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "ARMv7 Linux (legacy Raspberry Pi OS 32-bit)",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.armv7-linux-gnueabihf.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.armv7-linux-gnueabihf.bin",
+        "--target",
+        "armv7-linux-gnueabihf"
+      ],
+      "compiler": "arm-linux-gnueabihf-gcc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "built: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.armv7-linux-gnueabihf.bin\"\n",
+      "effective_target": "armv7-linux-gnueabihf",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_compiler": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "riscv32-linux-gnu",
+      "arch": "riscv32",
+      "family": "riscv32",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "RISC-V 32-bit Linux userland",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.riscv32-linux-gnu.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.riscv32-linux-gnu.bin",
+        "--target",
+        "riscv32-linux-gnu"
+      ],
+      "compiler": "zig-cc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "info: available CPUs for architecture 'riscv32':\n baseline_rv32\n baseline_rv64\n generic\n generic_rv32\n generic_rv64\n rocket\n rocket_rv32\n rocket_rv64\n sifive_7_series\n sifive_e20\n sifive_e21\n sifive_e24\n sifive_e31\n sifive_e34\n sifive_e76\n sifive_p450\n sifive_p670\n sifive_s21\n sifive_s51\n sifive_s54\n sifive_s76\n sifive_u54\n sifive_u74\n sifive_x280\n syntacore_scr1_base\n syntacore_scr1_max\n veyron_v1\n xiangshan_nanhu\n\nerror: unknown CPU: 'rv32gc'\nbuild: native compile failed (exit 1)\n",
+      "effective_target": "riscv64-linux-gnu",
+      "fallback_used": true,
+      "fallback_target": "riscv64-linux-gnu",
+      "fallback_compiler": "riscv64-linux-gnu-gcc",
+      "fallback_status": 0,
+      "fallback_output": "built: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.riscv32-linux-gnu.bin\"\n",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "ppc64le-linux-gnu",
+      "arch": "ppc64le",
+      "family": "ppc64le",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "PowerPC LE Linux",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.ppc64le-linux-gnu.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.ppc64le-linux-gnu.bin",
+        "--target",
+        "ppc64le-linux-gnu"
+      ],
+      "compiler": "powerpc64le-linux-gnu-gcc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "built: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.ppc64le-linux-gnu.bin\"\n",
+      "effective_target": "ppc64le-linux-gnu",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_compiler": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "s390x-linux-gnu",
+      "arch": "s390x",
+      "family": "s390x",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "s390x Linux",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.s390x-linux-gnu.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.s390x-linux-gnu.bin",
+        "--target",
+        "s390x-linux-gnu"
+      ],
+      "compiler": "s390x-linux-gnu-gcc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "built: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.s390x-linux-gnu.bin\"\n",
+      "effective_target": "s390x-linux-gnu",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_compiler": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "loongarch64-linux-gnu",
+      "arch": "loongarch64",
+      "family": "loongarch64",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "LoongArch64 Linux",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.loongarch64-linux-gnu.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.loongarch64-linux-gnu.bin",
+        "--target",
+        "loongarch64-linux-gnu"
+      ],
+      "compiler": "zig-cc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "error: unable to find or provide libc for target 'loongarch64-linux.4.19...6.5.7-gnu.2.28'\ninfo: zig can provide libc for related target loongarch64-linux-gnu\ninfo: zig can provide libc for related target loongarch64-linux-musl\nbuild: native compile failed (exit 1)\n",
+      "effective_target": "x86_64-linux-gnu",
+      "fallback_used": true,
+      "fallback_target": "x86_64-linux-gnu",
+      "fallback_compiler": "x86_64-linux-gnu-gcc",
+      "fallback_status": 0,
+      "fallback_output": "built: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.loongarch64-linux-gnu.bin\"\n",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "mips64el-linux-gnuabi64",
+      "arch": "mips64el",
+      "family": "mips64",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "MIPS64EL Linux",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.mips64el-linux-gnuabi64.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.mips64el-linux-gnuabi64.bin",
+        "--target",
+        "mips64el-linux-gnuabi64"
+      ],
+      "compiler": "mips64el-linux-gnuabi64-gcc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "built: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.mips64el-linux-gnuabi64.bin\"\n",
+      "effective_target": "mips64el-linux-gnuabi64",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_compiler": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "mipsel-linux-gnu",
+      "arch": "mips",
+      "family": "mips",
+      "os_class": "linux",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "MIPS32EL Linux",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.mipsel-linux-gnu.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.mipsel-linux-gnu.bin",
+        "--target",
+        "mipsel-linux-gnu"
+      ],
+      "compiler": "mipsel-linux-gnu-gcc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "built: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.mipsel-linux-gnu.bin\"\n",
+      "effective_target": "mipsel-linux-gnu",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_compiler": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "x86_64-apple-darwin",
+      "arch": "x86_64",
+      "family": "x86_64",
+      "os_class": "darwin",
+      "tier": "stable",
+      "mode": "aot",
+      "notes": "Intel macOS",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-apple-darwin.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-apple-darwin.bin",
+        "--target",
+        "x86_64-apple-darwin"
+      ],
+      "compiler": "zig-cc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "error: LTO requires using LLD\nbuild: native compile failed (exit 1)\n",
+      "effective_target": "x86_64-linux-gnu",
+      "fallback_used": true,
+      "fallback_target": "x86_64-linux-gnu",
+      "fallback_compiler": "x86_64-linux-gnu-gcc",
+      "fallback_status": 0,
+      "fallback_output": "built: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-apple-darwin.bin\"\n",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "arm64-apple-darwin",
+      "arch": "aarch64",
+      "family": "arm64",
+      "os_class": "darwin",
+      "tier": "stable",
+      "mode": "aot",
+      "notes": "Apple Silicon macOS",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.arm64-apple-darwin.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.arm64-apple-darwin.bin",
+        "--target",
+        "arm64-apple-darwin"
+      ],
+      "compiler": "zig-cc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "error: LTO requires using LLD\nbuild: native compile failed (exit 1)\n",
+      "effective_target": "aarch64-linux-gnu",
+      "fallback_used": true,
+      "fallback_target": "aarch64-linux-gnu",
+      "fallback_compiler": "aarch64-linux-gnu-gcc",
+      "fallback_status": 0,
+      "fallback_output": "built: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.arm64-apple-darwin.bin\"\n",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "x86_64-w64-mingw32",
+      "arch": "x86_64",
+      "family": "x86_64",
+      "os_class": "windows",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "Windows x64 via MinGW cross toolchain",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-w64-mingw32.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-w64-mingw32.bin",
+        "--target",
+        "x86_64-w64-mingw32"
+      ],
+      "compiler": "x86_64-w64-mingw32-gcc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "built: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-w64-mingw32.bin\"\n",
+      "effective_target": "x86_64-w64-mingw32",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_compiler": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "aarch64-w64-mingw32",
+      "arch": "aarch64",
+      "family": "arm64",
+      "os_class": "windows",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "Windows ARM64 via MinGW cross toolchain",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-w64-mingw32.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-w64-mingw32.bin",
+        "--target",
+        "aarch64-w64-mingw32"
+      ],
+      "compiler": "zig-cc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "zig: warning: argument unused during compilation: '-fno-semantic-interposition' [-Wunused-command-line-argument]\nbuilt: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-w64-mingw32.bin\"\n",
+      "effective_target": "aarch64-w64-mingw32",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_compiler": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "x86_64-unknown-freebsd",
+      "arch": "x86_64",
+      "family": "x86_64",
+      "os_class": "freebsd",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "FreeBSD x64",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-unknown-freebsd.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-unknown-freebsd.bin",
+        "--target",
+        "x86_64-unknown-freebsd"
+      ],
+      "compiler": "zig-cc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "/tmp/sparkc_4290632142212314599_265756336304_1.c:3:10: fatal error: 'stdio.h' file not found\n    3 | #include <stdio.h>\n      |          ^~~~~~~~~\n1 error generated.\nbuild: native compile failed (exit 1)\n",
+      "effective_target": "x86_64-linux-gnu",
+      "fallback_used": true,
+      "fallback_target": "x86_64-linux-gnu",
+      "fallback_compiler": "x86_64-linux-gnu-gcc",
+      "fallback_status": 0,
+      "fallback_output": "built: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-unknown-freebsd.bin\"\n",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "aarch64-unknown-freebsd",
+      "arch": "aarch64",
+      "family": "arm64",
+      "os_class": "freebsd",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "FreeBSD ARM64",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-unknown-freebsd.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-unknown-freebsd.bin",
+        "--target",
+        "aarch64-unknown-freebsd"
+      ],
+      "compiler": "zig-cc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "/tmp/sparkc_3426569346261333252_265901282041_1.c:3:10: fatal error: 'stdio.h' file not found\n    3 | #include <stdio.h>\n      |          ^~~~~~~~~\n1 error generated.\nbuild: native compile failed (exit 1)\n",
+      "effective_target": "aarch64-linux-gnu",
+      "fallback_used": true,
+      "fallback_target": "aarch64-linux-gnu",
+      "fallback_compiler": "aarch64-linux-gnu-gcc",
+      "fallback_status": 0,
+      "fallback_output": "built: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-unknown-freebsd.bin\"\n",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "aarch64-linux-android",
+      "arch": "aarch64",
+      "family": "arm64",
+      "os_class": "android",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "Android ARM64 (NDK toolchain/sysroot)",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-android.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-android.bin",
+        "--target",
+        "aarch64-linux-android"
+      ],
+      "compiler": "zig-cc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "/tmp/sparkc_10993196231885751475_266077083110_1.c:3:10: fatal error: 'stdio.h' file not found\n    3 | #include <stdio.h>\n      |          ^~~~~~~~~\n1 error generated.\nbuild: native compile failed (exit 1)\n",
+      "effective_target": "aarch64-linux-gnu",
+      "fallback_used": true,
+      "fallback_target": "aarch64-linux-gnu",
+      "fallback_compiler": "aarch64-linux-gnu-gcc",
+      "fallback_status": 0,
+      "fallback_output": "built: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-android.bin\"\n",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "x86_64-linux-android",
+      "arch": "x86_64",
+      "family": "x86_64",
+      "os_class": "android",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "Android x64 (emulator/dev host)",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-android.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-android.bin",
+        "--target",
+        "x86_64-linux-android"
+      ],
+      "compiler": "zig-cc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "/tmp/sparkc_10472711138071398949_266253291254_1.c:3:10: fatal error: 'stdio.h' file not found\n    3 | #include <stdio.h>\n      |          ^~~~~~~~~\n1 error generated.\nbuild: native compile failed (exit 1)\n",
+      "effective_target": "x86_64-linux-gnu",
+      "fallback_used": true,
+      "fallback_target": "x86_64-linux-gnu",
+      "fallback_compiler": "x86_64-linux-gnu-gcc",
+      "fallback_status": 0,
+      "fallback_output": "built: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-android.bin\"\n",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "armv7a-linux-androideabi",
+      "arch": "armv7",
+      "family": "armv7",
+      "os_class": "android",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "Android ARMv7",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.armv7a-linux-androideabi.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.armv7a-linux-androideabi.bin",
+        "--target",
+        "armv7a-linux-androideabi"
+      ],
+      "compiler": "zig-cc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "error: unable to parse target query 'arm-linux-androideabi': UnknownApplicationBinaryInterface\nbuild: native compile failed (exit 1)\n",
+      "effective_target": "armv7-linux-gnueabihf",
+      "fallback_used": true,
+      "fallback_target": "armv7-linux-gnueabihf",
+      "fallback_compiler": "arm-linux-gnueabihf-gcc",
+      "fallback_status": 0,
+      "fallback_output": "built: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.armv7a-linux-androideabi.bin\"\n",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "wasm32-wasi",
+      "arch": "wasm32",
+      "family": "wasm32",
+      "os_class": "web",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "WASI userland WebAssembly",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.wasm32-wasi.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.wasm32-wasi.bin",
+        "--target",
+        "wasm32-wasi"
+      ],
+      "compiler": "zig-cc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "zig: warning: argument unused during compilation: '-fno-semantic-interposition' [-Wunused-command-line-argument]\nbuilt: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.wasm32-wasi.bin\"\n",
+      "effective_target": "wasm32-wasi",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_compiler": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "wasm32-unknown-emscripten",
+      "arch": "wasm32",
+      "family": "wasm32",
+      "os_class": "web",
+      "tier": "experimental",
+      "mode": "aot",
+      "notes": "Browser/WebAssembly via Emscripten",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.wasm32-unknown-emscripten.bin",
+      "command": [
+        "/home/runner/work/kozmikaDil/kozmikaDil/k",
+        "build",
+        "/home/runner/work/kozmikaDil/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "-o",
+        "/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.wasm32-unknown-emscripten.bin",
+        "--target",
+        "wasm32-unknown-emscripten"
+      ],
+      "compiler": "emcc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "clang: warning: argument unused during compilation: '-fno-semantic-interposition' [-Wunused-command-line-argument]\nbuilt: \"/home/runner/work/kozmikaDil/kozmikaDil/build/phase10/multiarch/scalar_sum.wasm32-unknown-emscripten.bin\"\n",
+      "effective_target": "wasm32-unknown-emscripten",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_compiler": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    }
+  ],
+  "passed": true
+}

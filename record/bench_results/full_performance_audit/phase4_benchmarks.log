@@ -1,0 +1,12 @@
+[full-perf] Phase 4 benchmark matrix (stable + fast stability) :: start
+phase4 benchmark pass (with C baseline band): 18/20
+phase4 benchmark pass (correctness gate only): 18/20
+phase4 benchmark pass (correctness + reproducibility): 18/20
+benchmarks within 0.9x-1.2x baseline band: 18/20
+benchmarks passing reproducibility gate: 20/20
+benchmarks fully reproducible (interpreted/native/baseline): 7/20
+native vs interpreted speedup: geometric mean=8.844x, median=6.181x
+native vs baseline speedup: geometric mean=1.014x, median=1.010x, range=0.949x-1.145x
+results json: /Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase4_benchmarks.json
+results csv: /Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase4_benchmarks.csv
+[full-perf] Phase 4 benchmark matrix (stable + fast stability) :: ok

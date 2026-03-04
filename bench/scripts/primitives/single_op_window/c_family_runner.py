@@ -17,6 +17,7 @@ def run_c_like(
     language: str,
     operator: str,
     loops: int,
+    batch: int,
     runs: int,
     a_lit: str,
     b_lit: str,
@@ -43,6 +44,7 @@ def run_c_like(
             "-mtune=native",
             "-funroll-loops",
             f"-DLOOP_COUNT={loops}",
+            f"-DBATCH_COUNT={batch}",
             str(src),
             "-lm",
             "-o",
@@ -58,8 +60,9 @@ def run_c_like(
             floor_total = int(lines[-3])
             raw_total = int(lines[-2])
             checksum = lines[-1]
-            floor_samples.append(floor_total / loops)
-            raw_samples.append(raw_total / loops)
+            denom = float(loops * batch)
+            floor_samples.append(floor_total / denom)
+            raw_samples.append(raw_total / denom)
 
     floor_ns = statistics.median(floor_samples)
     raw_ns = statistics.median(raw_samples)
@@ -70,10 +73,10 @@ def run_c_like(
         primitive="f64",
         operator=operator,
         loops=loops,
+        batch=batch,
         runs=runs,
         floor_ns=floor_ns,
         raw_ns=raw_ns,
         net_ns=net_ns,
         checksum=checksum,
     )
-

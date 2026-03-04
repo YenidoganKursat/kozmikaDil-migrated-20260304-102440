@@ -1,0 +1,345 @@
+{
+  "random_init_cases": 24,
+  "random_op_cases": 32,
+  "random_seed_base": 392230276,
+  "randomize_seed": false,
+  "summaries": [
+    {
+      "primitive": "i8",
+      "mode": "init",
+      "operator": "init",
+      "cases": 37,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i8",
+      "mode": "op",
+      "operator": "+",
+      "cases": 113,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i8",
+      "mode": "op",
+      "operator": "-",
+      "cases": 113,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i8",
+      "mode": "op",
+      "operator": "*",
+      "cases": 113,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i8",
+      "mode": "op",
+      "operator": "%",
+      "cases": 176,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i8",
+      "mode": "op",
+      "operator": "^",
+      "cases": 131,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i16",
+      "mode": "init",
+      "operator": "init",
+      "cases": 37,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i16",
+      "mode": "op",
+      "operator": "+",
+      "cases": 113,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i16",
+      "mode": "op",
+      "operator": "-",
+      "cases": 113,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i16",
+      "mode": "op",
+      "operator": "*",
+      "cases": 113,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i16",
+      "mode": "op",
+      "operator": "%",
+      "cases": 176,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i16",
+      "mode": "op",
+      "operator": "^",
+      "cases": 131,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i32",
+      "mode": "init",
+      "operator": "init",
+      "cases": 37,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i32",
+      "mode": "op",
+      "operator": "+",
+      "cases": 113,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i32",
+      "mode": "op",
+      "operator": "-",
+      "cases": 113,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i32",
+      "mode": "op",
+      "operator": "*",
+      "cases": 113,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i32",
+      "mode": "op",
+      "operator": "%",
+      "cases": 176,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i32",
+      "mode": "op",
+      "operator": "^",
+      "cases": 131,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i64",
+      "mode": "init",
+      "operator": "init",
+      "cases": 37,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i64",
+      "mode": "op",
+      "operator": "+",
+      "cases": 113,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i64",
+      "mode": "op",
+      "operator": "-",
+      "cases": 113,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i64",
+      "mode": "op",
+      "operator": "*",
+      "cases": 113,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i64",
+      "mode": "op",
+      "operator": "%",
+      "cases": 176,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i64",
+      "mode": "op",
+      "operator": "^",
+      "cases": 131,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i128",
+      "mode": "init",
+      "operator": "init",
+      "cases": 37,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i128",
+      "mode": "op",
+      "operator": "+",
+      "cases": 113,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i128",
+      "mode": "op",
+      "operator": "-",
+      "cases": 113,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i128",
+      "mode": "op",
+      "operator": "*",
+      "cases": 113,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i128",
+      "mode": "op",
+      "operator": "%",
+      "cases": 176,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i128",
+      "mode": "op",
+      "operator": "^",
+      "cases": 131,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i256",
+      "mode": "init",
+      "operator": "init",
+      "cases": 37,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i256",
+      "mode": "op",
+      "operator": "+",
+      "cases": 113,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i256",
+      "mode": "op",
+      "operator": "-",
+      "cases": 113,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i256",
+      "mode": "op",
+      "operator": "*",
+      "cases": 113,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i256",
+      "mode": "op",
+      "operator": "%",
+      "cases": 176,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i256",
+      "mode": "op",
+      "operator": "^",
+      "cases": 131,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i512",
+      "mode": "init",
+      "operator": "init",
+      "cases": 37,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i512",
+      "mode": "op",
+      "operator": "+",
+      "cases": 113,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i512",
+      "mode": "op",
+      "operator": "-",
+      "cases": 113,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i512",
+      "mode": "op",
+      "operator": "*",
+      "cases": 113,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i512",
+      "mode": "op",
+      "operator": "%",
+      "cases": 176,
+      "mismatch_count": 0,
+      "pass_check": true
+    },
+    {
+      "primitive": "i512",
+      "mode": "op",
+      "operator": "^",
+      "cases": 131,
+      "mismatch_count": 0,
+      "pass_check": true
+    }
+  ],
+  "mismatches_preview": []
+}

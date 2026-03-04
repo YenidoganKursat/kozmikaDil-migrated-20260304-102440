@@ -1,0 +1,444 @@
+{
+  "policy_file": "/Users/kursatyenidogan/Documents/kozmikaDil/docs/platform_support_policy.json",
+  "system": "Darwin",
+  "checks": [
+    {
+      "name": "cpu-build[x86_64-apple-darwin]",
+      "status": "pass",
+      "level": "check",
+      "message": "build passed or allowed by exception",
+      "details": null
+    },
+    {
+      "name": "cpu-build[arm64-apple-darwin]",
+      "status": "pass",
+      "level": "check",
+      "message": "build passed or allowed by exception",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[x86_64-linux-gnu]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[aarch64-linux-gnu]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[i686-linux-gnu]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[riscv64-linux-gnu]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[armv7-linux-gnueabihf]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[riscv32-linux-gnu]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[ppc64le-linux-gnu]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[s390x-linux-gnu]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[loongarch64-linux-gnu]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[mips64el-linux-gnuabi64]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[mipsel-linux-gnu]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[x86_64-apple-darwin]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[arm64-apple-darwin]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[x86_64-w64-mingw32]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[aarch64-w64-mingw32]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[x86_64-unknown-freebsd]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[aarch64-unknown-freebsd]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[aarch64-linux-android]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[x86_64-linux-android]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[armv7a-linux-androideabi]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[wasm32-wasi]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[wasm32-unknown-emscripten]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[arm-none-eabi]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[riscv64-unknown-elf]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[avr-none-elf]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-interpret[xtensa-esp32-elf]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpreter smoke passed",
+      "details": null
+    },
+    {
+      "name": "cpu-host-exec",
+      "status": "pass",
+      "level": "warn",
+      "message": "arm64-apple-darwin: host exec not attempted",
+      "details": null
+    },
+    {
+      "name": "micro[arm-none-eabi]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret smoke passed",
+      "details": null
+    },
+    {
+      "name": "micro[riscv64-unknown-elf]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret smoke passed",
+      "details": null
+    },
+    {
+      "name": "micro[avr-none-elf]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret smoke passed",
+      "details": null
+    },
+    {
+      "name": "micro[xtensa-esp32-elf]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret smoke passed",
+      "details": null
+    },
+    {
+      "name": "gpu[metal]",
+      "status": "pass",
+      "level": "check",
+      "message": "backend available or excepted",
+      "details": null
+    },
+    {
+      "name": "performance-host",
+      "status": "pass",
+      "level": "check",
+      "message": "host performance criteria met",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[x86_64-linux-gnu]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[aarch64-linux-gnu]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[i686-linux-gnu]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[riscv64-linux-gnu]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[armv7-linux-gnueabihf]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[riscv32-linux-gnu]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[ppc64le-linux-gnu]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[s390x-linux-gnu]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[loongarch64-linux-gnu]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[mips64el-linux-gnuabi64]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[mipsel-linux-gnu]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[x86_64-apple-darwin]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[arm64-apple-darwin]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[x86_64-w64-mingw32]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[aarch64-w64-mingw32]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[x86_64-unknown-freebsd]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[aarch64-unknown-freebsd]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[aarch64-linux-android]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[x86_64-linux-android]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[armv7a-linux-androideabi]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[wasm32-wasi]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[wasm32-unknown-emscripten]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[arm-none-eabi]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[riscv64-unknown-elf]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[avr-none-elf]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    },
+    {
+      "name": "performance-interpret[xtensa-esp32-elf]",
+      "status": "pass",
+      "level": "check",
+      "message": "interpret performance passed",
+      "details": null
+    }
+  ],
+  "source_files": {
+    "platform_matrix": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10_platform_matrix_Darwin.json",
+    "advanced_capability": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10_advanced_capability_Darwin.json",
+    "cross_perf": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10_cross_platform_perf_Darwin.json",
+    "microcontroller": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10_microcontroller_gate_Darwin.json",
+    "gpu_smoke": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10_gpu_smoke_Darwin.json"
+  },
+  "result": {
+    "pass": true,
+    "system": "Darwin"
+  }
+}

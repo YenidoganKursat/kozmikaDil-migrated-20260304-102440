@@ -369,6 +369,8 @@ def python_reference_rows(loops: int) -> Dict[Tuple[str, str], StepwiseRow]:
                 if operator == "^":
                     a_src = clamp_value(a_raw, pow_bound_for_primitive(primitive))
                     b_src = float((seed % 9) - 4)
+                    if b_src < 0.0:
+                        a_src = stabilize_denominator(a_src, min_den)
                     if a_src == 0.0 and b_src < 0.0:
                         b_src = 1.0
                 elif operator in ("/", "%"):
@@ -376,6 +378,8 @@ def python_reference_rows(loops: int) -> Dict[Tuple[str, str], StepwiseRow]:
 
                 a = quantize_by_primitive(primitive, a_src)
                 b = quantize_by_primitive(primitive, b_src)
+                if operator == "^" and a == 0.0 and b < 0.0:
+                    b = quantize_by_primitive(primitive, 1.0)
                 if operator in ("/", "%") and b == 0.0:
                     b = quantize_by_primitive(primitive, min_den)
                 ref = apply_decimal_op(operator, decimal_from_float(a), decimal_from_float(b))
@@ -440,6 +444,14 @@ public final class StepwiseBigDecimalCheck {
       case "f16" -> 120.0;
       case "bf16", "f32", "f64", "f128", "f256", "f512" -> 500.0;
       default -> 500.0;
+    };
+  }
+
+  private static double powBoundFor(String prim) {
+    return switch (prim) {
+      case "f8", "f16" -> 8.0;
+      case "bf16" -> 24.0;
+      default -> 64.0;
     };
   }
 
@@ -672,10 +684,14 @@ public final class StepwiseBigDecimalCheck {
           final String prim = PRIMS[i];
           final double bound = boundFor(prim);
           final double minDen = minDenFor(prim);
-          final double aSrc = clamp(aRaw, bound);
+          double aSrc = clamp(aRaw, bound);
           double bSrc = clamp(bRaw, bound);
           if (op.equals("^")) {
+            aSrc = clamp(aRaw, powBoundFor(prim));
             bSrc = (double) ((seed % 9L) - 4L);
+            if (bSrc < 0.0) {
+              aSrc = stabilizeDen(aSrc, minDen);
+            }
             if (aSrc == 0.0 && bSrc < 0.0) {
               bSrc = 1.0;
             }
@@ -685,6 +701,9 @@ public final class StepwiseBigDecimalCheck {
 
           final double a = quantize(prim, aSrc);
           double b = quantize(prim, bSrc);
+          if (op.equals("^") && a == 0.0 && b < 0.0) {
+            b = quantize(prim, 1.0);
+          }
           if ((op.equals("/") || op.equals("%")) && b == 0.0) {
             b = quantize(prim, minDen);
           }
@@ -733,6 +752,7 @@ public final class StepwiseBigDecimalCheck {
 
 def make_kozmika_program(path: pathlib.Path, primitive: str, operator: str, loops: int) -> None:
     bound = bound_for_primitive(primitive)
+    pow_bound = pow_bound_for_primitive(primitive)
     min_den = min_den_for_primitive(primitive)
     acc_kind = primitive if primitive in HIGH_PRIMITIVES else "f64"
     lines: List[str] = [
@@ -758,7 +778,16 @@ def make_kozmika_program(path: pathlib.Path, primitive: str, operator: str, loop
     ]
     if operator == "^":
         lines += [
+            f"  if a_raw > {pow_bound}:",
+            f"    a_raw = {pow_bound}",
+            f"  if a_raw < {-pow_bound}:",
+            f"    a_raw = {-pow_bound}",
             "  b_raw = (seed % 9) - 4",
+            f"  if b_raw < 0 and a_raw > {-min_den} and a_raw < {min_den}:",
+            "    if a_raw < 0:",
+            f"      a_raw = {-min_den}",
+            "    else:",
+            f"      a_raw = {min_den}",
             "  if a_raw == 0 and b_raw < 0:",
             "    b_raw = 1",
         ]
@@ -771,6 +800,11 @@ def make_kozmika_program(path: pathlib.Path, primitive: str, operator: str, loop
             f"      b_raw = {min_den}",
         ]
     lines += [f"  b = {primitive}(b_raw)"]
+    if operator == "^":
+        lines += [
+            "  if a == 0 and b < 0:",
+            f"    b = {primitive}(1)",
+        ]
     if operator in ("/", "%"):
         lines += [
             "  if b == 0:",

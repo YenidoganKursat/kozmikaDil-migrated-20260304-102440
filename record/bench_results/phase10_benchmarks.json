@@ -1,0 +1,554 @@
+{
+  "config": {
+    "lto": "full",
+    "runs": 11,
+    "warmup_runs": 2,
+    "profile_runs": 5,
+    "min_multiarch_success": 2,
+    "min_pgo_speedup": 1.0,
+    "min_autofdo_speedup": 1.0,
+    "min_bolt_speedup": 1.0
+  },
+  "sections": [
+    {
+      "section": "multiarch",
+      "pass": true,
+      "status": 0,
+      "build_ok": 2,
+      "total_targets": 3,
+      "min_required": 2,
+      "output": "phase10 multiarch: 2/3 builds passed, skipped=0\nresults json: /Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10_multiarch.json\n",
+      "report": {
+        "host_arch": "aarch64",
+        "program": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+        "preset": "",
+        "include_experimental": false,
+        "include_embedded": false,
+        "targets": [
+          {
+            "target": "x86_64-linux-gnu",
+            "arch": "x86_64",
+            "family": "x86_64",
+            "os_class": "linux",
+            "tier": "stable",
+            "mode": "aot",
+            "notes": "Desktop/server Linux",
+            "build_attempted": true,
+            "build_ok": true,
+            "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-gnu.bin",
+            "command": [
+              "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+              "build",
+              "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+              "-o",
+              "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-gnu.bin",
+              "--target",
+              "x86_64-linux-gnu",
+              "--lto",
+              "full"
+            ],
+            "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_8757859688430655587_168661460251125_1.c:3:10: fatal error: 'stdio.h' file not found\n    3 | #include <stdio.h>\n      |          ^~~~~~~~~\n1 error generated.\nbuild: native compile failed (exit 1)\n",
+            "effective_target": "x86_64-apple-darwin",
+            "fallback_used": true,
+            "fallback_target": "x86_64-apple-darwin",
+            "fallback_status": 0,
+            "fallback_output": "built: \"/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.x86_64-linux-gnu.bin\"\n",
+            "smoke": {
+              "attempted": false,
+              "status_ok": false,
+              "output": "",
+              "status": 0
+            }
+          },
+          {
+            "target": "aarch64-linux-gnu",
+            "arch": "aarch64",
+            "family": "arm64",
+            "os_class": "linux",
+            "tier": "stable",
+            "mode": "aot",
+            "notes": "ARM64 Linux (Raspberry Pi 64-bit, ARM servers)",
+            "build_attempted": true,
+            "build_ok": true,
+            "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-gnu.bin",
+            "command": [
+              "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+              "build",
+              "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+              "-o",
+              "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-gnu.bin",
+              "--target",
+              "aarch64-linux-gnu",
+              "--lto",
+              "full"
+            ],
+            "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_7186656815653056385_168661802790666_1.c:3:10: fatal error: 'stdio.h' file not found\n    3 | #include <stdio.h>\n      |          ^~~~~~~~~\n1 error generated.\nbuild: native compile failed (exit 1)\n",
+            "effective_target": "arm64-apple-darwin",
+            "fallback_used": true,
+            "fallback_target": "arm64-apple-darwin",
+            "fallback_status": 0,
+            "fallback_output": "built: \"/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.aarch64-linux-gnu.bin\"\n",
+            "smoke": {
+              "attempted": true,
+              "status_ok": true,
+              "output": "19999900000\n",
+              "status": 0
+            }
+          },
+          {
+            "target": "riscv64-linux-gnu",
+            "arch": "riscv64",
+            "family": "riscv64",
+            "os_class": "linux",
+            "tier": "experimental",
+            "mode": "aot",
+            "notes": "RISC-V Linux userland",
+            "build_attempted": true,
+            "build_ok": false,
+            "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.riscv64-linux-gnu.bin",
+            "command": [
+              "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+              "build",
+              "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase4/scalar_sum.k",
+              "-o",
+              "/Users/kursatyenidogan/Documents/kozmikaDil/build/phase10/multiarch/scalar_sum.riscv64-linux-gnu.bin",
+              "--target",
+              "riscv64-linux-gnu",
+              "--lto",
+              "full"
+            ],
+            "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_14123212076889421246_168662285704250_1.c:3:10: fatal error: 'stdio.h' file not found\n    3 | #include <stdio.h>\n      |          ^~~~~~~~~\n1 error generated.\nbuild: native compile failed (exit 1)\n",
+            "effective_target": "riscv64-linux-gnu",
+            "fallback_used": false,
+            "fallback_target": "",
+            "fallback_status": 0,
+            "fallback_output": "",
+            "smoke": {
+              "attempted": false,
+              "status_ok": false,
+              "output": "",
+              "status": 0
+            }
+          }
+        ],
+        "passed": false
+      }
+    },
+    {
+      "section": "platform_matrix",
+      "pass": true,
+      "status": 0,
+      "cpu_summary": {
+        "total": 20,
+        "stable": 4,
+        "experimental": 12,
+        "embedded": 4,
+        "build_attempted": 0,
+        "build_ok": 0,
+        "skipped": 20
+      },
+      "gpu_summary": {
+        "total": 7,
+        "stable": 1,
+        "experimental": 5,
+        "planning": 1,
+        "available": 1,
+        "unavailable": 6
+      },
+      "output": "phase10 platform matrix: cpu=n/a(no_probe) (total=20), gpu_available=1/7\nresults json: /Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10_platform_matrix.json\n",
+      "report": {
+        "host": {
+          "system": "Darwin",
+          "machine": "arm64",
+          "platform": "macOS-26.3-arm64-arm-64bit-Mach-O"
+        },
+        "config": {
+          "preset": "market",
+          "explicit_targets": [],
+          "include_experimental": true,
+          "include_embedded": true,
+          "include_gpu_experimental": true,
+          "include_gpu_planning": true,
+          "run_multiarch_probe": false,
+          "multiarch_lto": "off"
+        },
+        "cpu": {
+          "summary": {
+            "total": 20,
+            "stable": 4,
+            "experimental": 12,
+            "embedded": 4,
+            "build_attempted": 0,
+            "build_ok": 0,
+            "skipped": 20
+          },
+          "targets": [
+            {
+              "target": "x86_64-linux-gnu",
+              "family": "x86_64",
+              "os_class": "linux",
+              "tier": "stable",
+              "mode": "aot",
+              "notes": "Desktop/server Linux",
+              "build_attempted": false,
+              "build_ok": false
+            },
+            {
+              "target": "aarch64-linux-gnu",
+              "family": "arm64",
+              "os_class": "linux",
+              "tier": "stable",
+              "mode": "aot",
+              "notes": "ARM64 Linux (Raspberry Pi 64-bit, ARM servers)",
+              "build_attempted": false,
+              "build_ok": false
+            },
+            {
+              "target": "riscv64-linux-gnu",
+              "family": "riscv64",
+              "os_class": "linux",
+              "tier": "experimental",
+              "mode": "aot",
+              "notes": "RISC-V Linux userland",
+              "build_attempted": false,
+              "build_ok": false
+            },
+            {
+              "target": "armv7-linux-gnueabihf",
+              "family": "armv7",
+              "os_class": "linux",
+              "tier": "experimental",
+              "mode": "aot",
+              "notes": "ARMv7 Linux (legacy Raspberry Pi OS 32-bit)",
+              "build_attempted": false,
+              "build_ok": false
+            },
+            {
+              "target": "x86_64-apple-darwin",
+              "family": "x86_64",
+              "os_class": "darwin",
+              "tier": "stable",
+              "mode": "aot",
+              "notes": "Intel macOS",
+              "build_attempted": false,
+              "build_ok": false
+            },
+            {
+              "target": "arm64-apple-darwin",
+              "family": "arm64",
+              "os_class": "darwin",
+              "tier": "stable",
+              "mode": "aot",
+              "notes": "Apple Silicon macOS",
+              "build_attempted": false,
+              "build_ok": false
+            },
+            {
+              "target": "x86_64-w64-mingw32",
+              "family": "x86_64",
+              "os_class": "windows",
+              "tier": "experimental",
+              "mode": "aot",
+              "notes": "Windows x64 via MinGW cross toolchain",
+              "build_attempted": false,
+              "build_ok": false
+            },
+            {
+              "target": "aarch64-w64-mingw32",
+              "family": "arm64",
+              "os_class": "windows",
+              "tier": "experimental",
+              "mode": "aot",
+              "notes": "Windows ARM64 via MinGW cross toolchain",
+              "build_attempted": false,
+              "build_ok": false
+            },
+            {
+              "target": "x86_64-unknown-freebsd",
+              "family": "x86_64",
+              "os_class": "freebsd",
+              "tier": "experimental",
+              "mode": "aot",
+              "notes": "FreeBSD x64",
+              "build_attempted": false,
+              "build_ok": false
+            },
+            {
+              "target": "aarch64-unknown-freebsd",
+              "family": "arm64",
+              "os_class": "freebsd",
+              "tier": "experimental",
+              "mode": "aot",
+              "notes": "FreeBSD ARM64",
+              "build_attempted": false,
+              "build_ok": false
+            },
+            {
+              "target": "aarch64-linux-android",
+              "family": "arm64",
+              "os_class": "android",
+              "tier": "experimental",
+              "mode": "aot",
+              "notes": "Android ARM64 (NDK toolchain/sysroot)",
+              "build_attempted": false,
+              "build_ok": false
+            },
+            {
+              "target": "x86_64-linux-android",
+              "family": "x86_64",
+              "os_class": "android",
+              "tier": "experimental",
+              "mode": "aot",
+              "notes": "Android x64 (emulator/dev host)",
+              "build_attempted": false,
+              "build_ok": false
+            },
+            {
+              "target": "armv7a-linux-androideabi",
+              "family": "armv7",
+              "os_class": "android",
+              "tier": "experimental",
+              "mode": "aot",
+              "notes": "Android ARMv7",
+              "build_attempted": false,
+              "build_ok": false
+            },
+            {
+              "target": "wasm32-wasi",
+              "family": "wasm32",
+              "os_class": "web",
+              "tier": "experimental",
+              "mode": "aot",
+              "notes": "WASI userland WebAssembly",
+              "build_attempted": false,
+              "build_ok": false
+            },
+            {
+              "target": "wasm32-unknown-emscripten",
+              "family": "wasm32",
+              "os_class": "web",
+              "tier": "experimental",
+              "mode": "aot",
+              "notes": "Browser/WebAssembly via Emscripten",
+              "build_attempted": false,
+              "build_ok": false
+            },
+            {
+              "target": "loongarch64-linux-gnu",
+              "family": "loongarch64",
+              "os_class": "linux",
+              "tier": "experimental",
+              "mode": "aot",
+              "notes": "LoongArch64 Linux",
+              "build_attempted": false,
+              "build_ok": false
+            },
+            {
+              "target": "arm-none-eabi",
+              "family": "arm-mcu",
+              "os_class": "embedded",
+              "tier": "embedded",
+              "mode": "interpret_only",
+              "notes": "Cortex-M bare-metal (runtime not yet portable)",
+              "build_attempted": false,
+              "build_ok": false
+            },
+            {
+              "target": "riscv64-unknown-elf",
+              "family": "riscv-mcu",
+              "os_class": "embedded",
+              "tier": "embedded",
+              "mode": "interpret_only",
+              "notes": "RISC-V bare-metal (runtime not yet portable)",
+              "build_attempted": false,
+              "build_ok": false
+            },
+            {
+              "target": "avr-none-elf",
+              "family": "avr",
+              "os_class": "embedded",
+              "tier": "embedded",
+              "mode": "interpret_only",
+              "notes": "Arduino AVR bare-metal (runtime not yet portable)",
+              "build_attempted": false,
+              "build_ok": false
+            },
+            {
+              "target": "xtensa-esp32-elf",
+              "family": "xtensa",
+              "os_class": "embedded",
+              "tier": "embedded",
+              "mode": "interpret_only",
+              "notes": "ESP32 bare-metal/RTOS (runtime not yet portable)",
+              "build_attempted": false,
+              "build_ok": false
+            }
+          ],
+          "probe_output": ""
+        },
+        "gpu": {
+          "summary": {
+            "total": 7,
+            "stable": 1,
+            "experimental": 5,
+            "planning": 1,
+            "available": 1,
+            "unavailable": 6
+          },
+          "backends": [
+            {
+              "name": "cuda",
+              "api": "CUDA",
+              "tier": "experimental",
+              "mode": "native_accel",
+              "available": false,
+              "reason": "os_not_supported:Darwin",
+              "notes": "NVIDIA CUDA backend (requires CUDA toolkit + driver)"
+            },
+            {
+              "name": "rocm_hip",
+              "api": "HIP/ROCm",
+              "tier": "experimental",
+              "mode": "native_accel",
+              "available": false,
+              "reason": "os_not_supported:Darwin",
+              "notes": "AMD ROCm HIP backend"
+            },
+            {
+              "name": "oneapi_sycl",
+              "api": "SYCL",
+              "tier": "experimental",
+              "mode": "native_accel",
+              "available": false,
+              "reason": "os_not_supported:Darwin",
+              "notes": "Intel/oneAPI SYCL backend"
+            },
+            {
+              "name": "opencl",
+              "api": "OpenCL",
+              "tier": "experimental",
+              "mode": "native_accel",
+              "available": false,
+              "reason": "tool_not_found",
+              "notes": "Portable OpenCL compute backend"
+            },
+            {
+              "name": "vulkan_compute",
+              "api": "Vulkan",
+              "tier": "experimental",
+              "mode": "native_accel",
+              "available": false,
+              "reason": "os_not_supported:Darwin",
+              "notes": "Vulkan compute backend"
+            },
+            {
+              "name": "metal",
+              "api": "Metal",
+              "tier": "stable",
+              "mode": "native_accel",
+              "available": true,
+              "reason": "probe_ok:xcrun -f metal",
+              "notes": "Apple Metal backend"
+            },
+            {
+              "name": "webgpu",
+              "api": "WebGPU",
+              "tier": "planning",
+              "mode": "planning_only",
+              "available": false,
+              "reason": "planning_only",
+              "notes": "Browser/WebGPU backend planning target"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "section": "dispatch",
+      "pass": true,
+      "records": [
+        {
+          "name": "host_default",
+          "status": 0,
+          "parse_ok": true,
+          "value": 10483.220000000087,
+          "equal_to_ref": true,
+          "arch": "",
+          "features": ""
+        },
+        {
+          "name": "x86_avx2",
+          "status": 0,
+          "parse_ok": true,
+          "value": 10483.220000000087,
+          "equal_to_ref": true,
+          "arch": "x86_64",
+          "features": "sse2,avx2"
+        },
+        {
+          "name": "x86_avx512",
+          "status": 0,
+          "parse_ok": true,
+          "value": 10483.220000000087,
+          "equal_to_ref": true,
+          "arch": "x86_64",
+          "features": "sse2,avx2,avx512f"
+        },
+        {
+          "name": "arm_neon",
+          "status": 0,
+          "parse_ok": true,
+          "value": 10483.220000000087,
+          "equal_to_ref": true,
+          "arch": "aarch64",
+          "features": "neon"
+        },
+        {
+          "name": "arm_sve2",
+          "status": 0,
+          "parse_ok": true,
+          "value": 10483.220000000087,
+          "equal_to_ref": true,
+          "arch": "aarch64",
+          "features": "neon,sve2"
+        }
+      ],
+      "reference_value": 10483.220000000087
+    },
+    {
+      "section": "pgo",
+      "pass": false,
+      "status": 1,
+      "speedup_vs_baseline": 0.0,
+      "min_required": 1.0,
+      "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_869121924629805989_168662685824375_1.c:2452:3: error: void function 'dbl' should not return a value [-Wreturn-mismatch]\n 2452 |   return (_t2) * (2);\n      |   ^      ~~~~~~~~~~~\n/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_869121924629805989_168662685824375_1.c:2455:8: error: variable has incomplete type 'void'\n 2455 |   void _t5;\n      |        ^\n/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_869121924629805989_168662685824375_1.c:2456:8: error: variable has incomplete type 'void'\n 2456 |   void _t6;\n      |        ^\n/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/sparkc_869121924629805989_168662685824375_1.c:2465:8: error: variable has incomplete type 'void'\n 2465 |   void _t12;\n      |        ^\n4 errors generated.\nbuild: native compile failed (exit 1)\n",
+      "report": {}
+    },
+    {
+      "section": "autofdo",
+      "pass": true,
+      "status": 0,
+      "skipped": true,
+      "speedup_vs_baseline": 0.0,
+      "min_required": 1.0,
+      "output": "phase10 autofdo: skipped (missing perf/llvm-profgen)\nresults json: /Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10/autofdo/phase10_autofdo_cycle.json\n",
+      "report": {
+        "program": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/phase10/pgo_call_chain_large.k",
+        "lto_mode": "full",
+        "skipped": true,
+        "reason": "perf and/or llvm-profgen not found",
+        "speedup_vs_baseline": 0.0
+      }
+    },
+    {
+      "section": "bolt",
+      "pass": false,
+      "status": 1,
+      "skipped": false,
+      "speedup_vs_baseline": 0.0,
+      "min_required": 1.0,
+      "output": "binary not executable: /Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase10/pgo/native_pgo.bin\n",
+      "report": {}
+    }
+  ]
+}

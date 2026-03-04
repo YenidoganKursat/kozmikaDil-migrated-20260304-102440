@@ -1,0 +1,132 @@
+{
+  "config": {
+    "program": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/platform_support/advanced_capability_probe.k",
+    "preset": "core",
+    "explicit_targets": [],
+    "include_experimental": false,
+    "include_embedded": false,
+    "run_build": false,
+    "run_host_exec": false,
+    "target_count": 2
+  },
+  "summary": {
+    "interpret_attempted": 2,
+    "interpret_pass": 2,
+    "build_attempted": 0,
+    "build_pass": 0,
+    "host_exec_attempted": 0,
+    "host_exec_pass": 0
+  },
+  "targets": [
+    {
+      "target": "x86_64-linux-gnu",
+      "mode": "aot",
+      "tier": "stable",
+      "target_output": {
+        "attempted": true,
+        "status": 0,
+        "passed": true,
+        "status_ok": true,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/platform_support/advanced_capability_probe.k",
+          "--target",
+          "x86_64-linux-gnu"
+        ],
+        "output": "1\n1\n1\n1\n1\n1\n",
+        "checks": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "check_count": 6,
+        "raw_values": {
+          "0": 1.0,
+          "1": 1.0,
+          "2": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0
+        }
+      },
+      "build": {
+        "attempted": false,
+        "status": 0,
+        "passed": false,
+        "status_ok": false,
+        "command": [],
+        "output": "",
+        "binary": ""
+      },
+      "host_exec": {
+        "attempted": false,
+        "status": 0,
+        "passed": false,
+        "status_ok": false,
+        "command": [],
+        "output": "",
+        "checks": []
+      }
+    },
+    {
+      "target": "aarch64-linux-gnu",
+      "mode": "aot",
+      "tier": "stable",
+      "target_output": {
+        "attempted": true,
+        "status": 0,
+        "passed": true,
+        "status_ok": true,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/platform_support/advanced_capability_probe.k",
+          "--target",
+          "aarch64-linux-gnu"
+        ],
+        "output": "1\n1\n1\n1\n1\n1\n",
+        "checks": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "check_count": 6,
+        "raw_values": {
+          "0": 1.0,
+          "1": 1.0,
+          "2": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0
+        }
+      },
+      "build": {
+        "attempted": false,
+        "status": 0,
+        "passed": false,
+        "status_ok": false,
+        "command": [],
+        "output": "",
+        "binary": ""
+      },
+      "host_exec": {
+        "attempted": false,
+        "status": 0,
+        "passed": false,
+        "status_ok": false,
+        "command": [],
+        "output": "",
+        "checks": []
+      }
+    }
+  ]
+}

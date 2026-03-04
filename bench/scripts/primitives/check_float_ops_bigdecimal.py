@@ -159,7 +159,7 @@ def main() -> int:
                 program = tmpdir / f"{primitive}_{op_name}.k"
                 make_program(program, primitive, operator, args.loops, args.b_literal)
 
-                cmd = ["./k", "run", str(program)] if args.mode == "run" else ["./k", "run", "--interpret", str(program)]
+                cmd = ["./k", "run", str(program)] if args.mode == "run" else ["./k", "run", str(program)]
                 proc = run_checked(cmd, cwd=REPO_ROOT)
                 out_lines = [line.strip() for line in proc.stdout.splitlines() if line.strip()]
                 if len(out_lines) < 2:

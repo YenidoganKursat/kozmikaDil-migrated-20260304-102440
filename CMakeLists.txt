@@ -16,7 +16,5 @@ if(SPARK_BUILD_TESTS)
 endif()
 
 add_subdirectory(compiler)
-add_subdirectory(runtime)
-add_subdirectory(stdlib)
-add_subdirectory(tests)
+add_subdirectory(test)
 add_subdirectory(bench)

@@ -1,0 +1,6 @@
+[full-perf] Phase 7 benchmark matrix :: start
+phase7 records: 6/6 passed
+phase7 comparisons: 2/3 passed
+results json: /Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase7_benchmarks.json
+results csv: /Users/kursatyenidogan/Documents/kozmikaDil/bench/results/phase7_benchmarks.csv
+[full-perf] Phase 7 benchmark matrix :: ok

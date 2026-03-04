@@ -1,0 +1,128 @@
+[
+  {
+    "primitive": "f128",
+    "op": "+",
+    "raw_current_ns": 3.882745,
+    "raw_oldsim_ns": 3.751765,
+    "speedup_x": 0.9662661338820859
+  },
+  {
+    "primitive": "f128",
+    "op": "-",
+    "raw_current_ns": 3.73979,
+    "raw_oldsim_ns": 3.76157,
+    "speedup_x": 1.0058238564197455
+  },
+  {
+    "primitive": "f128",
+    "op": "*",
+    "raw_current_ns": 3.89032,
+    "raw_oldsim_ns": 3.705,
+    "speedup_x": 0.9523638158300602
+  },
+  {
+    "primitive": "f128",
+    "op": "/",
+    "raw_current_ns": 3.933955,
+    "raw_oldsim_ns": 3.938665,
+    "speedup_x": 1.0011972683978336
+  },
+  {
+    "primitive": "f128",
+    "op": "%",
+    "raw_current_ns": 3.89499,
+    "raw_oldsim_ns": 3.9065,
+    "speedup_x": 1.002955078190188
+  },
+  {
+    "primitive": "f128",
+    "op": "^",
+    "raw_current_ns": 3.947705,
+    "raw_oldsim_ns": 3.61942,
+    "speedup_x": 0.91684155730988
+  },
+  {
+    "primitive": "f256",
+    "op": "+",
+    "raw_current_ns": 3.849765,
+    "raw_oldsim_ns": 3.76876,
+    "speedup_x": 0.97895845590575
+  },
+  {
+    "primitive": "f256",
+    "op": "-",
+    "raw_current_ns": 3.785825,
+    "raw_oldsim_ns": 3.806645,
+    "speedup_x": 1.0054994618081925
+  },
+  {
+    "primitive": "f256",
+    "op": "*",
+    "raw_current_ns": 3.50257,
+    "raw_oldsim_ns": 3.86923,
+    "speedup_x": 1.1046831326711528
+  },
+  {
+    "primitive": "f256",
+    "op": "/",
+    "raw_current_ns": 3.709075,
+    "raw_oldsim_ns": 3.83373,
+    "speedup_x": 1.0336081098387064
+  },
+  {
+    "primitive": "f256",
+    "op": "%",
+    "raw_current_ns": 3.70667,
+    "raw_oldsim_ns": 3.97361,
+    "speedup_x": 1.0720161222876599
+  },
+  {
+    "primitive": "f256",
+    "op": "^",
+    "raw_current_ns": 3.96136,
+    "raw_oldsim_ns": 3.739415,
+    "speedup_x": 0.9439725245875155
+  },
+  {
+    "primitive": "f512",
+    "op": "+",
+    "raw_current_ns": 3.925695,
+    "raw_oldsim_ns": 4.00377,
+    "speedup_x": 1.0198881981407115
+  },
+  {
+    "primitive": "f512",
+    "op": "-",
+    "raw_current_ns": 3.95847,
+    "raw_oldsim_ns": 3.637255,
+    "speedup_x": 0.9188537490495065
+  },
+  {
+    "primitive": "f512",
+    "op": "*",
+    "raw_current_ns": 3.88609,
+    "raw_oldsim_ns": 3.84216,
+    "speedup_x": 0.988695578331948
+  },
+  {
+    "primitive": "f512",
+    "op": "/",
+    "raw_current_ns": 3.866625,
+    "raw_oldsim_ns": 3.72494,
+    "speedup_x": 0.9633569327255682
+  },
+  {
+    "primitive": "f512",
+    "op": "%",
+    "raw_current_ns": 3.828065,
+    "raw_oldsim_ns": 3.644465,
+    "speedup_x": 0.9520384319493007
+  },
+  {
+    "primitive": "f512",
+    "op": "^",
+    "raw_current_ns": 3.903605,
+    "raw_oldsim_ns": 3.933085,
+    "speedup_x": 1.0075519936059105
+  }
+]

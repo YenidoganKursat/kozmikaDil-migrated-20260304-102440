@@ -1,0 +1,96 @@
+{
+  "host_arch": "aarch64",
+  "program": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/scalar_runtime/scalar_sum.k",
+  "preset": "core",
+  "include_experimental": false,
+  "include_embedded": false,
+  "targets": [
+    {
+      "target": "x86_64-linux-gnu",
+      "arch": "x86_64",
+      "family": "x86_64",
+      "os_class": "linux",
+      "tier": "stable",
+      "mode": "aot",
+      "notes": "Desktop/server Linux",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/platform_support/multiarch/scalar_sum.x86_64-linux-gnu.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/scalar_runtime/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/platform_support/multiarch/scalar_sum.x86_64-linux-gnu.bin",
+        "--target",
+        "x86_64-linux-gnu",
+        "--lto",
+        "thin"
+      ],
+      "compiler": "gcc",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/kozmika_build_XXXXXX.c.XBOmf0nTil\n",
+      "effective_target": "x86_64-linux-gnu",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_compiler": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    },
+    {
+      "target": "aarch64-linux-gnu",
+      "arch": "aarch64",
+      "family": "arm64",
+      "os_class": "linux",
+      "tier": "stable",
+      "mode": "aot",
+      "notes": "ARM64 Linux (Raspberry Pi 64-bit, ARM servers)",
+      "build_attempted": true,
+      "build_ok": true,
+      "binary": "/Users/kursatyenidogan/Documents/kozmikaDil/build/platform_support/multiarch/scalar_sum.aarch64-linux-gnu.bin",
+      "command": [
+        "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+        "build",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/scalar_runtime/scalar_sum.k",
+        "-o",
+        "/Users/kursatyenidogan/Documents/kozmikaDil/build/platform_support/multiarch/scalar_sum.aarch64-linux-gnu.bin",
+        "--target",
+        "aarch64-linux-gnu",
+        "--lto",
+        "thin"
+      ],
+      "compiler": "clang",
+      "interpret": {
+        "attempted": false,
+        "status_ok": false,
+        "status": 0,
+        "output": ""
+      },
+      "output": "/var/folders/9q/vgn0z6kn7dv50rbjj6nx7xsm0000gn/T/kozmika_build_XXXXXX.c.AQILRSsi24\n",
+      "effective_target": "aarch64-linux-gnu",
+      "fallback_used": false,
+      "fallback_target": "",
+      "fallback_compiler": "",
+      "fallback_status": 0,
+      "fallback_output": "",
+      "smoke": {
+        "attempted": false,
+        "status_ok": false,
+        "output": "",
+        "status": 0
+      }
+    }
+  ],
+  "passed": true
+}

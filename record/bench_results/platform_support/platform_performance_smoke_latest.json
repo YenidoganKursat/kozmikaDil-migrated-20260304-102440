@@ -1,0 +1,114 @@
+{
+  "config": {
+    "program": "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/platform_support/perf_micro_loop.k",
+    "preset": "core",
+    "targets": [
+      "x86_64-linux-gnu",
+      "aarch64-linux-gnu"
+    ],
+    "explicit_targets": [],
+    "include_experimental": false,
+    "include_embedded": false,
+    "runs": 1,
+    "warmup": 0,
+    "timeout": 60.0,
+    "run_build": false,
+    "run_host_exec": false,
+    "host_platform": {
+      "system": "Darwin",
+      "machine": "arm64"
+    }
+  },
+  "summary": {
+    "interpret_attempted": 2,
+    "interpret_pass": 2,
+    "build_attempted": 0,
+    "build_pass": 0,
+    "host_exec_attempted": 0,
+    "host_exec_pass": 0
+  },
+  "os_summary": {
+    "linux": {
+      "targets": 2,
+      "interpret_pass": 2,
+      "interpret_attempted": 2,
+      "interpret_pass_rate": 1.0
+    }
+  },
+  "targets": [
+    {
+      "target": "x86_64-linux-gnu",
+      "family": "x86_64",
+      "os_class": "linux",
+      "tier": "stable",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 16.232959,
+        "mean_ms": 16.232959,
+        "min_ms": 16.232959,
+        "max_ms": 16.232959,
+        "p95_ms": 16.232959,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/platform_support/perf_micro_loop.k",
+          "--target",
+          "x86_64-linux-gnu"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    },
+    {
+      "target": "aarch64-linux-gnu",
+      "family": "arm64",
+      "os_class": "linux",
+      "tier": "stable",
+      "mode": "aot",
+      "interpret": {
+        "median_ms": 16.008917,
+        "mean_ms": 16.008917,
+        "min_ms": 16.008917,
+        "max_ms": 16.008917,
+        "p95_ms": 16.008917,
+        "attempted": true,
+        "status_ok": true,
+        "passed": true,
+        "status_last": 0,
+        "output": "-11761\n",
+        "checks": 1,
+        "sample_count": 1,
+        "command": [
+          "/Users/kursatyenidogan/Documents/kozmikaDil/k",
+          "run",
+          "--interpret",
+          "/Users/kursatyenidogan/Documents/kozmikaDil/bench/programs/platform_support/perf_micro_loop.k",
+          "--target",
+          "aarch64-linux-gnu"
+        ]
+      },
+      "build": {
+        "attempted": false,
+        "passed": false
+      },
+      "host_exec": {
+        "attempted": false,
+        "passed": false
+      }
+    }
+  ]
+}

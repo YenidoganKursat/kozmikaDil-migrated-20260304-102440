@@ -1,0 +1,12 @@
+name,mode,pass,status_ok,checksum_ok,plan_ok,mode_ok,reproducible_ok,median_time_sec,checksum,plan_id,fused_count,fallback_count,last_allocations,total_allocations
+list_pipeline_reduce,fused,PASS,1,1,1,1,1,1.8854687080020085,275089008.0,1.0,24.0,0.0,0.0,0.0
+list_pipeline_reduce,non_fused,PASS,1,1,1,1,1,3.5720845829928294,275089008.0,1.0,0.0,24.0,3.0,72.0
+hetero_pipeline_reduce,fused,PASS,1,1,1,1,1,1.4365732499863952,43193100.0,5.0,20.0,0.0,0.0,0.0
+hetero_pipeline_reduce,non_fused,PASS,1,1,1,1,1,1.943260583007941,43193100.0,5.0,0.0,20.0,1.0,20.0
+matrix_pipeline_reduce,fused,PASS,1,1,1,1,1,0.10549262500717305,15681852.0,1.0,18.0,0.0,0.0,0.0
+matrix_pipeline_reduce,non_fused,PASS,1,1,1,1,1,0.4163899169943761,15681852.0,1.0,0.0,18.0,2.0,36.0
+
+name,pass,speedup,speedup_ok,min_speedup,alloc_ratio
+list_pipeline_reduce,PASS,1.8945340051695114,1,1.5,inf
+hetero_pipeline_reduce,FAIL,1.3527055324372386,0,1.8,inf
+matrix_pipeline_reduce,PASS,3.947099780350175,1,1.2,inf

@@ -1,0 +1,9 @@
+atoms:
+  - source_id
+  - file_path
+  - source_text
+  - diagnostic_message
+  - backend_name
+  - operation_name
+  - target_triple
+  - capability_reason

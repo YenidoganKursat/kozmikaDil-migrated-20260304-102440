@@ -1,0 +1,13 @@
+{
+  "primitive": "f256",
+  "mode": "interpret",
+  "loops": 20000,
+  "runs": 1,
+  "warmup": 0,
+  "median_sec": 0.05324879100226099,
+  "min_sec": 0.05324879100226099,
+  "max_sec": 0.05324879100226099,
+  "checksum_raw": "0",
+  "baseline_1x_sec": 1.973814291999588,
+  "speedup_vs_1x": 37.0677766546057
+}

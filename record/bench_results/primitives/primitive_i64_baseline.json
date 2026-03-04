@@ -1,0 +1,13 @@
+{
+  "primitive": "i64",
+  "mode": "native",
+  "loops": 20000,
+  "runs": 1,
+  "warmup": 0,
+  "median_sec": 0.281252749999112,
+  "min_sec": 0.281252749999112,
+  "max_sec": 0.281252749999112,
+  "checksum_raw": "51",
+  "baseline_1x_sec": 0.281252749999112,
+  "speedup_vs_1x": 1.0
+}

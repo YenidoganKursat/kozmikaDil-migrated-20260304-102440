@@ -28,13 +28,13 @@ def benchmark_builtin(
         make_builtin_program(program, primitive, operator, loops, seed_x, seed_y)
 
         for _ in range(warmup):
-            run_checked(repo_root, ["./k", "run", "--interpret", str(program)])
+            run_checked(repo_root, ["./k", "run", str(program)])
 
         samples: List[float] = []
         checksum = ""
         for _ in range(runs):
             t0 = time.perf_counter()
-            proc = run_checked(repo_root, ["./k", "run", "--interpret", str(program)])
+            proc = run_checked(repo_root, ["./k", "run", str(program)])
             t1 = time.perf_counter()
             samples.append(t1 - t0)
             checksum = parse_last_line(proc.stdout)
@@ -93,13 +93,13 @@ def benchmark_interpret(
         make_operator_program(program, primitive, operator, loops)
 
         for _ in range(warmup):
-            run_checked(repo_root, ["./k", "run", "--interpret", str(program)])
+            run_checked(repo_root, ["./k", "run", str(program)])
 
         samples: List[float] = []
         checksum = ""
         for _ in range(runs):
             t0 = time.perf_counter()
-            proc = run_checked(repo_root, ["./k", "run", "--interpret", str(program)])
+            proc = run_checked(repo_root, ["./k", "run", str(program)])
             t1 = time.perf_counter()
             samples.append(t1 - t0)
             checksum = parse_last_line(proc.stdout)

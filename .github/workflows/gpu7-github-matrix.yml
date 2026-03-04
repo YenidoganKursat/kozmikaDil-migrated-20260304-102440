@@ -1,0 +1,197 @@
+name: GPU7 GitHub Matrix
+
+on:
+  push:
+    branches: [ "codex/**" ]
+    paths:
+      - ".github/workflows/gpu7-github-matrix.yml"
+      - "bench/programs/matmul_schedule_gpu/matmul_core_f64.k"
+      - "bench/programs/platform_support/object_store_backend_perf.k"
+      - "scripts/core/platform/runtime/gpu_backend_catalog.py"
+      - "scripts/core/platform/runtime/gpu_smoke_matrix.py"
+      - "scripts/core/platform/runtime/gpu_backend_runtime_perf.py"
+      - "scripts/core/platform/runtime/object_store_backend_perf.py"
+      - "src/**"
+      - "k"
+      - "CMakeLists.txt"
+  workflow_dispatch:
+    inputs:
+      enforce_gpu_requirements:
+        description: "Enforce strict GPU availability/routing checks on this host"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  gpu7-runtime-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get -o Acquire::Retries=3 install -y \
+            cmake ninja-build clang g++ make python3 python3-pip \
+            libmpfr-dev libgmp-dev libopenblas-dev
+
+      - name: Build sparkc
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSPARK_BUILD_TESTS=OFF
+          cmake --build build --parallel 4 --target sparkc
+
+      - name: Python compile checks (GPU scripts)
+        run: |
+          python3 -m py_compile scripts/core/platform/runtime/gpu_backend_catalog.py
+          python3 -m py_compile scripts/core/platform/runtime/gpu_smoke_matrix.py
+          python3 -m py_compile scripts/core/platform/runtime/gpu_backend_runtime_perf.py
+          python3 -m py_compile scripts/core/platform/runtime/object_store_backend_perf.py
+
+      - name: Run GPU smoke matrix (all declared GPU backends)
+        run: |
+          GPU7="cuda,rocm_hip,oneapi_sycl,opencl,vulkan_compute,metal,webgpu"
+          python3 scripts/core/platform/runtime/gpu_smoke_matrix.py \
+            --backends "$GPU7" \
+            --include-planning \
+            --json-out bench/results/github_gpu7_smoke.json
+
+      - name: Run GPU runtime matrix with portable routing enforcement
+        run: |
+          GPU7="cuda,rocm_hip,oneapi_sycl,opencl,vulkan_compute,metal,webgpu"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.enforce_gpu_requirements }}" = "true" ]; then
+            python3 scripts/core/platform/runtime/gpu_backend_runtime_perf.py \
+              --program bench/programs/matmul_schedule_gpu/matmul_core_f64.k \
+              --backends "$GPU7" \
+              --runs 1 \
+              --warmup 0 \
+              --max-perf \
+              --require-portable-routing \
+              --require-gpu-coverage \
+              --json-out bench/results/github_gpu7_runtime_perf.json \
+              --csv-out bench/results/github_gpu7_runtime_perf.csv
+          else
+            python3 scripts/core/platform/runtime/gpu_backend_runtime_perf.py \
+              --program bench/programs/matmul_schedule_gpu/matmul_core_f64.k \
+              --backends "$GPU7" \
+              --runs 1 \
+              --warmup 0 \
+              --max-perf \
+              --json-out bench/results/github_gpu7_runtime_perf.json \
+              --csv-out bench/results/github_gpu7_runtime_perf.csv || true
+          fi
+
+      - name: Run object-store backend portability/perf matrix
+        run: |
+          GPU7="cuda,rocm_hip,oneapi_sycl,opencl,vulkan_compute,metal,webgpu"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.enforce_gpu_requirements }}" = "true" ]; then
+            python3 scripts/core/platform/runtime/object_store_backend_perf.py \
+              --program bench/programs/platform_support/object_store_backend_perf.k \
+              --backends "$GPU7" \
+              --runs 1 \
+              --warmup 0 \
+              --require-portable-routing \
+              --require-gpu-coverage \
+              --json-out bench/results/github_gpu7_object_store_perf.json \
+              --csv-out bench/results/github_gpu7_object_store_perf.csv
+          else
+            python3 scripts/core/platform/runtime/object_store_backend_perf.py \
+              --program bench/programs/platform_support/object_store_backend_perf.k \
+              --backends "$GPU7" \
+              --runs 1 \
+              --warmup 0 \
+              --json-out bench/results/github_gpu7_object_store_perf.json \
+              --csv-out bench/results/github_gpu7_object_store_perf.csv || true
+          fi
+
+      - name: Summarize GPU7 results and enforce 7/7 pass
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          runtime_path = Path("bench/results/github_gpu7_runtime_perf.json")
+          smoke_path = Path("bench/results/github_gpu7_smoke.json")
+          object_path = Path("bench/results/github_gpu7_object_store_perf.json")
+
+          runtime = json.loads(runtime_path.read_text(encoding="utf-8"))
+          smoke = json.loads(smoke_path.read_text(encoding="utf-8"))
+          object_perf = json.loads(object_path.read_text(encoding="utf-8"))
+          enforce = ("${{ github.event_name }}" == "workflow_dispatch" and
+                     "${{ github.event.inputs.enforce_gpu_requirements }}" == "true")
+
+          rows = runtime.get("results", [])
+          total = len(rows)
+          portable = sum(1 for row in rows if bool(row.get("portable_route_ok", False)))
+          strict = runtime.get("strict", {})
+          strict_passed = bool(strict.get("passed", False))
+
+          print(f"GPU7 runtime portable pass: {portable}/{total}")
+          print(f"GPU7 strict passed: {strict_passed}")
+          print("requested\teffective\tportable\tstatus_ok\tprogram_pass\tmedian_time_sec")
+          for row in rows:
+            print(
+              f"{row.get('requested_backend','')}\t"
+              f"{row.get('effective_backend','')}\t"
+              f"{bool(row.get('portable_route_ok', False))}\t"
+              f"{bool(row.get('status_ok', False))}\t"
+              f"{bool(row.get('program_pass', False))}\t"
+              f"{float(row.get('median_time_sec', 0.0)):.6f}"
+            )
+
+          obj_rows = object_perf.get("results", [])
+          obj_total = len(obj_rows)
+          obj_portable = sum(1 for row in obj_rows if bool(row.get("portable_route_ok", False)))
+          obj_strict = object_perf.get("strict", {})
+          obj_strict_passed = bool(obj_strict.get("passed", False))
+          print(f"Object-store portable pass: {obj_portable}/{obj_total}")
+          print(f"Object-store strict passed: {obj_strict_passed}")
+          print("requested\teffective\tportable\tstatus_ok\tprogram_ok\ttotal_consistent\tmedian_time_sec")
+          for row in obj_rows:
+            print(
+              f"{row.get('requested_backend','')}\t"
+              f"{row.get('effective_backend','')}\t"
+              f"{bool(row.get('portable_route_ok', False))}\t"
+              f"{bool(row.get('status_ok', False))}\t"
+              f"{bool(row.get('program_ok', False))}\t"
+              f"{bool(row.get('total_consistent', False))}\t"
+              f"{float(row.get('median_time_sec', 0.0)):.6f}"
+            )
+
+          smoke_rows = smoke.get("records", [])
+          smoke_available = sum(1 for row in smoke_rows if bool(row.get("available", False)))
+          print(f"GPU7 smoke availability on host: {smoke_available}/{len(smoke_rows)}")
+
+          if total != 7:
+            raise SystemExit(f"expected 7 GPU rows, got {total}")
+          if obj_total != 7:
+            raise SystemExit(f"expected 7 object-store rows, got {obj_total}")
+          if enforce:
+            if portable != 7:
+              raise SystemExit("portable routing check failed for one or more GPU backends")
+            if not strict_passed:
+              raise SystemExit("runtime strict checks failed")
+            if obj_portable != 7:
+              raise SystemExit("object-store portable routing failed for one or more GPU backends")
+            if not obj_strict_passed:
+              raise SystemExit("object-store strict checks failed")
+          else:
+            print("GPU7 strict enforcement disabled (report mode on hosted runner)")
+          PY
+
+      - name: Upload GPU7 artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gpu7-github-matrix
+          path: |
+            bench/results/github_gpu7_smoke.json
+            bench/results/github_gpu7_runtime_perf.json
+            bench/results/github_gpu7_runtime_perf.csv
+            bench/results/github_gpu7_object_store_perf.json
+            bench/results/github_gpu7_object_store_perf.csv
+          if-no-files-found: warn
